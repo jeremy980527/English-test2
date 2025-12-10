@@ -15,6 +15,8 @@
             --border: #333333;
             --success: #4caf50;
             --error: #f44336;
+            --btn-primary: #3b82f6; /* Blue like the screenshot */
+            --btn-primary-hover: #2563eb;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --warning: #ff9800;
         }
@@ -152,14 +154,53 @@
         .btn-delete:hover { color: var(--error); border-color: var(--error); background: transparent; }
 
         /* Practice Area */
-        .practice-area { text-align: center; margin-top: 40px; }
+        .practice-area { text-align: center; margin-top: 40px; position: relative; }
         .question-text { font-size: 2rem; margin-bottom: 30px; font-weight: 600; }
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
-        .result-msg { height: 30px; margin-top: 10px; font-weight: 600; }
-        .result-correct { color: var(--success); }
-        .result-wrong { color: var(--error); }
-        .result-reset { color: var(--warning); }
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
+
+        /* --- New Feedback / Result Screen Styles --- */
+        #feedback-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
+        .icon-correct { color: var(--success); }
+        .icon-wrong { color: var(--error); }
+        .result-status { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; }
+        .status-correct { color: var(--success); }
+        .status-wrong { color: var(--error); }
+        
+        .answer-reveal {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tts-btn-large {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-sub);
+        }
+        .tts-btn-large:hover { color: var(--accent); }
+
+        .btn-next-big {
+            background-color: var(--btn-primary);
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 8px;
+        }
+        .btn-next-big:hover { background-color: var(--btn-primary-hover); }
 
         /* --- Puzzle Mode Styles --- */
         .puzzle-container {
@@ -244,7 +285,6 @@
         }
         .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
         
-        /* New for Import */
         .import-section {
             margin-top: 15px;
             border: 1px dashed var(--border);
@@ -252,14 +292,9 @@
             border-radius: 8px;
         }
         .import-trigger {
-            font-size: 0.85rem; 
-            color: var(--text-sub); 
-            text-decoration: underline; 
-            cursor: pointer; 
-            text-align: right; 
-            display: block; 
-            margin-bottom: 5px;
+            font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px;
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 480px) {
             .memory-grid { grid-template-columns: repeat(3, 1fr); }
@@ -348,15 +383,32 @@
                 <span id="sequential-badge" class="mode-badge hidden">循序漸進</span>
             </div>
         </div>
+        
         <div class="practice-area">
-            <div class="hint-text" id="hint-display"></div>
-            <div class="question-text" id="question-display"></div>
-            <input type="text" id="answer-input" placeholder="輸入答案..." autocomplete="off">
-            <div class="flex-row">
-                <button class="btn btn-outline" id="hint-btn" onclick="showHint()">提示</button>
-                <button class="btn" onclick="checkAnswer()">送出</button>
+            <div id="interaction-area">
+                <div class="hint-text" id="hint-display"></div>
+                <div class="question-text" id="question-display"></div>
+                <input type="text" id="answer-input" placeholder="輸入答案 (直接 Enter 可看解答)..." autocomplete="off">
+                <div class="flex-row">
+                    <button class="btn btn-outline" id="hint-btn" onclick="showHint()">提示</button>
+                    <button class="btn" onclick="checkAnswer()">送出</button>
+                </div>
             </div>
-            <div class="result-msg" id="result-message"></div>
+
+            <div id="feedback-area" class="hidden">
+                <div class="question-text" id="feedback-question-copy" style="font-size: 1.5rem; margin-bottom: 10px; color: var(--text-sub);"></div>
+                
+                <div id="feedback-icon" class="big-icon"></div>
+                <div id="feedback-status" class="result-status"></div>
+                
+                <div class="answer-reveal">
+                    正確答案: <span id="feedback-answer" style="color: var(--accent); margin-left: 5px;"></span>
+                    <button class="tts-btn-large" onclick="replayAudio()">🔊</button>
+                </div>
+
+                <button class="btn btn-next-big" id="btn-next-action" onclick="handleNextClick()">下一個</button>
+            </div>
+
             <div class="progress-text" id="progress-display"></div>
         </div>
     </div>
@@ -374,7 +426,7 @@
             <div id="puzzle-answer-area" class="puzzle-container"></div>
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="puzzle-pool-area" class="puzzle-container"></div>
-            <div class="result-msg" id="puzzle-message"></div>
+            <div class="result-msg" id="puzzle-message" style="margin-top:10px; height: 30px;"></div>
             <div class="progress-text" id="puzzle-progress"></div>
         </div>
     </div>
@@ -386,7 +438,7 @@
         </div>
         <div style="text-align:center; color:var(--text-sub); margin-bottom:10px;">找出配對的卡片</div>
         <div id="memory-board" class="memory-grid"></div>
-        <div class="result-msg" id="memory-message" style="text-align:center;"></div>
+        <div class="result-msg" id="memory-message" style="text-align:center; margin-top:10px;"></div>
     </div>
 
 </div>
@@ -402,7 +454,11 @@
     let currentCardIndex = 0;
     let currentMode = ''; 
     let selectedBookIds = new Set();
+    
+    // State to track if the last answer was correct (for Sequential Mode reset logic)
+    let lastAnswerCorrect = false;
 
+    // Puzzle & Memory State
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
 
@@ -439,7 +495,7 @@
         renderSettings();
     }
     function speakEnglishWord(word) {
-        if (!autoPronounce) return;
+        if (!autoPronounce && !window.forceSpeak) return; // Allow forcing for replay button
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(word);
@@ -447,6 +503,12 @@
             utterance.rate = 0.95; 
             window.speechSynthesis.speak(utterance);
         }
+        window.forceSpeak = false;
+    }
+    function replayAudio() {
+        window.forceSpeak = true;
+        const word = practiceQueue[currentCardIndex].en;
+        speakEnglishWord(word);
     }
 
     // --- Book Logic & Import ---
@@ -492,7 +554,7 @@
         const btnSimple = document.getElementById('btn-create-simple');
         if (area.classList.contains('hidden')) {
             area.classList.remove('hidden');
-            btnSimple.classList.add('hidden'); // Hide the simple create button to avoid confusion
+            btnSimple.classList.add('hidden'); 
         } else {
             area.classList.add('hidden');
             btnSimple.classList.remove('hidden');
@@ -522,11 +584,7 @@
         const newWords = [];
 
         lines.forEach(line => {
-            // Logic: Find the separator ' - ' or '-'
-            // Using regex to capture English (before first -) and Chinese (after)
-            // It allows spaces around hyphen or not
             let separatorIndex = line.indexOf('-');
-            // Support for en-dash just in case
             if(separatorIndex === -1) separatorIndex = line.indexOf('–'); 
 
             if (separatorIndex > 0) {
@@ -534,24 +592,20 @@
                 const zhStr = line.substring(separatorIndex + 1).trim();
                 
                 if (en && zhStr) {
-                    // Split chinese meanings by common separators: full-width ;, full-width ,, half-width ;, half-width ,, slash /
                     const zh = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
                     newWords.push({ en: en, zh: zh });
                 }
             }
         });
 
-        if (newWords.length === 0) {
-            return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
-        }
+        if (newWords.length === 0) return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
 
         books.push({ id: Date.now(), name: name, words: newWords });
         saveData();
         
-        // Reset Inputs
         nameInput.value = '';
         contentInput.value = '';
-        toggleImportArea(); // Hide import area
+        toggleImportArea();
         renderBookList();
         alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
     }
@@ -612,7 +666,7 @@
         return queue;
     }
 
-    // --- Mode: Standard Practice ---
+    // --- Mode: Standard Practice (UPDATED Logic) ---
     function setupPractice(mode) {
         practiceQueue = getPracticeWords();
         if(practiceQueue.length === 0) return;
@@ -629,52 +683,107 @@
         switchView('practice');
         showNextCard();
     }
+
     function showNextCard() {
         if (currentCardIndex >= practiceQueue.length) { alert("練習結束！"); quitPractice(); return; }
+        
         const word = practiceQueue[currentCardIndex];
+        
+        // Reset UI
+        document.getElementById('interaction-area').classList.remove('hidden');
+        document.getElementById('feedback-area').classList.add('hidden');
+        
         document.getElementById('answer-input').value = '';
         document.getElementById('hint-display').innerText = '';
-        document.getElementById('result-message').innerText = '';
         document.getElementById('progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
         document.getElementById('answer-input').focus();
-        document.getElementById('question-display').innerText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
+        
+        const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
+        document.getElementById('question-display').innerText = questionText;
+        document.getElementById('feedback-question-copy').innerText = questionText; // Set for feedback view too
     }
+
     function showHint() {
         const word = practiceQueue[currentCardIndex].en;
         if(word.length <= 2) { document.getElementById('hint-display').innerText = word; return; }
         document.getElementById('hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
     }
+
     function checkAnswer() {
         const input = document.getElementById('answer-input');
-        const msg = document.getElementById('result-message');
         const val = input.value.trim();
         const currentWord = practiceQueue[currentCardIndex];
         
-        if (val === '') { msg.className = 'result-msg result-wrong'; msg.innerText = '請輸入答案！'; input.focus(); return; }
-        
         let isCorrect = false;
-        if (currentMode === 'zh-to-en') {
-            if (val.toLowerCase() === currentWord.en.toLowerCase()) isCorrect = true;
+        
+        // Empty Input handled as wrong (Skipped)
+        if (val === '') {
+            isCorrect = false;
         } else {
-            if (currentWord.zh.some(m => m.trim().includes(val) && val.length > 0)) isCorrect = true;
-        }
-
-        if (isCorrect) {
-            msg.className = 'result-msg result-correct'; msg.innerText = 'Correct! 下一題...';
-            speakEnglishWord(currentWord.en);
-            setTimeout(() => { currentCardIndex++; showNextCard(); }, 800);
-        } else {
-            const correctAns = currentMode === 'zh-to-en' ? currentWord.en : currentWord.zh.join(' / ');
-            if (isSequentialMode) {
-                msg.className = 'result-msg result-reset'; msg.innerText = `錯誤！答案: ${correctAns}。回到第一題！`;
-                speakEnglishWord(currentWord.en);
-                setTimeout(() => { currentCardIndex = 0; showNextCard(); }, 2000);
+            if (currentMode === 'zh-to-en') {
+                if (val.toLowerCase() === currentWord.en.toLowerCase()) isCorrect = true;
             } else {
-                msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案: ${correctAns}`;
-                input.focus();
+                if (currentWord.zh.some(m => m.trim().includes(val) && val.length > 0)) isCorrect = true;
+            }
+        }
+        
+        lastAnswerCorrect = isCorrect;
+        showFeedback(isCorrect, currentWord);
+    }
+
+    function showFeedback(isCorrect, word) {
+        const interactionArea = document.getElementById('interaction-area');
+        const feedbackArea = document.getElementById('feedback-area');
+        const icon = document.getElementById('feedback-icon');
+        const status = document.getElementById('feedback-status');
+        const answerSpan = document.getElementById('feedback-answer');
+        
+        // Hide Question, Show Feedback
+        interactionArea.classList.add('hidden');
+        feedbackArea.classList.remove('hidden');
+
+        // Populate Data
+        answerSpan.innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
+        
+        if (isCorrect) {
+            icon.innerText = '✔';
+            icon.className = 'big-icon icon-correct';
+            status.innerText = '正確!';
+            status.className = 'result-status status-correct';
+        } else {
+            icon.innerText = '✘';
+            icon.className = 'big-icon icon-wrong';
+            status.innerText = '錯誤!';
+            status.className = 'result-status status-wrong';
+        }
+        
+        // Play audio
+        speakEnglishWord(word.en);
+        
+        // Focus the next button so Space/Enter works
+        document.getElementById('btn-next-action').focus();
+    }
+
+    function handleNextClick() {
+        if (lastAnswerCorrect) {
+            // Correct answer: Move next
+            currentCardIndex++;
+            showNextCard();
+        } else {
+            // Wrong answer
+            if (isSequentialMode) {
+                // Sequential: Restart
+                alert("循序漸進模式：錯誤！回到第一題重來！");
+                currentCardIndex = 0;
+                showNextCard();
+            } else {
+                // Normal: Just move next
+                currentCardIndex++;
+                showNextCard();
             }
         }
     }
+
     document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
 
     // --- Mode: Puzzle ---
@@ -737,7 +846,7 @@
                 setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800);
             } else {
                 if(isSequentialMode) {
-                     msg.className = 'result-msg result-reset'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`;
+                     msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`;
                      speakEnglishWord(puzzleCurrentWord.en);
                      setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000);
                 } else {
