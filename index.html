@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -15,7 +16,7 @@
             --border: #333333;
             --success: #4caf50;
             --error: #f44336;
-            --btn-primary: #3b82f6; /* Blue like the screenshot */
+            --btn-primary: #3b82f6; 
             --btn-primary-hover: #2563eb;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --warning: #ff9800;
@@ -181,6 +182,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            justify-content: center;
         }
         
         .tts-btn-large {
@@ -199,6 +201,7 @@
             padding: 15px;
             margin-top: 30px;
             border-radius: 8px;
+            width: 100%;
         }
         .btn-next-big:hover { background-color: var(--btn-primary-hover); }
 
@@ -270,7 +273,7 @@
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
         /* Utilities */
-        .hidden { display: none; }
+        .hidden { display: none !important; } /* Added !important to force hide */
         .flex-row { display: flex; gap: 10px; }
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
         input[type="checkbox"] { accent-color: var(--accent); transform: scale(1.2); }
@@ -495,7 +498,7 @@
         renderSettings();
     }
     function speakEnglishWord(word) {
-        if (!autoPronounce && !window.forceSpeak) return; // Allow forcing for replay button
+        if (!autoPronounce && !window.forceSpeak) return; 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(word);
@@ -689,7 +692,7 @@
         
         const word = practiceQueue[currentCardIndex];
         
-        // Reset UI
+        // --- FIX: Force Reset UI States ---
         document.getElementById('interaction-area').classList.remove('hidden');
         document.getElementById('feedback-area').classList.add('hidden');
         
@@ -700,7 +703,7 @@
         
         const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
         document.getElementById('question-display').innerText = questionText;
-        document.getElementById('feedback-question-copy').innerText = questionText; // Set for feedback view too
+        document.getElementById('feedback-question-copy').innerText = questionText; 
     }
 
     function showHint() {
@@ -716,7 +719,6 @@
         
         let isCorrect = false;
         
-        // Empty Input handled as wrong (Skipped)
         if (val === '') {
             isCorrect = false;
         } else {
@@ -738,11 +740,9 @@
         const status = document.getElementById('feedback-status');
         const answerSpan = document.getElementById('feedback-answer');
         
-        // Hide Question, Show Feedback
         interactionArea.classList.add('hidden');
         feedbackArea.classList.remove('hidden');
 
-        // Populate Data
         answerSpan.innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
         
         if (isCorrect) {
@@ -757,27 +757,20 @@
             status.className = 'result-status status-wrong';
         }
         
-        // Play audio
         speakEnglishWord(word.en);
-        
-        // Focus the next button so Space/Enter works
         document.getElementById('btn-next-action').focus();
     }
 
     function handleNextClick() {
         if (lastAnswerCorrect) {
-            // Correct answer: Move next
             currentCardIndex++;
             showNextCard();
         } else {
-            // Wrong answer
             if (isSequentialMode) {
-                // Sequential: Restart
                 alert("循序漸進模式：錯誤！回到第一題重來！");
                 currentCardIndex = 0;
                 showNextCard();
             } else {
-                // Normal: Just move next
                 currentCardIndex++;
                 showNextCard();
             }
