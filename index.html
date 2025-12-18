@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -273,7 +272,7 @@
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
         /* Utilities */
-        .hidden { display: none !important; } /* Added !important to force hide */
+        .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
         input[type="checkbox"] { accent-color: var(--accent); transform: scale(1.2); }
@@ -455,10 +454,14 @@
     let currentBookId = null;
     let practiceQueue = [];
     let currentCardIndex = 0;
+    
+    // New Progress Tracking
+    let initialQueueLength = 0;
+    let completedCount = 0;
+
     let currentMode = ''; 
     let selectedBookIds = new Set();
     
-    // State to track if the last answer was correct (for Sequential Mode reset logic)
     let lastAnswerCorrect = false;
 
     // Puzzle & Memory State
@@ -674,8 +677,13 @@
         practiceQueue = getPracticeWords();
         if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
+        
         currentMode = mode;
         currentCardIndex = 0;
+        
+        // Progress Init
+        initialQueueLength = practiceQueue.length;
+        completedCount = 0;
         
         document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英' : '英翻中';
         const badge = document.getElementById('sequential-badge');
@@ -692,13 +700,22 @@
         
         const word = practiceQueue[currentCardIndex];
         
-        // --- FIX: Force Reset UI States ---
+        // Force Reset UI States
         document.getElementById('interaction-area').classList.remove('hidden');
         document.getElementById('feedback-area').classList.add('hidden');
         
         document.getElementById('answer-input').value = '';
         document.getElementById('hint-display').innerText = '';
-        document.getElementById('progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
+        
+        // Update Progress Display
+        let progressStr = '';
+        if (isSequentialMode) {
+             progressStr = `循序漸進: 第 ${currentCardIndex + 1} 關`;
+        } else {
+             progressStr = `完成進度: ${completedCount} / ${initialQueueLength}`;
+        }
+        document.getElementById('progress-display').innerText = progressStr;
+        
         document.getElementById('answer-input').focus();
         
         const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
@@ -730,6 +747,13 @@
         }
         
         lastAnswerCorrect = isCorrect;
+        
+        // --- LOGIC CHANGE: Re-queue if wrong in Standard Mode ---
+        if (!isCorrect && !isSequentialMode) {
+            // Push current word to end of queue so we see it again
+            practiceQueue.push(currentWord);
+        }
+        
         showFeedback(isCorrect, currentWord);
     }
 
@@ -762,19 +786,24 @@
     }
 
     function handleNextClick() {
+        // Increment completed count only if correct
         if (lastAnswerCorrect) {
-            currentCardIndex++;
-            showNextCard();
-        } else {
-            if (isSequentialMode) {
-                alert("循序漸進模式：錯誤！回到第一題重來！");
-                currentCardIndex = 0;
-                showNextCard();
-            } else {
-                currentCardIndex++;
-                showNextCard();
-            }
+            completedCount++;
         }
+        
+        // Sequential Mode Logic (Death Mode)
+        if (isSequentialMode && !lastAnswerCorrect) {
+            alert("循序漸進模式：錯誤！回到第一題重來！");
+            currentCardIndex = 0;
+            // Note: completedCount isn't really used for logic in sequential, but let's reset it for display consistency
+            completedCount = 0; 
+            showNextCard();
+            return;
+        }
+
+        // Standard Logic: Move to next index
+        currentCardIndex++;
+        showNextCard();
     }
 
     document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
