@@ -70,7 +70,6 @@
         }
         .btn-icon:hover { color: var(--accent); }
 
-        /* 進度條 */
         .progress-container {
             width: 100%;
             height: 6px;
@@ -171,20 +170,17 @@
             background-color: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 20px;
+            padding: 22px;
             border-radius: 12px;
             font-size: 1.1rem;
             cursor: pointer;
             text-align: left;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
         }
         .choice-btn:hover { border-color: var(--text-sub); background-color: #1a1a1a; }
         .choice-btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .choice-btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
 
-        /* 練習區 */
         .practice-area { text-align: center; margin-top: 20px; position: relative; }
         .question-text { font-size: 2.2rem; margin-bottom: 30px; font-weight: 600; min-height: 80px; display: flex; align-items: center; justify-content: center; }
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
@@ -211,7 +207,6 @@
             justify-content: center;
         }
 
-        /* 拼圖模式 */
         .puzzle-container {
             display: flex;
             flex-wrap: wrap;
@@ -234,7 +229,6 @@
             color: var(--text-main);
         }
 
-        /* 翻卡模式 */
         .memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -405,6 +399,7 @@
     let currentCardIndex = 0;
     let currentMode = '';
     let currentBookId = null;
+    let lastCorrect = false;
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
@@ -510,7 +505,7 @@
         return p;
     }
 
-    // --- MCQ Logic ---
+    // --- MCQ Logic (修復發音問題) ---
     function setupMCQ() {
         if(getPracticeWords().length < 4) return alert("單字量不足 4 個");
         switchView('mcq-init');
@@ -551,6 +546,8 @@
             btn.onclick = () => handleMCQAnswer(btn, opt, cur);
             container.appendChild(btn);
         });
+
+        // 題目是英文時朗讀題目
         if(currentMode === 'en-to-zh') speak(cur.en);
     }
 
@@ -562,6 +559,8 @@
             btn.classList.add('correct');
             completedCount++;
             practiceQueue.shift();
+            // 答對時朗讀單字
+            speak(correct.en);
             setTimeout(showNextMCQ, 600);
         } else {
             btn.classList.add('wrong');
@@ -577,7 +576,7 @@
         }
     }
 
-    // --- Key Events (Ins, Del, PgUp, PgDn Mapping) ---
+    // --- Key Events (Ins, Del, PgUp, PgDn) ---
     window.addEventListener('keydown', (e) => {
         const mcqView = document.getElementById('view-mcq-play');
         if (mcqView.classList.contains('hidden')) return;
@@ -620,6 +619,8 @@
         document.getElementById('progress-display').innerText = `進度: ${completedCount} / ${initialQueueLength}`;
         document.getElementById('question-display').innerText = currentMode === 'zh-to-en' ? w.zh.join(' / ') : w.en;
         document.getElementById('answer-input').focus();
+
+        if(currentMode === 'en-to-zh') speak(w.en);
     }
 
     function checkAnswer() {
@@ -639,6 +640,7 @@
             icon.innerText = '❌'; icon.className = 'big-icon icon-wrong';
             lastCorrect = false;
         }
+        // 判定後發音
         speak(w.en);
     }
 
@@ -683,7 +685,13 @@
         const check = () => {
             if(userAns.join('') === w.en.toLowerCase()) {
                 document.getElementById('puzzle-message').innerText = "✅ 正確！";
-                setTimeout(() => { currentCardIndex++; if(currentCardIndex < practiceQueue.length) loadPuzzle(); else goHome(); }, 1000);
+                speak(w.en);
+                setTimeout(() => { 
+                    document.getElementById('puzzle-message').innerText = "";
+                    currentCardIndex++; 
+                    if(currentCardIndex < practiceQueue.length) loadPuzzle(); 
+                    else goHome(); 
+                }, 1000);
             }
         };
         render();
@@ -704,8 +712,11 @@
                 if(flipped.length < 2 && !el.classList.contains('flipped')) {
                     el.classList.add('flipped'); flipped.push({c, el});
                     if(flipped.length === 2) {
-                        if(flipped[0].c.id === flipped[1].c.id) flipped = [];
-                        else setTimeout(() => { flipped.forEach(f => f.el.classList.remove('flipped')); flipped = []; }, 1000);
+                        if(flipped[0].c.id === flipped[1].c.id) {
+                            speak(c.id); flipped = [];
+                        } else {
+                            setTimeout(() => { flipped.forEach(f => f.el.classList.remove('flipped')); flipped = []; }, 1000);
+                        }
                     }
                 }
             };
@@ -715,8 +726,12 @@
     }
 
     function speak(t) {
+        if(!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; window.speechSynthesis.speak(u);
+        const u = new SpeechSynthesisUtterance(t); 
+        u.lang = 'en-US'; 
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
     }
 
     document.getElementById('answer-input').onkeypress = (e) => { if(e.key==='Enter') checkAnswer(); };
