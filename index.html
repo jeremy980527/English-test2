@@ -72,6 +72,22 @@
         }
         .btn-icon:hover { color: var(--accent); }
 
+        /* Progress Bar (New) */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--btn-primary);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
         /* Cards & Lists */
         .card {
             background-color: var(--card-bg);
@@ -139,9 +155,9 @@
             font-size: 0.9rem;
             width: 100%;
             margin-top: 10px;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
-        .btn:hover { background-color: var(--accent-hover); }
+        .btn:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
         .btn-outline {
             background: transparent;
             color: var(--text-main);
@@ -153,9 +169,45 @@
         .btn-delete { background: transparent; color: #555; border: 1px solid #333; }
         .btn-delete:hover { color: var(--error); border-color: var(--error); background: transparent; }
 
+        /* Choice Grid (New) */
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .choice-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .choice-btn:hover { border-color: var(--text-sub); background-color: #1a1a1a; }
+        .choice-btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
+        .choice-btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
+        .choice-label {
+            width: 28px;
+            height: 28px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
         /* Practice Area */
-        .practice-area { text-align: center; margin-top: 40px; position: relative; }
-        .question-text { font-size: 2rem; margin-bottom: 30px; font-weight: 600; }
+        .practice-area { text-align: center; margin-top: 20px; position: relative; }
+        .question-text { font-size: 2rem; margin-bottom: 30px; font-weight: 600; min-height: 80px; display: flex; align-items: center; justify-content: center; }
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
@@ -296,18 +348,21 @@
         .import-trigger {
             font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px;
         }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .shake { animation: shake 0.2s ease-in-out 0s 2; }
 
         @media (max-width: 480px) {
             .memory-grid { grid-template-columns: repeat(3, 1fr); }
+            .question-text { font-size: 1.5rem; }
         }
-
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
+    <header onclick="goHome()" style="cursor:pointer">
         <h1>SilenVocab</h1>
     </header>
 
@@ -345,8 +400,8 @@
             </div>
 
             <div class="flex-row">
-                <button class="btn" onclick="setupPractice('zh-to-en')">看中文 → 拼英文</button>
-                <button class="btn" onclick="setupPractice('en-to-zh')">看英文 → 翻中文</button>
+                <button class="btn" onclick="setupMCQ()">🔘 選擇題模式</button>
+                <button class="btn" onclick="setupPractice('zh-to-en')">⌨️ 拼打模式</button>
             </div>
             <div class="flex-row">
                 <button class="btn btn-outline" onclick="setupPuzzleMode()">🧩 拼圖模式</button>
@@ -360,6 +415,32 @@
                 <input type="checkbox" id="auto-pronounce-toggle" style="pointer-events: none;">
                 <label for="auto-pronounce-toggle" style="flex:1;">自動朗讀英文單字 (建議開啟)</label>
             </div>
+        </div>
+    </div>
+
+    <div id="view-mcq-init" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="goHome()">← 返回</button>
+            <h2>選擇題練習方向</h2>
+        </div>
+        <div class="card">
+            <button class="btn" style="margin-bottom:15px" onclick="startMCQ('zh-to-en')">看中文 → 選英文</button>
+            <button class="btn btn-outline" onclick="startMCQ('en-to-zh')">看英文 → 選中文</button>
+        </div>
+    </div>
+
+    <div id="view-mcq-play" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="quitPractice()">✕ 結束</button>
+            <span id="mcq-mode-display" style="color:var(--text-sub)"></span>
+        </div>
+        <div class="progress-container">
+            <div id="mcq-progress-bar" class="progress-fill"></div>
+        </div>
+        <div class="practice-area">
+            <div class="question-text" id="mcq-question-display"></div>
+            <div id="mcq-options-container" class="choice-grid"></div>
+            <div class="progress-text" id="mcq-progress-text"></div>
         </div>
     </div>
 
@@ -385,7 +466,9 @@
                 <span id="sequential-badge" class="mode-badge hidden">循序漸進</span>
             </div>
         </div>
-        
+        <div class="progress-container">
+            <div id="practice-progress-bar" class="progress-fill"></div>
+        </div>
         <div class="practice-area">
             <div id="interaction-area">
                 <div class="hint-text" id="hint-display"></div>
@@ -399,18 +482,14 @@
 
             <div id="feedback-area" class="hidden">
                 <div class="question-text" id="feedback-question-copy" style="font-size: 1.5rem; margin-bottom: 10px; color: var(--text-sub);"></div>
-                
                 <div id="feedback-icon" class="big-icon"></div>
                 <div id="feedback-status" class="result-status"></div>
-                
                 <div class="answer-reveal">
                     正確答案: <span id="feedback-answer" style="color: var(--accent); margin-left: 5px;"></span>
                     <button class="tts-btn-large" onclick="replayAudio()">🔊</button>
                 </div>
-
                 <button class="btn btn-next-big" id="btn-next-action" onclick="handleNextClick()">下一個</button>
             </div>
-
             <div class="progress-text" id="progress-display"></div>
         </div>
     </div>
@@ -455,13 +534,11 @@
     let practiceQueue = [];
     let currentCardIndex = 0;
     
-    // New Progress Tracking
     let initialQueueLength = 0;
     let completedCount = 0;
 
     let currentMode = ''; 
     let selectedBookIds = new Set();
-    
     let lastAnswerCorrect = false;
 
     // Puzzle & Memory State
@@ -470,10 +547,13 @@
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- Navigation & Setup ---
-    const views = ['home', 'edit', 'practice', 'puzzle', 'memory'];
+    // --- Navigation ---
+    const views = ['home', 'edit', 'practice', 'puzzle', 'memory', 'mcq-init', 'mcq-play'];
     function switchView(viewName) {
-        views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+        views.forEach(v => {
+            const el = document.getElementById(`view-${v}`);
+            if(el) el.classList.add('hidden');
+        });
         document.getElementById(`view-${viewName}`).classList.remove('hidden');
     }
     function goHome() {
@@ -517,7 +597,7 @@
         speakEnglishWord(word);
     }
 
-    // --- Book Logic & Import ---
+    // --- Book Logic ---
     function renderBookList() {
         const list = document.getElementById('book-list');
         list.innerHTML = '';
@@ -526,24 +606,17 @@
         books.forEach(book => {
             const div = document.createElement('div');
             div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = selectedBookIds.has(book.id);
-            checkbox.style.pointerEvents = 'none';
-            const info = document.createElement('div');
-            info.style.flex = '1';
-            info.style.marginLeft = '15px';
-            info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-icon';
-            editBtn.innerHTML = '✎';
+            div.innerHTML = `
+                <div class="checkbox-wrapper" style="flex:1">
+                    <input type="checkbox" ${selectedBookIds.has(book.id) ? 'checked' : ''} style="pointer-events:none">
+                    <div style="margin-left:15px">
+                        <strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>
+                    </div>
+                </div>
+                <button class="btn-icon">✎</button>
+            `;
+            const editBtn = div.querySelector('button');
             editBtn.onclick = (e) => { e.stopPropagation(); openEditBook(book.id); };
-            const wrapper = document.createElement('div');
-            wrapper.className = 'checkbox-wrapper';
-            wrapper.appendChild(checkbox);
-            wrapper.appendChild(info);
-            div.appendChild(wrapper);
-            div.appendChild(editBtn);
             div.onclick = (e) => {
                  if (e.target !== editBtn) { 
                      if(selectedBookIds.has(book.id)) selectedBookIds.delete(book.id);
@@ -558,13 +631,8 @@
     function toggleImportArea() {
         const area = document.getElementById('import-area');
         const btnSimple = document.getElementById('btn-create-simple');
-        if (area.classList.contains('hidden')) {
-            area.classList.remove('hidden');
-            btnSimple.classList.add('hidden'); 
-        } else {
-            area.classList.add('hidden');
-            btnSimple.classList.remove('hidden');
-        }
+        area.classList.toggle('hidden');
+        btnSimple.classList.toggle('hidden');
     }
 
     function addBookSimple() {
@@ -596,7 +664,6 @@
             if (separatorIndex > 0) {
                 const en = line.substring(0, separatorIndex).trim();
                 const zhStr = line.substring(separatorIndex + 1).trim();
-                
                 if (en && zhStr) {
                     const zh = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
                     newWords.push({ en: en, zh: zh });
@@ -604,28 +671,20 @@
             }
         });
 
-        if (newWords.length === 0) return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
-
+        if (newWords.length === 0) return alert("無法識別格式，請用「英文 - 中文」");
         books.push({ id: Date.now(), name: name, words: newWords });
         saveData();
-        
-        nameInput.value = '';
-        contentInput.value = '';
-        toggleImportArea();
-        renderBookList();
-        alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
+        nameInput.value = ''; contentInput.value = ''; toggleImportArea(); renderBookList();
     }
 
     function deleteCurrentBook() {
         if(confirm('確定要刪除整個單字簿嗎？')) {
             books = books.filter(b => b.id !== currentBookId);
             selectedBookIds.delete(currentBookId);
-            saveData();
-            goHome();
+            saveData(); goHome();
         }
     }
     
-    // --- Edit Book Functions ---
     function openEditBook(id) {
         currentBookId = id;
         document.getElementById('edit-book-title').innerText = books.find(b => b.id === id).name;
@@ -650,77 +709,144 @@
         const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
         books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray });
         saveData();
-        document.getElementById('input-en').value = '';
-        document.getElementById('input-zh').value = '';
-        document.getElementById('input-en').focus();
-        renderWordList();
+        document.getElementById('input-en').value = ''; document.getElementById('input-zh').value = ''; renderWordList();
     }
     function deleteWord(index) {
         books.find(b => b.id === currentBookId).words.splice(index, 1);
-        saveData();
-        renderWordList();
+        saveData(); renderWordList();
     }
 
-    // --- Practice Utils ---
     function getPracticeWords() {
         if (selectedBookIds.size === 0) { alert("請至少選擇一本單字簿！"); return []; }
         let queue = [];
-        books.forEach(book => {
-            if (selectedBookIds.has(book.id)) queue.push(...book.words);
-        });
-        if (queue.length === 0) { alert("選定的單字簿中沒有單字！"); return []; }
+        books.forEach(book => { if (selectedBookIds.has(book.id)) queue.push(...book.words); });
+        if (queue.length === 0) { alert("單字簿內沒單字！"); return []; }
         return queue;
     }
 
-    // --- Mode: Standard Practice (UPDATED Logic) ---
+    // --- NEW: Multiple Choice Mode (選擇題) ---
+    function setupMCQ() {
+        const pool = getPracticeWords();
+        if(pool.length < 4) return alert("單字量不足 4 個，無法生成選擇題選項！");
+        switchView('mcq-init');
+    }
+
+    function startMCQ(mode) {
+        currentMode = mode;
+        practiceQueue = getPracticeWords();
+        practiceQueue.sort(() => Math.random() - 0.5);
+        initialQueueLength = practiceQueue.length;
+        completedCount = 0;
+        
+        document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中翻英 (選擇)' : '英翻中 (選擇)';
+        switchView('mcq-play');
+        showNextMCQ();
+    }
+
+    function showNextMCQ() {
+        if (practiceQueue.length === 0) {
+            alert("全部練習完成！");
+            return goHome();
+        }
+
+        // 進度更新
+        const progress = (completedCount / initialQueueLength) * 100;
+        document.getElementById('mcq-progress-bar').style.width = `${progress}%`;
+        document.getElementById('mcq-progress-text').innerText = `完成進度: ${completedCount} / ${initialQueueLength}`;
+
+        const currentCard = practiceQueue[0];
+        const questionText = currentMode === 'zh-to-en' ? currentCard.zh.join(' / ') : currentCard.en;
+        document.getElementById('mcq-question-display').innerText = questionText;
+
+        // 生成選項
+        let options = [currentCard];
+        let fullPool = getPracticeWords();
+        // 排除掉正確答案後隨機抓三個
+        let distractors = fullPool.filter(w => w.en !== currentCard.en)
+                                  .sort(() => Math.random() - 0.5)
+                                  .slice(0, 3);
+        options.push(...distractors);
+        options.sort(() => Math.random() - 0.5); // 打亂選項
+
+        const container = document.getElementById('mcq-options-container');
+        container.innerHTML = '';
+        const labels = ['A', 'B', 'C', 'D'];
+
+        options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerHTML = `<span class="choice-label">${labels[idx]}</span> ${currentMode === 'zh-to-en' ? opt.en : opt.zh[0]}`;
+            btn.onclick = () => handleMCQAnswer(btn, opt, currentCard);
+            container.appendChild(btn);
+        });
+
+        if (currentMode === 'en-to-zh') speakEnglishWord(currentCard.en);
+    }
+
+    function handleMCQAnswer(clickedBtn, selectedWord, correctWord) {
+        // 禁用所有按鈕防止連點
+        const allBtns = document.querySelectorAll('.choice-btn');
+        allBtns.forEach(b => b.style.pointerEvents = 'none');
+
+        if (selectedWord.en === correctWord.en) {
+            clickedBtn.classList.add('correct');
+            completedCount++;
+            practiceQueue.shift(); // 移除正確題
+            if (currentMode === 'zh-to-en') speakEnglishWord(correctWord.en);
+            setTimeout(showNextMCQ, 600);
+        } else {
+            clickedBtn.classList.add('wrong');
+            clickedBtn.classList.add('shake');
+            // 亮出正確答案
+            allBtns.forEach(b => {
+                // 這裡要判斷內容是否匹配正確答案
+                const text = b.innerText.substring(2).trim(); 
+                if (text === correctWord.en || correctWord.zh.includes(text)) {
+                    b.classList.add('correct');
+                }
+            });
+
+            // 隨機重排：將錯誤題目插回後方 (至少間隔兩題)
+            const wrongItem = practiceQueue.shift();
+            const insertIndex = Math.min(practiceQueue.length, Math.floor(Math.random() * 3) + 2);
+            practiceQueue.splice(insertIndex, 0, wrongItem);
+
+            setTimeout(showNextMCQ, 1500);
+        }
+    }
+
+    // --- Standard Practice (原本的) ---
     function setupPractice(mode) {
         practiceQueue = getPracticeWords();
         if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
-        
         currentMode = mode;
         currentCardIndex = 0;
-        
-        // Progress Init
         initialQueueLength = practiceQueue.length;
         completedCount = 0;
-        
         document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英' : '英翻中';
-        const badge = document.getElementById('sequential-badge');
-        badge.classList.toggle('hidden', !isSequentialMode);
-        badge.classList.toggle('active', isSequentialMode);
+        document.getElementById('sequential-badge').classList.toggle('hidden', !isSequentialMode);
         document.getElementById('hint-btn').style.display = mode === 'zh-to-en' ? 'block' : 'none';
-        
         switchView('practice');
         showNextCard();
     }
 
     function showNextCard() {
         if (currentCardIndex >= practiceQueue.length) { alert("練習結束！"); quitPractice(); return; }
-        
         const word = practiceQueue[currentCardIndex];
-        
-        // Force Reset UI States
         document.getElementById('interaction-area').classList.remove('hidden');
         document.getElementById('feedback-area').classList.add('hidden');
-        
         document.getElementById('answer-input').value = '';
         document.getElementById('hint-display').innerText = '';
         
-        // Update Progress Display
-        let progressStr = '';
-        if (isSequentialMode) {
-             progressStr = `循序漸進: 第 ${currentCardIndex + 1} 關`;
-        } else {
-             progressStr = `完成進度: ${completedCount} / ${initialQueueLength}`;
-        }
-        document.getElementById('progress-display').innerText = progressStr;
+        // 進度條與文字
+        const progress = (completedCount / initialQueueLength) * 100;
+        document.getElementById('practice-progress-bar').style.width = isSequentialMode ? '0%' : `${progress}%`;
+        document.getElementById('progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `完成進度: ${completedCount} / ${initialQueueLength}`;
         
         document.getElementById('answer-input').focus();
-        
-        const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
-        document.getElementById('question-display').innerText = questionText;
-        document.getElementById('feedback-question-copy').innerText = questionText; 
+        document.getElementById('question-display').innerText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
+        document.getElementById('feedback-question-copy').innerText = document.getElementById('question-display').innerText; 
     }
 
     function showHint() {
@@ -731,82 +857,44 @@
 
     function checkAnswer() {
         const input = document.getElementById('answer-input');
-        const val = input.value.trim();
+        const val = input.value.trim().toLowerCase();
         const currentWord = practiceQueue[currentCardIndex];
-        
         let isCorrect = false;
-        
-        if (val === '') {
-            isCorrect = false;
-        } else {
-            if (currentMode === 'zh-to-en') {
-                if (val.toLowerCase() === currentWord.en.toLowerCase()) isCorrect = true;
-            } else {
-                if (currentWord.zh.some(m => m.trim().includes(val) && val.length > 0)) isCorrect = true;
-            }
+        if (val !== '') {
+            if (currentMode === 'zh-to-en') { if (val === currentWord.en.toLowerCase()) isCorrect = true; }
+            else { if (currentWord.zh.some(m => m.includes(val))) isCorrect = true; }
         }
-        
         lastAnswerCorrect = isCorrect;
-        
-        // --- LOGIC CHANGE: Re-queue if wrong in Standard Mode ---
-        if (!isCorrect && !isSequentialMode) {
-            // Push current word to end of queue so we see it again
-            practiceQueue.push(currentWord);
-        }
-        
+        if (!isCorrect && !isSequentialMode) { practiceQueue.push(currentWord); }
         showFeedback(isCorrect, currentWord);
     }
 
     function showFeedback(isCorrect, word) {
-        const interactionArea = document.getElementById('interaction-area');
-        const feedbackArea = document.getElementById('feedback-area');
+        document.getElementById('interaction-area').classList.add('hidden');
+        document.getElementById('feedback-area').classList.remove('hidden');
         const icon = document.getElementById('feedback-icon');
         const status = document.getElementById('feedback-status');
-        const answerSpan = document.getElementById('feedback-answer');
-        
-        interactionArea.classList.add('hidden');
-        feedbackArea.classList.remove('hidden');
-
-        answerSpan.innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
+        document.getElementById('feedback-answer').innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
         
         if (isCorrect) {
-            icon.innerText = '✔';
-            icon.className = 'big-icon icon-correct';
-            status.innerText = '正確!';
-            status.className = 'result-status status-correct';
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct';
+            status.innerText = '正確!'; status.className = 'result-status status-correct';
         } else {
-            icon.innerText = '✘';
-            icon.className = 'big-icon icon-wrong';
-            status.innerText = '錯誤!';
-            status.className = 'result-status status-wrong';
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong';
+            status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
         }
-        
         speakEnglishWord(word.en);
         document.getElementById('btn-next-action').focus();
     }
 
     function handleNextClick() {
-        // Increment completed count only if correct
-        if (lastAnswerCorrect) {
-            completedCount++;
-        }
-        
-        // Sequential Mode Logic (Death Mode)
+        if (lastAnswerCorrect) completedCount++;
         if (isSequentialMode && !lastAnswerCorrect) {
-            alert("循序漸進模式：錯誤！回到第一題重來！");
-            currentCardIndex = 0;
-            // Note: completedCount isn't really used for logic in sequential, but let's reset it for display consistency
-            completedCount = 0; 
-            showNextCard();
-            return;
+            alert("錯誤！回到第一題重來！");
+            currentCardIndex = 0; completedCount = 0; showNextCard(); return;
         }
-
-        // Standard Logic: Move to next index
-        currentCardIndex++;
-        showNextCard();
+        currentCardIndex++; showNextCard();
     }
-
-    document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
 
     // --- Mode: Puzzle ---
     function setupPuzzleMode() {
@@ -814,14 +902,12 @@
         if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0;
-        const badge = document.getElementById('puzzle-seq-badge');
-        badge.classList.toggle('hidden', !isSequentialMode);
-        badge.classList.toggle('active', isSequentialMode);
+        document.getElementById('puzzle-seq-badge').classList.toggle('hidden', !isSequentialMode);
         switchView('puzzle');
         loadPuzzleLevel();
     }
     function loadPuzzleLevel() {
-        if (currentCardIndex >= practiceQueue.length) { alert("拼圖練習結束！"); quitPractice(); return; }
+        if (currentCardIndex >= practiceQueue.length) { alert("練習結束！"); quitPractice(); return; }
         puzzleCurrentWord = practiceQueue[currentCardIndex];
         puzzleUserAnswer = [];
         let letters = puzzleCurrentWord.en.toLowerCase().split('');
@@ -851,29 +937,21 @@
             }
         });
     }
-    function addLetterToAnswer(letterObj) {
-        letterObj.used = true; puzzleUserAnswer.push(letterObj); renderPuzzleBoard(); checkPuzzleState();
-    }
-    function removeLetterFromAnswer(index) {
-        const letterObj = puzzleUserAnswer[index]; letterObj.used = false; puzzleUserAnswer.splice(index, 1); renderPuzzleBoard();
-    }
+    function addLetterToAnswer(letterObj) { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderPuzzleBoard(); checkPuzzleState(); }
+    function removeLetterFromAnswer(index) { const letterObj = puzzleUserAnswer[index]; letterObj.used = false; puzzleUserAnswer.splice(index, 1); renderPuzzleBoard(); }
     function checkPuzzleState() {
         const currentString = puzzleUserAnswer.map(o => o.char).join('');
         const targetString = puzzleCurrentWord.en.toLowerCase();
         const msg = document.getElementById('puzzle-message');
         if (puzzleUserAnswer.length === targetString.length) {
             if (currentString === targetString) {
-                msg.className = 'result-msg result-correct'; msg.innerText = '拼字正確！';
-                speakEnglishWord(puzzleCurrentWord.en);
+                msg.className = 'result-msg icon-correct'; msg.innerText = '拼字正確！'; speakEnglishWord(puzzleCurrentWord.en);
                 setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800);
             } else {
                 if(isSequentialMode) {
-                     msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`;
-                     speakEnglishWord(puzzleCurrentWord.en);
-                     setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000);
-                } else {
-                    msg.className = 'result-msg result-wrong'; msg.innerText = '錯誤，請修正';
-                }
+                     msg.className = 'result-msg icon-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。`;
+                     speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000);
+                } else { msg.className = 'result-msg icon-wrong'; msg.innerText = '錯誤，請修正'; }
             }
         }
     }
@@ -881,8 +959,7 @@
     // --- Mode: Memory ---
     function setupMemoryMode() {
         let pool = getPracticeWords();
-        if(pool.length === 0) return;
-        if (pool.length < 2) return alert("翻卡遊戲至少需要 2 個單字！");
+        if(pool.length < 2) return alert("翻卡遊戲至少需要 2 個單字！");
         pool.sort(() => Math.random() - 0.5);
         const selectedWords = pool.slice(0, 8); 
         memoryCards = [];
@@ -897,17 +974,14 @@
     function renderMemoryBoard() {
         const board = document.getElementById('memory-board'); board.innerHTML = '';
         memoryCards.forEach((card, index) => {
-            const cardEl = document.createElement('div'); cardEl.className = `memory-card ${card.matched ? 'matched' : ''}`; cardEl.dataset.index = index;
+            const cardEl = document.createElement('div'); cardEl.className = `memory-card ${card.matched ? 'matched' : ''}`;
             cardEl.innerHTML = `<div class="memory-inner"><div class="memory-front">${card.content}</div><div class="memory-back">?</div></div>`;
             cardEl.onclick = () => flipCard(index); board.appendChild(cardEl);
         });
     }
     function flipCard(index) {
-        if (memoryLocked) return;
-        if (memoryCards[index].matched) return;
-        if (memoryFlipped.includes(index)) return;
-        const cardEl = document.getElementById('memory-board').children[index];
-        cardEl.classList.add('flipped');
+        if (memoryLocked || memoryCards[index].matched || memoryFlipped.includes(index)) return;
+        document.getElementById('memory-board').children[index].classList.add('flipped');
         memoryFlipped.push(index);
         if (memoryFlipped.length === 2) checkMemoryMatch();
     }
@@ -920,12 +994,10 @@
             card1.matched = true; card2.matched = true; memoryMatchedCount += 2;
             document.getElementById('memory-board').children[idx1].classList.add('matched');
             document.getElementById('memory-board').children[idx2].classList.add('matched');
-            msg.innerText = '配對成功！'; msg.className = 'result-msg result-correct';
-            speakEnglishWord(card1.id);
-            memoryFlipped = []; memoryLocked = false;
+            msg.innerText = '配對成功！'; speakEnglishWord(card1.id); memoryFlipped = []; memoryLocked = false;
             if (memoryMatchedCount === memoryCards.length) setTimeout(() => alert("恭喜！全部完成！"), 500);
         } else {
-            msg.innerText = '不匹配...'; msg.className = 'result-msg result-wrong';
+            msg.innerText = '不匹配...';
             setTimeout(() => {
                 document.getElementById('memory-board').children[idx1].classList.remove('flipped');
                 document.getElementById('memory-board').children[idx2].classList.remove('flipped');
@@ -934,7 +1006,7 @@
         }
     }
 
-    // Initial Load
+    document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
     goHome(); 
 </script>
 
