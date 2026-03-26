@@ -505,7 +505,7 @@
         return p;
     }
 
-    // --- MCQ Logic (修復發音問題) ---
+    // --- MCQ Logic ---
     function setupMCQ() {
         if(getPracticeWords().length < 4) return alert("單字量不足 4 個");
         switchView('mcq-init');
@@ -547,7 +547,6 @@
             container.appendChild(btn);
         });
 
-        // 題目是英文時朗讀題目
         if(currentMode === 'en-to-zh') speak(cur.en);
     }
 
@@ -555,12 +554,13 @@
         const allBtns = document.querySelectorAll('.choice-btn');
         allBtns.forEach(b => b.style.pointerEvents = 'none');
 
+        // 不論對錯，只要點選選項就發音，加強記憶
+        speak(correct.en);
+
         if (selected.en === correct.en) {
             btn.classList.add('correct');
             completedCount++;
             practiceQueue.shift();
-            // 答對時朗讀單字
-            speak(correct.en);
             setTimeout(showNextMCQ, 600);
         } else {
             btn.classList.add('wrong');
@@ -576,7 +576,7 @@
         }
     }
 
-    // --- Key Events (Ins, Del, PgUp, PgDn) ---
+    // --- Key Events ---
     window.addEventListener('keydown', (e) => {
         const mcqView = document.getElementById('view-mcq-play');
         if (mcqView.classList.contains('hidden')) return;
@@ -633,6 +633,9 @@
         const icon = document.getElementById('feedback-icon');
         document.getElementById('feedback-answer').innerText = `${w.en} - ${w.zh[0]}`;
         
+        // 檢查答案時發音
+        speak(w.en);
+
         if(correct) {
             icon.innerText = '✅'; icon.className = 'big-icon icon-correct';
             lastCorrect = true;
@@ -640,8 +643,6 @@
             icon.innerText = '❌'; icon.className = 'big-icon icon-wrong';
             lastCorrect = false;
         }
-        // 判定後發音
-        speak(w.en);
     }
 
     function handleNextClick() {
@@ -712,8 +713,10 @@
                 if(flipped.length < 2 && !el.classList.contains('flipped')) {
                     el.classList.add('flipped'); flipped.push({c, el});
                     if(flipped.length === 2) {
+                        // 不論對錯都先讀出單字
+                        speak(c.id);
                         if(flipped[0].c.id === flipped[1].c.id) {
-                            speak(c.id); flipped = [];
+                            flipped = [];
                         } else {
                             setTimeout(() => { flipped.forEach(f => f.el.classList.remove('flipped')); flipped = []; }, 1000);
                         }
