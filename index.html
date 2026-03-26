@@ -183,20 +183,21 @@
         .choice-btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .choice-btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
         .choice-label {
-            width: 28px;
+            min-width: 80px;
             height: 28px;
             background: rgba(255,255,255,0.1);
-            border-radius: 50%;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
             margin-right: 15px;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             font-weight: bold;
+            color: var(--text-sub);
         }
 
         .practice-area { text-align: center; margin-top: 20px; position: relative; }
-        .question-text { font-size: 2rem; margin-bottom: 30px; font-weight: 600; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .question-text { font-size: 2.2rem; margin-bottom: 30px; font-weight: 600; min-height: 80px; display: flex; align-items: center; justify-content: center; }
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
@@ -314,7 +315,7 @@
                 <input type="checkbox" id="sequential-toggle"> <label>循序漸進 (錯誤即重來)</label>
             </div>
             <div class="flex-row">
-                <button class="btn" onclick="setupMCQ()">🔘 選擇題 (鍵盤 1-4)</button>
+                <button class="btn" onclick="setupMCQ()">🔘 選擇題 (導航鍵)</button>
                 <button class="btn" onclick="setupPractice('zh-to-en')">⌨️ 拼打模式</button>
             </div>
             <div class="flex-row">
@@ -345,7 +346,12 @@
             <div class="question-text" id="mcq-question-display"></div>
             <div id="mcq-options-container" class="choice-grid"></div>
             <div class="progress-text" id="mcq-progress-text"></div>
-            <p style="color:#444; font-size:0.7rem; margin-top:20px;">提示: 可使用鍵盤數字鍵 1, 2, 3, 4 進行選擇</p>
+            <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; opacity:0.6;">
+                <span class="choice-label" style="margin:0">Ins</span>
+                <span class="choice-label" style="margin:0">Del</span>
+                <span class="choice-label" style="margin:0">PgUp</span>
+                <span class="choice-label" style="margin:0">PgDn</span>
+            </div>
         </div>
     </div>
 
@@ -353,7 +359,7 @@
         <div class="nav-bar">
             <button class="btn-icon" onclick="goHome()">← 返回</button>
             <h2 id="edit-book-title"></h2>
-            <button class="btn-icon" style="color:var(--error)" onclick="deleteCurrentBook()">刪除</button>
+            <button class="btn-icon" style="color:var(--error)" onclick="deleteCurrentBook()">刪除此簿</button>
         </div>
         <div class="card">
             <input type="text" id="input-en" placeholder="English Word">
@@ -379,7 +385,7 @@
             <div id="feedback-area" class="hidden">
                 <div id="feedback-icon" class="big-icon"></div>
                 <div class="answer-reveal"><span id="feedback-answer"></span></div>
-                <button class="btn" id="btn-next-action" onclick="handleNextClick()">下一個</button>
+                <button class="btn btn-primary" id="btn-next-action" onclick="handleNextClick()">下一個</button>
             </div>
             <div class="progress-text" id="progress-display"></div>
         </div>
@@ -552,7 +558,7 @@
 
         const container = document.getElementById('mcq-options-container');
         container.innerHTML = '';
-        const labels = ['A', 'B', 'C', 'D'];
+        const labels = ['Ins', 'Del', 'PgUp', 'PgDn'];
 
         options.forEach((opt, idx) => {
             const btn = document.createElement('button');
@@ -577,10 +583,9 @@
             btn.classList.add('wrong');
             btn.classList.add('shake');
             allBtns.forEach(b => {
-                const txt = b.innerText.substring(2).trim();
+                const txt = b.innerText.substring(5).trim(); // Skip label
                 if(txt === correct.en || correct.zh.includes(txt)) b.classList.add('correct');
             });
-            // 隨機重排
             const wrong = practiceQueue.shift();
             const idx = Math.min(practiceQueue.length, Math.floor(Math.random() * 3) + 2);
             practiceQueue.splice(idx, 0, wrong);
@@ -588,23 +593,27 @@
         }
     }
 
-    // --- Keyboard Support for MCQ ---
+    // --- Key Events (Ins, Del, PgUp, PgDn) ---
     window.addEventListener('keydown', (e) => {
-        // 只有在選擇題頁面且沒有在輸入框時才觸發
         const mcqView = document.getElementById('view-mcq-play');
         if (mcqView.classList.contains('hidden')) return;
         
-        const keys = ['1', '2', '3', '4'];
-        if (keys.includes(e.key)) {
-            const index = parseInt(e.key) - 1;
+        // 映射按鍵
+        let targetIndex = -1;
+        if (e.key === 'Insert') targetIndex = 0;
+        else if (e.key === 'Delete') targetIndex = 1;
+        else if (e.key === 'PageUp') { targetIndex = 2; e.preventDefault(); } // 阻止捲動
+        else if (e.key === 'PageDown') { targetIndex = 3; e.preventDefault(); } // 阻止捲動
+        
+        if (targetIndex !== -1) {
             const buttons = document.querySelectorAll('#mcq-options-container .choice-btn');
-            if (buttons[index] && buttons[index].style.pointerEvents !== 'none') {
-                buttons[index].click();
+            if (buttons[targetIndex] && buttons[targetIndex].style.pointerEvents !== 'none') {
+                buttons[targetIndex].click();
             }
         }
     });
 
-    // --- Typing Practice Logic ---
+    // --- Typing Logic ---
     function setupPractice(mode) {
         currentMode = mode;
         practiceQueue = getPracticeWords();
@@ -659,7 +668,7 @@
         showNextCard();
     }
 
-    // --- Puzzle & Memory (簡化完整邏輯) ---
+    // --- Puzzle & Memory ---
     function setupPuzzleMode() {
         practiceQueue = getPracticeWords().sort(() => Math.random() - 0.5);
         if(practiceQueue.length === 0) return;
