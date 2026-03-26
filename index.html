@@ -53,7 +53,6 @@
         h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
         h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; }
 
-        /* Navigation */
         .nav-bar {
             margin-bottom: 20px;
             display: flex;
@@ -116,7 +115,7 @@
         .word-item:last-child { border-bottom: none; }
         .word-en { font-weight: 600; color: var(--accent); }
         .word-zh { color: var(--text-sub); font-size: 0.9rem; }
-        .word-sentence-preview { font-size: 0.8rem; color: #555; font-style: italic; margin-top: 4px; }
+        .word-sentence-preview { font-size: 0.8rem; color: #555; font-style: italic; margin-top: 4px; display: block; }
 
         /* Inputs & Buttons */
         input[type="text"], textarea {
@@ -153,6 +152,7 @@
             border: 1px solid var(--border);
         }
         .btn-outline:hover { border-color: var(--accent); }
+        .btn-small { padding: 5px 10px; font-size: 0.8rem; width: auto; margin: 0; }
 
         /* Choice Grid */
         .choice-grid {
@@ -174,37 +174,18 @@
             display: flex;
             align-items: center;
         }
-        .choice-btn:hover { border-color: var(--text-sub); background-color: #1a1a1a; }
         .choice-btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .choice-btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
 
         /* Practice Area */
-        .practice-area { text-align: center; margin-top: 20px; position: relative; }
-        .question-text { font-size: 2rem; margin-bottom: 25px; font-weight: 600; line-height: 1.4; display: flex; align-items: center; justify-content: center; min-height: 120px; }
-        .cloze-sentence { font-size: 1.5rem; font-weight: 400; color: var(--text-main); }
-        .cloze-blank { border-bottom: 2px solid var(--accent); color: var(--btn-primary); padding: 0 10px; font-weight: bold; }
+        .practice-area { text-align: center; margin-top: 20px; }
+        .question-text { font-size: 1.8rem; margin-bottom: 25px; font-weight: 600; line-height: 1.4; display: flex; align-items: center; justify-content: center; min-height: 100px; }
+        .cloze-blank { border-bottom: 2px solid var(--accent); color: var(--btn-primary); padding: 0 5px; font-weight: bold; }
         
-        .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
+        /* Loader */
+        .loader { width: 16px; height: 16px; border: 2px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Feedback Styles */
-        #feedback-area { display: flex; flex-direction: column; align-items: center; animation: fadeIn 0.3s ease; }
-        .big-icon { font-size: 4rem; margin-bottom: 15px; }
-        .icon-correct { color: var(--success); }
-        .icon-wrong { color: var(--error); }
-        
-        /* Puzzle/Memory */
-        .puzzle-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
-        .letter-tile { width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--card-bg); font-weight: bold; }
-        .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .memory-card { height: 80px; cursor: pointer; perspective: 1000px; }
-        .memory-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-        .memory-card.flipped .memory-inner { transform: rotateY(180deg); }
-        .memory-front, .memory-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 5px; font-size: 0.8rem; }
-        .memory-back { background: #222; font-size: 1.5rem; }
-        .memory-front { background: var(--card-bg); transform: rotateY(180deg); color: var(--accent); }
-
-        /* Import area */
-        .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -222,22 +203,18 @@
     <div id="view-home">
         <div class="nav-bar"><h2>你的單字簿</h2></div>
         <div id="book-list"></div>
-        
         <div style="margin-top:20px;">
             <input type="text" id="new-book-name" placeholder="輸入新單字簿名稱...">
             <div style="text-align:right"><span onclick="toggleImportArea()" style="font-size:0.8rem; cursor:pointer; text-decoration:underline; color:var(--text-sub)">▼ 批量匯入</span></div>
-            <div id="import-area" class="hidden import-section">
-                <textarea id="import-content" placeholder="格式: 英文 - 中文 | 例句 (例句可省略)"></textarea>
+            <div id="import-area" class="hidden" style="margin-top:10px; border:1px dashed #333; padding:15px; border-radius:8px;">
+                <textarea id="import-content" placeholder="格式: apple - 蘋果 | I eat an apple. (例句可不填)"></textarea>
                 <button class="btn btn-outline" onclick="addBookWithImport()">建立並匯入</button>
             </div>
-            <button id="btn-create-simple" class="btn btn-outline" onclick="addBookSimple()">＋ 建立單字簿</button>
+            <button class="btn btn-outline" onclick="addBookSimple()">＋ 建立單字簿</button>
         </div>
         
         <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
-            <h2>選擇模式</h2>
-            <div class="checkbox-wrapper" style="margin-bottom:15px" onclick="toggleSequential()">
-                <input type="checkbox" id="sequential-toggle"> <label>循序漸進 (錯誤即重來)</label>
-            </div>
+            <h2>模式選擇</h2>
             <div class="flex-row">
                 <button class="btn" onclick="setupMCQ()">🔘 選擇題</button>
                 <button class="btn" onclick="setupPractice('cloze')">📝 克漏字</button>
@@ -245,10 +222,6 @@
             <div class="flex-row">
                 <button class="btn btn-outline" onclick="setupPractice('zh-to-en')">⌨️ 拼打 (中→英)</button>
                 <button class="btn btn-outline" onclick="setupPractice('en-to-zh')">📖 拼打 (英→中)</button>
-            </div>
-            <div class="flex-row">
-                <button class="btn btn-outline" onclick="setupPuzzleMode()">🧩 拼圖</button>
-                <button class="btn btn-outline" onclick="setupMemoryMode()">🎴 翻卡</button>
             </div>
         </div>
     </div>
@@ -260,87 +233,63 @@
             <button class="btn-icon" style="color:var(--error)" onclick="deleteCurrentBook()">刪除</button>
         </div>
         <div class="card">
-            <input type="text" id="input-en" placeholder="英文單字 (例如: apple)">
-            <input type="text" id="input-zh" placeholder="中文意思 (例如: 蘋果)">
-            <input type="text" id="input-sentence" placeholder="例句 (選填，例如: I eat an apple.)">
-            <button class="btn btn-small" onclick="addWord()">加入</button>
+            <input type="text" id="input-en" placeholder="英文單字">
+            <input type="text" id="input-zh" placeholder="中文意思">
+            <input type="text" id="input-sentence" placeholder="例句 (選填)">
+            <div class="flex-row">
+                <button class="btn btn-small btn-outline" onclick="autoFillCurrentWordSentence()">🔍 幫我找例句</button>
+                <button class="btn btn-small" onclick="addWord()">加入單字</button>
+            </div>
+        </div>
+        <div style="margin-bottom:15px">
+            <button class="btn btn-small btn-outline" id="btn-autofill-all" onclick="autoFillAllSentences()">🚀 自動補全此簿所有例句 (AI)</button>
         </div>
         <div id="word-list"></div>
     </div>
 
-    <div id="view-mcq-init" class="hidden">
-        <div class="nav-bar"><button class="btn-icon" onclick="goHome()">← 返回</button><h2>選擇題方向</h2></div>
-        <div class="card">
-            <button class="btn" style="margin-bottom:15px" onclick="startMCQ('zh-to-en')">看中文 → 選英文</button>
-            <button class="btn btn-outline" onclick="startMCQ('en-to-zh')">看英文 → 選中文</button>
-        </div>
-    </div>
-
     <div id="view-practice" class="hidden">
-        <div class="nav-bar">
-            <button class="btn-icon" onclick="quitPractice()">✕ 結束</button>
-            <span id="practice-mode-title" style="color:var(--text-sub)"></span>
-        </div>
+        <div class="nav-bar"><button class="btn-icon" onclick="quitPractice()">✕ 結束</button><span id="practice-mode-title" style="color:var(--text-sub)"></span></div>
         <div class="progress-container"><div id="practice-progress-bar" class="progress-fill"></div></div>
         <div class="practice-area">
             <div id="interaction-area">
-                <div class="hint-text" id="hint-display"></div>
                 <div class="question-text" id="question-display"></div>
                 <input type="text" id="answer-input" placeholder="輸入答案..." autocomplete="off">
                 <button class="btn" onclick="checkAnswer()">送出</button>
             </div>
             <div id="feedback-area" class="hidden">
-                <div id="feedback-icon" class="big-icon"></div>
+                <div id="feedback-icon" style="font-size:3rem; margin-bottom:10px"></div>
                 <div id="feedback-answer" style="font-size:1.5rem; color:var(--accent); margin-bottom:20px"></div>
-                <button class="btn btn-primary" id="btn-next" onclick="handleNextClick()">下一個</button>
+                <button class="btn btn-primary" onclick="handleNextClick()">下一個</button>
             </div>
-            <div class="progress-text" id="progress-display"></div>
         </div>
+    </div>
+
+    <div id="view-mcq-init" class="hidden">
+        <div class="nav-bar"><button class="btn-icon" onclick="goHome()">← 返回</button><h2>選擇題</h2></div>
+        <div class="card"><button class="btn" onclick="startMCQ('zh-to-en')">看中文 → 選英文</button><button class="btn btn-outline" onclick="startMCQ('en-to-zh')">看英文 → 選中文</button></div>
     </div>
 
     <div id="view-mcq-play" class="hidden">
         <div class="nav-bar"><button class="btn-icon" onclick="quitPractice()">✕ 結束</button><span id="mcq-title"></span></div>
         <div class="progress-container"><div id="mcq-progress-bar" class="progress-fill"></div></div>
-        <div class="practice-area">
-            <div class="question-text" id="mcq-q-display"></div>
-            <div id="mcq-options" class="choice-grid"></div>
-        </div>
+        <div class="practice-area"><div class="question-text" id="mcq-q-display"></div><div id="mcq-options" class="choice-grid"></div></div>
     </div>
-
-    <div id="view-puzzle" class="hidden">
-        <div class="nav-bar"><button class="btn-icon" onclick="quitPractice()">✕ 結束</button><span>拼圖模式</span></div>
-        <div class="practice-area">
-            <div class="question-text" id="puzzle-q"></div>
-            <div id="puzzle-ans-area" class="puzzle-container"></div>
-            <div style="margin:20px 0; border-bottom:1px solid #333"></div>
-            <div id="puzzle-pool-area" class="puzzle-container"></div>
-            <div id="puzzle-msg" style="height:30px; margin-top:10px"></div>
-        </div>
-    </div>
-
-    <div id="view-memory" class="hidden">
-        <div class="nav-bar"><button class="btn-icon" onclick="quitPractice()">✕ 結束</button><span>翻卡記憶</span></div>
-        <div id="memory-board" class="memory-grid"></div>
-        <div id="memory-msg" style="text-align:center; margin-top:20px"></div>
-    </div>
-
 </div>
 
 <script>
     let books = JSON.parse(localStorage.getItem('sv_books')) || [];
     let selectedBookIds = new Set();
-    let isSequentialMode = false;
-    let autoPronounce = true;
     let practiceQueue = [];
     let initialCount = 0;
     let completedCount = 0;
     let currentCardIndex = 0;
     let currentMode = '';
     let currentBookId = null;
+    let lastCorrect = false;
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    const views = ['home', 'edit', 'practice', 'mcq-init', 'mcq-play', 'puzzle', 'memory'];
+    const views = ['home', 'edit', 'practice', 'mcq-init', 'mcq-play'];
     function switchView(name) {
         views.forEach(v => { const el = document.getElementById(`view-${v}`); if(el) el.classList.add('hidden'); });
         document.getElementById(`view-${name}`).classList.remove('hidden');
@@ -348,7 +297,6 @@
 
     function goHome() { renderBookList(); switchView('home'); }
     function quitPractice() { goHome(); }
-    function toggleSequential() { isSequentialMode = !isSequentialMode; }
     function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
 
     function renderBookList() {
@@ -358,39 +306,12 @@
             const div = document.createElement('div');
             div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
             div.innerHTML = `
-                <div class="checkbox-wrapper" style="flex:1"><input type="checkbox" ${selectedBookIds.has(book.id)?'checked':''}>
-                <strong>${book.name}</strong> <span style="font-size:0.8rem;color:#555">(${book.words.length})</span></div>
+                <div style="flex:1"><input type="checkbox" ${selectedBookIds.has(book.id)?'checked':''}> <strong>${book.name}</strong> (${book.words.length})</div>
                 <button class="btn-icon" onclick="event.stopPropagation(); openEditBook(${book.id})">✎</button>
             `;
             div.onclick = () => { if(selectedBookIds.has(book.id)) selectedBookIds.delete(book.id); else selectedBookIds.add(book.id); renderBookList(); };
             list.appendChild(div);
         });
-    }
-
-    function addBookSimple() {
-        const n = document.getElementById('new-book-name').value.trim();
-        if(!n) return;
-        books.push({ id: Date.now(), name: n, words: [] });
-        saveData(); document.getElementById('new-book-name').value=''; renderBookList();
-    }
-
-    function addBookWithImport() {
-        const n = document.getElementById('new-book-name').value.trim();
-        const c = document.getElementById('import-content').value.trim();
-        if(!n || !c) return alert("請填寫名稱與內容");
-        const words = [];
-        c.split('\n').forEach(line => {
-            const parts = line.split(/[–-]/);
-            if(parts.length >= 2) {
-                const en = parts[0].trim();
-                const rest = parts[1].split('|');
-                const zh = rest[0].trim().split(/[;；,，]/).map(s=>s.trim());
-                const sentence = rest[1] ? rest[1].trim() : "";
-                if(en && zh[0]) words.push({ en, zh, sentence });
-            }
-        });
-        books.push({ id: Date.now(), name: n, words });
-        saveData(); goHome();
     }
 
     function openEditBook(id) {
@@ -407,11 +328,60 @@
         [...b.words].reverse().forEach((w, i) => {
             const div = document.createElement('div');
             div.className = 'word-item';
-            div.innerHTML = `<div><div class="word-en">${w.en}</div><div class="word-zh">${w.zh.join(', ')}</div>
-                ${w.sentence ? `<div class="word-sentence-preview">${w.sentence}</div>` : ''}</div>
+            div.innerHTML = `<div><span class="word-en">${w.en}</span> - <span class="word-zh">${w.zh.join(', ')}</span>
+                <span class="word-sentence-preview">${w.sentence || '(無例句)'}</span></div>
                 <button class="btn-icon" onclick="deleteWord(${b.words.length-1-i})">✕</button>`;
             list.appendChild(div);
         });
+    }
+
+    async function fetchExample(word) {
+        try {
+            const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+            const data = await res.json();
+            if (data && data[0]) {
+                for (let mean of data[0].meanings) {
+                    for (let def of mean.definitions) {
+                        if (def.example) return def.example;
+                    }
+                }
+            }
+        } catch (e) { console.error(e); }
+        return "";
+    }
+
+    async function autoFillCurrentWordSentence() {
+        const en = document.getElementById('input-en').value.trim();
+        if(!en) return alert("請先輸入英文單字");
+        const senInput = document.getElementById('input-sentence');
+        senInput.placeholder = "搜尋中...";
+        const ex = await fetchExample(en);
+        if(ex) senInput.value = ex;
+        else alert("找不到相關例句，請手動輸入。");
+        senInput.placeholder = "例句 (選填)";
+    }
+
+    async function autoFillAllSentences() {
+        const b = books.find(x => x.id === currentBookId);
+        const targets = b.words.filter(w => !w.sentence);
+        if(targets.length === 0) return alert("所有單字都已經有例句了！");
+        if(!confirm(`即將連線網路為 ${targets.length} 個單字補全例句，是否繼續？`)) return;
+        
+        const btn = document.getElementById('btn-autofill-all');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        
+        for(let i=0; i<targets.length; i++) {
+            btn.innerHTML = `<span class="loader"></span> 正在抓取 (${i+1}/${targets.length}): ${targets[i].en}`;
+            const ex = await fetchExample(targets[i].en);
+            if(ex) targets[i].sentence = ex;
+            await new Promise(r => setTimeout(r, 200)); // 避免請求太快
+        }
+        
+        saveData(); renderWordList();
+        btn.innerText = originalText;
+        btn.disabled = false;
+        alert("補全完成！");
     }
 
     function addWord() {
@@ -429,53 +399,67 @@
         b.words.splice(idx, 1); saveData(); renderWordList();
     }
 
-    function deleteCurrentBook() {
-        if(!confirm("刪除整本單字簿？")) return;
-        books = books.filter(x => x.id !== currentBookId);
+    function addBookSimple() {
+        const n = document.getElementById('new-book-name').value.trim();
+        if(!n) return;
+        books.push({ id: Date.now(), name: n, words: [] });
         saveData(); goHome();
     }
 
-    function getPool() {
-        let p = [];
-        books.forEach(b => { if(selectedBookIds.has(b.id)) p.push(...b.words); });
-        return p;
+    function addBookWithImport() {
+        const n = document.getElementById('new-book-name').value.trim();
+        const c = document.getElementById('import-content').value.trim();
+        if(!n || !c) return;
+        const words = [];
+        c.split('\n').forEach(line => {
+            const parts = line.split(/[–-]/);
+            if(parts.length >= 2) {
+                const en = parts[0].trim();
+                const rest = parts[1].split('|');
+                const zh = rest[0].trim().split(/[;；,，]/).map(s=>s.trim());
+                const sentence = rest[1] ? rest[1].trim() : "";
+                words.push({ en, zh, sentence });
+            }
+        });
+        books.push({ id: Date.now(), name: n, words });
+        saveData(); goHome();
     }
 
-    // --- Practice Logic (Types: zh-to-en, en-to-zh, cloze) ---
     function setupPractice(mode) {
         currentMode = mode;
-        practiceQueue = getPool();
-        if(practiceQueue.length === 0) return alert("請先選單字簿");
+        let pool = [];
+        books.forEach(b => { if(selectedBookIds.has(b.id)) pool.push(...b.words); });
+        if(pool.length === 0) return alert("請先選擇單字簿");
+        
         if(mode === 'cloze') {
-            const hasSen = practiceQueue.filter(x => x.sentence);
-            if(hasSen.length === 0) return alert("選取的單字中沒有任何例句，無法使用克漏字模式！");
-            practiceQueue = hasSen;
+            const hasSen = pool.filter(x => x.sentence);
+            if(hasSen.length === 0) return alert("選取的單字都沒有例句！請先去編輯頁面點擊「自動補全例句」。");
+            practiceQueue = [...hasSen];
+        } else {
+            practiceQueue = [...pool];
         }
-        if(!isSequentialMode) practiceQueue.sort(()=>Math.random()-0.5);
+        
+        practiceQueue.sort(()=>Math.random()-0.5);
         initialCount = practiceQueue.length;
         completedCount = 0;
         currentCardIndex = 0;
-        document.getElementById('practice-mode-title').innerText = 
-            mode === 'cloze' ? '📝 克漏字填空' : (mode==='zh-to-en' ? '⌨️ 中翻英' : '⌨️ 英翻中');
         switchView('practice');
         showNextCard();
     }
 
     function showNextCard() {
-        if(currentCardIndex >= practiceQueue.length) { alert("練習完成！"); return goHome(); }
-        
+        if(currentCardIndex >= practiceQueue.length) { alert("恭喜完成！"); return goHome(); }
         const w = practiceQueue[currentCardIndex];
         document.getElementById('interaction-area').classList.remove('hidden');
         document.getElementById('feedback-area').classList.add('hidden');
         document.getElementById('answer-input').value = '';
         document.getElementById('practice-progress-bar').style.width = `${(completedCount/initialCount)*100}%`;
-        document.getElementById('progress-display').innerText = `進度: ${completedCount}/${initialCount}`;
         
         const qEl = document.getElementById('question-display');
         if(currentMode === 'cloze') {
-            const regex = new RegExp(`\\b${w.en}\\b`, 'gi');
+            const regex = new RegExp(w.en, 'gi');
             const displaySen = w.sentence.replace(regex, `<span class="cloze-blank">_____</span>`);
-            qEl.innerHTML = `<div class="cloze-sentence">${displaySen}<br><small style="color:#666">(${w.zh[0]})</small></div>`;
+            qEl.innerHTML = `<div style="font-size:1.4rem">${displaySen}<br><small style="color:#666">(${w.zh[0]})</small></div>`;
         } else {
             qEl.innerText = currentMode === 'zh-to-en' ? w.zh.join(' / ') : w.en;
         }
@@ -485,67 +469,45 @@
     function checkAnswer() {
         const val = document.getElementById('answer-input').value.trim().toLowerCase();
         const w = practiceQueue[currentCardIndex];
-        let correct = false;
+        const isCorrect = (currentMode === 'en-to-zh') ? w.zh.some(z => z.includes(val)) : (val === w.en.toLowerCase());
         
-        if(currentMode === 'en-to-zh') {
-            correct = w.zh.some(z => z.includes(val) && val.length > 0);
-        } else {
-            correct = (val === w.en.toLowerCase());
-        }
-
         document.getElementById('interaction-area').classList.add('hidden');
         document.getElementById('feedback-area').classList.remove('hidden');
         const icon = document.getElementById('feedback-icon');
         const ans = document.getElementById('feedback-answer');
         
-        if(correct) {
-            icon.innerText = '✅'; icon.className = 'big-icon icon-correct';
-            ans.innerText = '正確！';
+        if(isCorrect) {
+            icon.innerText = '✅'; ans.innerText = '答對了！';
             lastCorrect = true;
         } else {
-            icon.innerText = '❌'; icon.className = 'big-icon icon-wrong';
-            ans.innerText = `答案是: ${w.en}`;
+            icon.innerText = '❌'; ans.innerText = `正確答案: ${w.en}`;
             lastCorrect = false;
         }
-        if(autoPronounce) speak(w.en);
     }
 
     function handleNextClick() {
-        const w = practiceQueue[currentCardIndex];
-        if(lastCorrect) {
-            completedCount++;
-            currentCardIndex++;
-        } else {
-            if(isSequentialMode) {
-                alert("錯誤！回到第一題重來。");
-                currentCardIndex = 0; completedCount = 0;
-            } else {
-                practiceQueue.splice(currentCardIndex, 1);
-                practiceQueue.push(w);
-            }
-        }
+        if(lastCorrect) { completedCount++; currentCardIndex++; } 
+        else { const w = practiceQueue.splice(currentCardIndex, 1)[0]; practiceQueue.push(w); }
         showNextCard();
     }
 
-    // --- MCQ ---
-    function setupMCQ() { if(getPool().length < 4) return alert("單字量不足 4 個"); switchView('mcq-init'); }
+    function setupMCQ() { switchView('mcq-init'); }
     function startMCQ(m) {
         currentMode = m;
-        practiceQueue = [...getPool()].sort(()=>Math.random()-0.5);
+        let pool = []; books.forEach(b => { if(selectedBookIds.has(b.id)) pool.push(...b.words); });
+        practiceQueue = [...pool].sort(()=>Math.random()-0.5);
         initialCount = practiceQueue.length;
         completedCount = 0;
         switchView('mcq-play');
         showNextMCQ();
     }
     function showNextMCQ() {
-        if(practiceQueue.length === 0) { alert("完成！"); return goHome(); }
+        if(practiceQueue.length === 0) return goHome();
         document.getElementById('mcq-progress-bar').style.width = `${(completedCount/initialCount)*100}%`;
         const cur = practiceQueue[0];
         document.getElementById('mcq-q-display').innerText = currentMode === 'zh-to-en' ? cur.zh[0] : cur.en;
-        
-        let opts = [cur, ...getPool().filter(x=>x.en!==cur.en).sort(()=>Math.random()-0.5).slice(0,3)];
+        let opts = [cur, ...books[0].words.filter(x=>x.en!==cur.en).sort(()=>Math.random()-0.5).slice(0,3)];
         opts.sort(()=>Math.random()-0.5);
-        
         const container = document.getElementById('mcq-options');
         container.innerHTML = '';
         opts.forEach(o => {
@@ -553,89 +515,15 @@
             b.className = 'choice-btn';
             b.innerText = currentMode === 'zh-to-en' ? o.en : o.zh[0];
             b.onclick = () => {
-                if(o.en === cur.en) {
-                    b.classList.add('correct'); completedCount++; practiceQueue.shift();
-                    setTimeout(showNextMCQ, 600);
-                } else {
-                    b.classList.add('wrong'); b.classList.add('shake');
-                    const w = practiceQueue.shift(); practiceQueue.push(w);
-                    setTimeout(showNextMCQ, 1200);
-                }
+                if(o.en === cur.en) { b.classList.add('correct'); completedCount++; practiceQueue.shift(); setTimeout(showNextMCQ, 600); }
+                else { b.classList.add('wrong'); b.classList.add('shake'); const w = practiceQueue.shift(); practiceQueue.push(w); setTimeout(showNextMCQ, 1200); }
             };
             container.appendChild(b);
         });
     }
 
-    // --- Puzzle ---
-    function setupPuzzleMode() { practiceQueue = getPool(); if(practiceQueue.length===0)return; currentCardIndex=0; switchView('puzzle'); loadPuzzle(); }
-    function loadPuzzle() {
-        const w = practiceQueue[currentCardIndex];
-        document.getElementById('puzzle-q').innerText = w.zh[0];
-        let letters = w.en.toLowerCase().split('');
-        let pool = [...letters].sort(()=>Math.random()-0.5);
-        const ansArea = document.getElementById('puzzle-ans-area');
-        const poolArea = document.getElementById('puzzle-pool-area');
-        ansArea.innerHTML = ''; poolArea.innerHTML = '';
-        let userAns = [];
-        
-        const render = () => {
-            ansArea.innerHTML = '';
-            for(let i=0; i<letters.length; i++) {
-                const box = document.createElement('div'); box.className = 'letter-tile';
-                box.innerText = userAns[i] || '';
-                box.onclick = () => { if(userAns[i]) { pool.push(userAns[i]); userAns.splice(i,1); render(); } };
-                ansArea.appendChild(box);
-            }
-            poolArea.innerHTML = '';
-            pool.forEach((l, idx) => {
-                const box = document.createElement('div'); box.className = 'letter-tile'; box.innerText = l;
-                box.onclick = () => { userAns.push(l); pool.splice(idx,1); render(); check(); };
-                poolArea.appendChild(box);
-            });
-        };
-        const check = () => {
-            if(userAns.join('') === w.en.toLowerCase()) {
-                document.getElementById('puzzle-msg').innerText = "✅ 正確！"; speak(w.en);
-                setTimeout(()=>{ currentCardIndex++; if(currentCardIndex < practiceQueue.length) loadPuzzle(); else goHome(); }, 1000);
-            }
-        };
-        render();
-    }
-
-    // --- Memory ---
-    function setupMemoryMode() {
-        let p = getPool(); if(p.length < 2) return;
-        let selected = p.sort(()=>Math.random()-0.5).slice(0, 8);
-        let cards = [];
-        selected.forEach(x => { cards.push({id:x.en, txt:x.en}, {id:x.en, txt:x.zh[0]}); });
-        cards.sort(()=>Math.random()-0.5);
-        const board = document.getElementById('memory-board'); board.innerHTML = '';
-        let flipped = [];
-        cards.forEach((c, i) => {
-            const el = document.createElement('div'); el.className = 'memory-card';
-            el.innerHTML = `<div class="memory-inner"><div class="memory-front">${c.txt}</div><div class="memory-back">?</div></div>`;
-            el.onclick = () => {
-                if(flipped.length < 2 && !el.classList.contains('flipped')) {
-                    el.classList.add('flipped'); flipped.push({c, el});
-                    if(flipped.length === 2) {
-                        if(flipped[0].c.id === flipped[1].c.id) { flipped = []; speak(c.id); }
-                        else { setTimeout(()=>{ flipped.forEach(f=>f.el.classList.remove('flipped')); flipped=[]; }, 1000); }
-                    }
-                }
-            };
-            board.appendChild(el);
-        });
-        switchView('memory');
-    }
-
-    function speak(t) {
-        if(!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; window.speechSynthesis.speak(u);
-    }
-
     document.getElementById('answer-input').onkeypress = (e) => { if(e.key==='Enter') checkAnswer(); };
-    renderBookList();
+    goHome();
 </script>
 </body>
 </html>
