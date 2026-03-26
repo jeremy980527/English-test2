@@ -268,6 +268,17 @@
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
         input[type="checkbox"] { accent-color: var(--accent); transform: scale(1.2); }
         
+        .mode-badge {
+            font-size: 0.75rem;
+            background: var(--border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 10px;
+            color: var(--text-sub);
+        }
+        .mode-badge.active { background: var(--btn-primary); color: white; font-weight: bold; }
+        .mode-badge.warning { background: var(--warning); color: #000; font-weight: bold; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         .shake { animation: shake 0.2s ease-in-out 0s 2; }
@@ -296,8 +307,11 @@
         </div>
         <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
             <h2>模式選擇</h2>
-            <div class="checkbox-wrapper" style="margin-bottom: 15px;" onclick="toggleSequential()">
+            <div class="checkbox-wrapper" style="margin-bottom: 10px;" onclick="toggleSequential()">
                 <input type="checkbox" id="sequential-toggle"> <label>循序漸進 (錯誤即重來)</label>
+            </div>
+            <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="toggleInfinite()">
+                <input type="checkbox" id="infinite-toggle"> <label>無限循環 (無盡練習)</label>
             </div>
             <div class="flex-row">
                 <button class="btn" onclick="setupMCQ()">🔘 選擇題</button>
@@ -324,7 +338,10 @@
     <div id="view-mcq-play" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="quitPractice()">✕ 結束</button>
-            <span id="mcq-mode-display" style="color:var(--text-sub)"></span>
+            <div style="text-align: right;">
+                <span id="mcq-mode-display" style="color:var(--text-sub)"></span>
+                <span id="mcq-infinite-badge" class="mode-badge active hidden">無限</span>
+            </div>
         </div>
         <div class="progress-container"><div id="mcq-progress-bar" class="progress-fill"></div></div>
         <div class="practice-area">
@@ -351,7 +368,11 @@
     <div id="view-practice" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="quitPractice()">✕ 結束</button>
-            <span id="mode-display" style="color:var(--text-sub)"></span>
+            <div style="text-align: right;">
+                <span id="mode-display" style="color:var(--text-sub)"></span>
+                <span id="practice-infinite-badge" class="mode-badge active hidden">無限</span>
+                <span id="sequential-badge" class="mode-badge warning hidden">循序</span>
+            </div>
         </div>
         <div class="progress-container"><div id="practice-progress-bar" class="progress-fill"></div></div>
         <div class="practice-area">
@@ -392,6 +413,7 @@
 <script>
     let books = JSON.parse(localStorage.getItem('sv_books')) || [];
     let isSequentialMode = false;
+    let isInfiniteMode = false;
     let selectedBookIds = new Set();
     let practiceQueue = [];
     let initialQueueLength = 0;
@@ -411,7 +433,8 @@
 
     function goHome() { renderBookList(); switchView('home'); }
     function quitPractice() { goHome(); }
-    function toggleSequential() { isSequentialMode = !isSequentialMode; }
+    function toggleSequential() { isSequentialMode = !isSequentialMode; document.getElementById('sequential-toggle').checked = isSequentialMode; }
+    function toggleInfinite() { isInfiniteMode = !isInfiniteMode; document.getElementById('infinite-toggle').checked = isInfiniteMode; }
     function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
 
     // --- Book Management ---
@@ -516,23 +539,30 @@
         practiceQueue = getPracticeWords().sort(() => Math.random() - 0.5);
         initialQueueLength = practiceQueue.length;
         completedCount = 0;
-        document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中翻英 (選擇)' : '英翻中 (選擇)';
+        document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中翻英 (選)' : '英翻中 (選)';
+        document.getElementById('mcq-infinite-badge').classList.toggle('hidden', !isInfiniteMode);
         switchView('mcq-play');
         showNextMCQ();
     }
 
     function showNextMCQ() {
         if (practiceQueue.length === 0) { alert("恭喜完成！"); return goHome(); }
-        const progress = (completedCount / initialQueueLength) * 100;
-        document.getElementById('mcq-progress-bar').style.width = `${progress}%`;
-        document.getElementById('mcq-progress-text').innerText = `完成進度: ${completedCount} / ${initialQueueLength}`;
+        
+        // 進度顯示 (無限模式下顯示累計數)
+        if (isInfiniteMode) {
+            document.getElementById('mcq-progress-bar').style.width = `100%`;
+            document.getElementById('mcq-progress-text').innerText = `已完成累計: ${completedCount} 題 (無限循環中)`;
+        } else {
+            const progress = (completedCount / initialQueueLength) * 100;
+            document.getElementById('mcq-progress-bar').style.width = `${progress}%`;
+            document.getElementById('mcq-progress-text').innerText = `完成進度: ${completedCount} / ${initialQueueLength}`;
+        }
 
         const cur = practiceQueue[0];
         document.getElementById('mcq-question-display').innerText = currentMode === 'zh-to-en' ? cur.zh.join(' / ') : cur.en;
 
         let options = [cur];
-        let pool = getPracticeWords().filter(w => w.en !== cur.en);
-        let distractors = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+        let distractors = getPracticeWords().filter(w => w.en !== cur.en).sort(() => Math.random() - 0.5).slice(0, 3);
         options.push(...distractors);
         options.sort(() => Math.random() - 0.5);
 
@@ -553,21 +583,23 @@
     function handleMCQAnswer(btn, selected, correct) {
         const allBtns = document.querySelectorAll('.choice-btn');
         allBtns.forEach(b => b.style.pointerEvents = 'none');
-
-        // 不論對錯，只要點選選項就發音，加強記憶
         speak(correct.en);
 
         if (selected.en === correct.en) {
             btn.classList.add('correct');
             completedCount++;
-            practiceQueue.shift();
+            
+            const word = practiceQueue.shift();
+            // 無限模式：將答對的單字丟到最後端
+            if (isInfiniteMode) {
+                practiceQueue.push(word);
+            }
             setTimeout(showNextMCQ, 600);
         } else {
             btn.classList.add('wrong');
             btn.classList.add('shake');
             allBtns.forEach(b => {
-                const txt = b.innerText.trim();
-                if(txt === correct.en || correct.zh.includes(txt)) b.classList.add('correct');
+                if(b.innerText.trim() === correct.en || correct.zh.includes(b.innerText.trim())) b.classList.add('correct');
             });
             const wrong = practiceQueue.shift();
             const idx = Math.min(practiceQueue.length, Math.floor(Math.random() * 3) + 2);
@@ -576,22 +608,17 @@
         }
     }
 
-    // --- Key Events ---
+    // --- Key Events (Ins, Del, PgUp, PgDn) ---
     window.addEventListener('keydown', (e) => {
-        const mcqView = document.getElementById('view-mcq-play');
-        if (mcqView.classList.contains('hidden')) return;
-        
+        if (document.getElementById('view-mcq-play').classList.contains('hidden')) return;
         let targetIndex = -1;
         if (e.key === 'Insert') targetIndex = 0;
         else if (e.key === 'Delete') targetIndex = 1;
         else if (e.key === 'PageUp') { targetIndex = 2; e.preventDefault(); }
         else if (e.key === 'PageDown') { targetIndex = 3; e.preventDefault(); }
-        
         if (targetIndex !== -1) {
             const buttons = document.querySelectorAll('#mcq-options-container .choice-btn');
-            if (buttons[targetIndex] && buttons[targetIndex].style.pointerEvents !== 'none') {
-                buttons[targetIndex].click();
-            }
+            if (buttons[targetIndex] && buttons[targetIndex].style.pointerEvents !== 'none') buttons[targetIndex].click();
         }
     });
 
@@ -604,22 +631,36 @@
         initialQueueLength = practiceQueue.length;
         completedCount = 0;
         currentCardIndex = 0;
-        document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英 (拼寫)' : '英翻中';
+        document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中→英 (拼)' : '英→中';
+        document.getElementById('practice-infinite-badge').classList.toggle('hidden', !isInfiniteMode);
+        document.getElementById('sequential-badge').classList.toggle('hidden', !isSequentialMode);
         switchView('practice');
         showNextCard();
     }
 
     function showNextCard() {
-        if (currentCardIndex >= practiceQueue.length) { alert("練習結束！"); return goHome(); }
+        // 檢查是否結束
+        if (currentCardIndex >= practiceQueue.length) {
+            if (isInfiniteMode) {
+                // 無限模式：重新洗牌並開始
+                practiceQueue.sort(() => Math.random() - 0.5);
+                currentCardIndex = 0;
+            } else {
+                alert("練習結束！"); return goHome();
+            }
+        }
+        
         const w = practiceQueue[currentCardIndex];
         document.getElementById('interaction-area').classList.remove('hidden');
         document.getElementById('feedback-area').classList.add('hidden');
         document.getElementById('answer-input').value = '';
-        document.getElementById('practice-progress-bar').style.width = `${(completedCount/initialQueueLength)*100}%`;
-        document.getElementById('progress-display').innerText = `進度: ${completedCount} / ${initialQueueLength}`;
+        
+        const progress = (completedCount / initialQueueLength) * 100;
+        document.getElementById('practice-progress-bar').style.width = isInfiniteMode ? '100%' : `${progress}%`;
+        document.getElementById('progress-display').innerText = isInfiniteMode ? `累計完成: ${completedCount} 題` : `進度: ${completedCount} / ${initialQueueLength}`;
+        
         document.getElementById('question-display').innerText = currentMode === 'zh-to-en' ? w.zh.join(' / ') : w.en;
         document.getElementById('answer-input').focus();
-
         if(currentMode === 'en-to-zh') speak(w.en);
     }
 
@@ -630,17 +671,16 @@
         
         document.getElementById('interaction-area').classList.add('hidden');
         document.getElementById('feedback-area').classList.remove('hidden');
-        const icon = document.getElementById('feedback-icon');
         document.getElementById('feedback-answer').innerText = `${w.en} - ${w.zh[0]}`;
-        
-        // 檢查答案時發音
         speak(w.en);
 
         if(correct) {
-            icon.innerText = '✅'; icon.className = 'big-icon icon-correct';
+            document.getElementById('feedback-icon').innerText = '✅';
+            document.getElementById('feedback-icon').className = 'big-icon icon-correct';
             lastCorrect = true;
         } else {
-            icon.innerText = '❌'; icon.className = 'big-icon icon-wrong';
+            document.getElementById('feedback-icon').innerText = '❌';
+            document.getElementById('feedback-icon').className = 'big-icon icon-wrong';
             lastCorrect = false;
         }
     }
@@ -713,13 +753,9 @@
                 if(flipped.length < 2 && !el.classList.contains('flipped')) {
                     el.classList.add('flipped'); flipped.push({c, el});
                     if(flipped.length === 2) {
-                        // 不論對錯都先讀出單字
                         speak(c.id);
-                        if(flipped[0].c.id === flipped[1].c.id) {
-                            flipped = [];
-                        } else {
-                            setTimeout(() => { flipped.forEach(f => f.el.classList.remove('flipped')); flipped = []; }, 1000);
-                        }
+                        if(flipped[0].c.id === flipped[1].c.id) flipped = [];
+                        else setTimeout(() => { flipped.forEach(f => f.el.classList.remove('flipped')); flipped = []; }, 1000);
                     }
                 }
             };
@@ -729,7 +765,6 @@
     }
 
     function speak(t) {
-        if(!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(t); 
         u.lang = 'en-US'; 
