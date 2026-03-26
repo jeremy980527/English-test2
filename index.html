@@ -70,6 +70,7 @@
         }
         .btn-icon:hover { color: var(--accent); }
 
+        /* 進度條 */
         .progress-container {
             width: 100%;
             height: 6px;
@@ -170,9 +171,9 @@
             background-color: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 16px 20px;
+            padding: 20px;
             border-radius: 12px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
             text-align: left;
             transition: all 0.2s;
@@ -182,20 +183,8 @@
         .choice-btn:hover { border-color: var(--text-sub); background-color: #1a1a1a; }
         .choice-btn.correct { background-color: var(--success); border-color: var(--success); color: white; }
         .choice-btn.wrong { background-color: var(--error); border-color: var(--error); color: white; }
-        .choice-label {
-            min-width: 80px;
-            height: 28px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 15px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            color: var(--text-sub);
-        }
 
+        /* 練習區 */
         .practice-area { text-align: center; margin-top: 20px; position: relative; }
         .question-text { font-size: 2.2rem; margin-bottom: 30px; font-weight: 600; min-height: 80px; display: flex; align-items: center; justify-content: center; }
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
@@ -222,6 +211,7 @@
             justify-content: center;
         }
 
+        /* 拼圖模式 */
         .puzzle-container {
             display: flex;
             flex-wrap: wrap;
@@ -244,6 +234,7 @@
             color: var(--text-main);
         }
 
+        /* 翻卡模式 */
         .memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -276,7 +267,7 @@
             border: 1px solid var(--border);
         }
         .memory-back { background-color: #222; font-size: 1.5rem; }
-        .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); font-size: 0.8rem; padding: 5px; }
+        .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); font-size: 0.8rem; padding: 5px; text-align: center; }
 
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
@@ -310,12 +301,12 @@
             <button id="btn-create-simple" class="btn btn-outline" onclick="addBookSimple()">＋ 建立單字簿</button>
         </div>
         <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
-            <h2>選擇模式</h2>
+            <h2>模式選擇</h2>
             <div class="checkbox-wrapper" style="margin-bottom: 15px;" onclick="toggleSequential()">
                 <input type="checkbox" id="sequential-toggle"> <label>循序漸進 (錯誤即重來)</label>
             </div>
             <div class="flex-row">
-                <button class="btn" onclick="setupMCQ()">🔘 選擇題 (導航鍵)</button>
+                <button class="btn" onclick="setupMCQ()">🔘 選擇題</button>
                 <button class="btn" onclick="setupPractice('zh-to-en')">⌨️ 拼打模式</button>
             </div>
             <div class="flex-row">
@@ -328,7 +319,7 @@
     <div id="view-mcq-init" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="goHome()">← 返回</button>
-            <h2>選擇題方向</h2>
+            <h2>選擇題類型</h2>
         </div>
         <div class="card">
             <button class="btn" style="margin-bottom:15px" onclick="startMCQ('zh-to-en')">看中文 → 選英文</button>
@@ -346,12 +337,6 @@
             <div class="question-text" id="mcq-question-display"></div>
             <div id="mcq-options-container" class="choice-grid"></div>
             <div class="progress-text" id="mcq-progress-text"></div>
-            <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; opacity:0.6;">
-                <span class="choice-label" style="margin:0">Ins</span>
-                <span class="choice-label" style="margin:0">Del</span>
-                <span class="choice-label" style="margin:0">PgUp</span>
-                <span class="choice-label" style="margin:0">PgDn</span>
-            </div>
         </div>
     </div>
 
@@ -434,7 +419,7 @@
     function toggleSequential() { isSequentialMode = !isSequentialMode; }
     function toggleImportArea() { document.getElementById('import-area').classList.toggle('hidden'); }
 
-    // --- Book CRUD ---
+    // --- Book Management ---
     function renderBookList() {
         const list = document.getElementById('book-list');
         list.innerHTML = '';
@@ -443,7 +428,7 @@
             div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
             div.innerHTML = `
                 <div class="checkbox-wrapper" style="flex:1"><input type="checkbox" ${selectedBookIds.has(book.id)?'checked':''}>
-                <strong>${book.name}</strong> (${book.words.length})</div>
+                <strong>${book.name}</strong> (${book.words.length} 字)</div>
                 <button class="btn-icon" onclick="event.stopPropagation(); openEditBook(${book.id})">✎</button>
             `;
             div.onclick = () => {
@@ -527,7 +512,7 @@
 
     // --- MCQ Logic ---
     function setupMCQ() {
-        if(getPracticeWords().length < 4) return alert("單字量不足 4 個，無法練習");
+        if(getPracticeWords().length < 4) return alert("單字量不足 4 個");
         switchView('mcq-init');
     }
 
@@ -558,12 +543,11 @@
 
         const container = document.getElementById('mcq-options-container');
         container.innerHTML = '';
-        const labels = ['Ins', 'Del', 'PgUp', 'PgDn'];
 
-        options.forEach((opt, idx) => {
+        options.forEach((opt) => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
-            btn.innerHTML = `<span class="choice-label">${labels[idx]}</span> ${currentMode === 'zh-to-en' ? opt.en : opt.zh[0]}`;
+            btn.innerText = currentMode === 'zh-to-en' ? opt.en : opt.zh[0];
             btn.onclick = () => handleMCQAnswer(btn, opt, cur);
             container.appendChild(btn);
         });
@@ -583,7 +567,7 @@
             btn.classList.add('wrong');
             btn.classList.add('shake');
             allBtns.forEach(b => {
-                const txt = b.innerText.substring(5).trim(); // Skip label
+                const txt = b.innerText.trim();
                 if(txt === correct.en || correct.zh.includes(txt)) b.classList.add('correct');
             });
             const wrong = practiceQueue.shift();
@@ -593,17 +577,16 @@
         }
     }
 
-    // --- Key Events (Ins, Del, PgUp, PgDn) ---
+    // --- Key Events (Ins, Del, PgUp, PgDn Mapping) ---
     window.addEventListener('keydown', (e) => {
         const mcqView = document.getElementById('view-mcq-play');
         if (mcqView.classList.contains('hidden')) return;
         
-        // 映射按鍵
         let targetIndex = -1;
         if (e.key === 'Insert') targetIndex = 0;
         else if (e.key === 'Delete') targetIndex = 1;
-        else if (e.key === 'PageUp') { targetIndex = 2; e.preventDefault(); } // 阻止捲動
-        else if (e.key === 'PageDown') { targetIndex = 3; e.preventDefault(); } // 阻止捲動
+        else if (e.key === 'PageUp') { targetIndex = 2; e.preventDefault(); }
+        else if (e.key === 'PageDown') { targetIndex = 3; e.preventDefault(); }
         
         if (targetIndex !== -1) {
             const buttons = document.querySelectorAll('#mcq-options-container .choice-btn');
