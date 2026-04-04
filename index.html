@@ -4,7 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilenVocab | 極簡英文練習</title>
+    
+    <script>
+        var ygWidget = null;
+        var isYgApiReady = false;
+        
+        window.onYouglishAPIReady = function(){
+            isYgApiReady = true;
+            ygWidget = new YG.Widget("yg-widget-1", {
+                width: '100%',
+                components: 8415, // 隱藏搜尋列等UI
+                events: {
+                    'onError': function(e) { console.error("YouGlish Error:", e); }
+                }
+            });
+        };
+    </script>
     <script async src="https://youglish.com/api/widget/js/widget.js"></script>
+
     <style>
         :root {
             --bg-color: #0a0a0a;
@@ -18,7 +35,7 @@
             --error: #f44336;
             --btn-primary: #3b82f6; 
             --btn-primary-hover: #2563eb;
-            --btn-youglish: #e62117; /* YouTube/YouGlish Red */
+            --btn-youglish: #e62117; 
             --btn-youglish-hover: #cc1d15;
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --warning: #ff9800;
@@ -297,24 +314,7 @@
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
 
-    // YouGlish API variables
-    let ygWidget = null;
-    let isYgApiReady = false;
-
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
-
-    // --- YouGlish API Integration ---
-    // This function is automatically called by the YouGlish API when it loads
-    window.onYouglishAPIReady = function(){
-        isYgApiReady = true;
-        ygWidget = new YG.Widget("yg-widget-1", {
-            width: '100%',
-            components: 8415, // 8415 is a specific combination of controls (search bar off, caption on, etc.)
-            events: {
-                'onError': function(e) { console.error("YouGlish Error:", e); }
-            }
-        });
-    };
 
     // --- Navigation & Setup ---
     const views = ['home', 'edit', 'practice', 'puzzle', 'memory', 'youglish'];
@@ -326,7 +326,7 @@
     function quitPractice() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); goHome(); }
     
     function quitYouglish() {
-        if(ygWidget) ygWidget.pause(); // Stop video when leaving
+        if(ygWidget && isYgApiReady) ygWidget.pause(); 
         goHome();
     }
 
@@ -545,13 +545,11 @@
         practiceQueue = getPracticeWords(); 
         if(practiceQueue.length === 0) return;
         
-        // Ensure YouGlish API is loaded
         if (typeof YG === 'undefined' || !isYgApiReady) {
-            alert("正在載入 YouGlish 播放器，請稍候再試或檢查網路連線。");
+            alert("正在載入 YouGlish 播放器，請稍候再試或檢查網路連線。若持續失敗，請暫時關閉廣告攔截器 (AdBlock/Brave Shields)。");
             return;
         }
 
-        // Randomize order for browsing
         practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0;
         
@@ -562,13 +560,11 @@
     function loadYouglishCard() {
         const word = practiceQueue[currentCardIndex];
         
-        // Update UI Text
         document.getElementById('yg-word').innerText = word.en;
         document.getElementById('yg-zh').innerText = word.zh.join(' / ');
         document.getElementById('yg-progress').innerText = `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
         
-        // Fetch new word in YouGlish widget
-        if (ygWidget) {
+        if (ygWidget && isYgApiReady) {
             ygWidget.fetch(word.en, "english");
         }
     }
