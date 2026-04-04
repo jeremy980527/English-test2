@@ -328,7 +328,8 @@
             <div class="yg-zh-display" id="yg-zh">中文意思</div>
             
             <div id="youglish-widget-container">
-                </div>
+                <div id="yg-player"></div>
+            </div>
             
             <div class="flex-row" style="margin-top: 20px;">
                 <button class="btn btn-outline" onclick="prevYouglishCard()">上一個</button>
@@ -354,9 +355,8 @@
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
     
-    // YouGlish API Reference
+    // YouGlish API 單例 (Singleton) 變數
     let ygWidget = null;
-    let ygInitAttempts = 0;
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
@@ -558,8 +558,10 @@
 
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
+        
         document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中';
         setDisplayState('mcq-seq-badge', isSequentialMode);
+        
         switchView('mcq'); showMcqNextCard();
     }
     function showMcqNextCard() {
@@ -691,52 +693,42 @@
     }
 
     // =====================================
-    // 5. YouGlish Mode (防隱藏阻擋與強制延遲載入)
+    // 5. YouGlish Mode (完美的單例設計)
     // =====================================
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
         if(practiceQueue.length === 0) return;
-
         practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0;
         
-        // 1. 切換畫面，確保有實體寬高 (超級重要)
         switchView('youglish');
         
-        // 2. 每次進入都強制重置，避免殘留的 iframe 出問題
-        ygWidget = null;
-        document.getElementById('youglish-widget-container').innerHTML = '<div id="yg-player"></div>';
-        ygInitAttempts = 0;
-        
-        // 3. 給瀏覽器一點時間把畫面排版出來 (300ms 絕對足夠)
-        setTimeout(initYouglishWidget, 300);
+        if (!ygWidget) {
+            initYouglishWidget();
+        } else {
+            // Widget 已經活著，直接呼叫切換單字
+            loadYouglishCard();
+        }
     }
 
     function initYouglishWidget() {
-        document.getElementById('yg-word').innerText = '載入中...';
-        document.getElementById('yg-zh').innerText = '正在初始化播放器';
-
-        if (typeof YG === 'undefined' || typeof YG.Widget !== 'function') {
-            ygInitAttempts++;
-            if (ygInitAttempts > 20) {
-                 document.getElementById('yg-zh').innerText = '⚠️ API 連線失敗，請檢查網路';
-                 return;
-            }
-            setTimeout(initYouglishWidget, 500);
+        // 如果 API 還沒準備好，稍等一下再試
+        if (!window.isYgApiReady || typeof YG === 'undefined') {
+            setTimeout(initYouglishWidget, 300);
             return;
         }
 
-        // 當 YG 確定可用且畫面可見時，才建立 iframe
+        // 建立唯一的一個播放器實體
         ygWidget = new YG.Widget("yg-player", {
             width: '100%',
-            // 不指定 components 使用安全預設值
+            components: 8415,
             events: { 
                 'onError': function(e) { console.error("YG Error:", e); } 
             }
         });
         
-        // 再次延遲，讓 iframe 有時間準備接收第一個單字
-        setTimeout(loadYouglishCard, 800);
+        // 第一次建立 iframe 需要時間，等待 1 秒後再拉取單字
+        setTimeout(loadYouglishCard, 1000);
     }
 
     function loadYouglishCard() {
@@ -748,25 +740,33 @@
         document.getElementById('yg-progress').innerText = `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
         
         if (ygWidget) {
-            try { ygWidget.fetch(word.en, "english"); } catch(e) { console.log(e); }
+            ygWidget.fetch(word.en, "english");
         }
     }
 
     function nextYouglishCard() {
-        if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; loadYouglishCard(); } 
-        else { alert("已經是最後一個單字囉！"); }
+        if (currentCardIndex < practiceQueue.length - 1) { 
+            currentCardIndex++; 
+            loadYouglishCard();
+        } else { 
+            alert("已經是最後一個單字囉！"); 
+        }
     }
 
     function prevYouglishCard() {
-        if (currentCardIndex > 0) { currentCardIndex--; loadYouglishCard(); } 
-        else { alert("已經是第一個單字囉！"); }
+        if (currentCardIndex > 0) { 
+            currentCardIndex--; 
+            loadYouglishCard();
+        } else { 
+            alert("已經是第一個單字囉！"); 
+        }
     }
 
     function quitYouglish() {
-        if(ygWidget) { try { ygWidget.pause(); } catch(e){} }
-        // 退出時清空，避免背景播音
-        document.getElementById('youglish-widget-container').innerHTML = '';
-        ygWidget = null;
+        if(ygWidget) { 
+            try { ygWidget.pause(); } catch(e){} 
+        }
+        // 絕對不刪除 DOM，保留播放器實體
         goHome();
     }
 
