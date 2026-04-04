@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilenVocab | 極簡英文練習</title>
     
+    <script>
+        window.isYgApiReady = false;
+        window.onYouglishAPIReady = function() {
+            window.isYgApiReady = true;
+            console.log("YouGlish API 準備就緒");
+        };
+    </script>
+    <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
+
     <style>
         :root {
             --bg-color: #0a0a0a;
@@ -52,10 +61,11 @@
         .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; }
         .btn-icon:hover { color: var(--accent); }
 
-        .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; cursor: pointer; }
-        .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; }
+        .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
         .book-item:hover { border-color: var(--text-sub); }
         .book-item.selected { border-color: var(--accent); background-color: #222; }
+        
         .word-item { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 10px 0; border-bottom: 1px solid #222; }
         .word-item:last-child { border-bottom: none; }
         .word-en { font-weight: 600; color: var(--accent); }
@@ -81,7 +91,7 @@
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
         #feedback-area, #mcq-feedback-area, #speaking-feedback-area { 
-            display: flex; 
+            display: none; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
@@ -108,33 +118,12 @@
 
         /* ======= Speaking Mode Styles ======= */
         .mic-btn {
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            border: 2px solid var(--border);
-            background: var(--card-bg);
-            color: var(--text-main);
-            font-size: 2.5rem;
-            cursor: pointer;
-            margin: 20px auto;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s;
+            width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 2.5rem; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s;
         }
-        .mic-btn.listening {
-            border-color: var(--error);
-            color: var(--error);
-            box-shadow: 0 0 20px rgba(244, 67, 54, 0.4);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
+        .mic-btn.listening { border-color: var(--error); color: var(--error); box-shadow: 0 0 20px rgba(244, 67, 54, 0.4); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .speaking-status { color: var(--text-sub); margin-top: 10px; height: 20px; }
-        .score-circle {
-            font-size: 3rem; font-weight: 800; color: var(--success);
-            margin-bottom: 10px;
-        }
+        .score-circle { font-size: 3rem; font-weight: 800; color: var(--success); margin-bottom: 10px; }
 
         .puzzle-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; min-height: 60px; }
         .letter-tile { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border); border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; background: var(--card-bg); color: var(--text-main); user-select: none; }
@@ -150,15 +139,22 @@
         .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
-        /* ======= YouGlish Mode Styles ======= */
-        .yg-open-btn {
-            display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none;
-        }
+        .yg-open-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none; }
         .yg-open-btn:hover { background: #2d0000; }
         .yg-open-btn .yg-btn-label { font-size: 0.85rem; color: #aaa; margin-top: 5px; }
         .yg-tip { color: var(--text-sub); font-size: 0.82rem; margin-bottom: 20px; line-height: 1.5; }
         .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
+
+        /* --- 新增：標籤群組標題 --- */
+        .group-title {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin: 25px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
 
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
@@ -175,31 +171,19 @@
 
 <div class="container">
     <header>
-        <h1>SilenVocab挑戰</h1>
+        <h1>SilenVocab</h1>
     </header>
 
     <div id="view-home">
-        <div class="nav-bar">
-            <h2>你的單字簿</h2>
-        </div>
-        <div id="book-list"></div>
-        
-        <div style="margin-top:20px;">
-            <input type="text" id="new-book-name" placeholder="輸入新單字簿名稱...">
-            <div style="display: flex; justify-content: flex-end;">
-                <span class="import-trigger" onclick="toggleImportArea()">▼ 批量匯入 (Import)</span>
+        <div class="card" style="text-align: center; padding: 30px 20px; border-color: var(--border);">
+            <div id="home-book-summary" style="font-size: 1.1rem; margin-bottom: 20px;">
+                尚未選擇單字簿
             </div>
-            <div id="import-area" class="hidden import-section">
-                <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0;">格式: <span style="color:var(--accent)">英文 - 中文</span> (換行新增)</p>
-                <textarea id="import-content" placeholder="範例：&#10;theory - 學說；理論&#10;psychology - 心理學"></textarea>
-                <button class="btn btn-outline" onclick="addBookWithImport()">建立並匯入</button>
-            </div>
-            <button id="btn-create-simple" class="btn btn-outline" onclick="addBookSimple()">＋ 僅建立單字簿</button>
+            <button class="btn btn-outline" style="border-color: var(--accent); color: var(--accent);" onclick="openBookSelect()">📚 選擇與管理單字簿</button>
         </div>
         
-        <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
-            <h2>選擇練習模式</h2>
-            <p style="color:var(--text-sub); font-size:0.9rem; margin-bottom:15px;">請勾選上方單字簿後開始</p>
+        <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <h2>開始練習</h2>
             
             <div class="checkbox-wrapper" style="margin-bottom: 15px;" onclick="toggleSequential()">
                 <input type="checkbox" id="sequential-toggle" style="pointer-events: none;">
@@ -209,12 +193,12 @@
             </div>
 
             <div class="flex-row">
-                <button class="btn" onclick="setupPractice('zh-to-en')">看中文 → 拼英文</button>
-                <button class="btn" onclick="setupPractice('en-to-zh')">看英文 → 翻中文</button>
+                <button class="btn" onclick="setupPractice('zh-to-en')">中翻英</button>
+                <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
             </div>
             <div class="flex-row">
-                <button class="btn btn-outline" onclick="setupMultipleChoice('en-to-zh')">⭕ 選擇題 (英選中)</button>
-                <button class="btn btn-outline" onclick="setupMultipleChoice('zh-to-en')">⭕ 選擇題 (中選英)</button>
+                <button class="btn btn-outline" onclick="setupMultipleChoice('en-to-zh')">選擇題(英)</button>
+                <button class="btn btn-outline" onclick="setupMultipleChoice('zh-to-en')">選擇題(中)</button>
             </div>
             <div class="flex-row" style="margin-top: 10px;">
                 <button class="btn btn-outline" onclick="setupPuzzleMode()">🧩 拼圖</button>
@@ -235,12 +219,50 @@
         </div>
     </div>
 
+    <div id="view-book-select" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="goHome()">← 返回首頁</button>
+            <h2>單字簿庫</h2>
+            <div style="width: 60px;"></div> </div>
+        
+        <div id="book-list"></div>
+        
+        <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <h3 style="margin-top: 0;">新增單字簿</h3>
+            <div class="flex-row">
+                <input type="text" id="new-book-name" placeholder="單字簿名稱..." style="flex: 2;">
+                <input type="text" id="new-book-tag" placeholder="標籤 (選填)" style="flex: 1;">
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end;">
+                <span class="import-trigger" onclick="toggleImportArea()">▼ 批量匯入 (Import)</span>
+            </div>
+            <div id="import-area" class="hidden import-section">
+                <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0;">格式: <span style="color:var(--accent)">英文 - 中文</span> (換行新增)</p>
+                <textarea id="import-content" placeholder="範例：&#10;theory - 學說；理論&#10;psychology - 心理學"></textarea>
+                <button class="btn btn-outline" onclick="addBookWithImport()">建立並匯入</button>
+            </div>
+            <button id="btn-create-simple" class="btn btn-outline" onclick="addBookSimple()">＋ 建立空單字簿</button>
+        </div>
+    </div>
+
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
-            <button class="btn-icon" onclick="goHome()">← 返回</button>
-            <h2 id="edit-book-title">編輯單字</h2>
+            <button class="btn-icon" onclick="switchView('book-select')">← 返回</button>
+            <h2 id="edit-book-title">編輯單字簿</h2>
             <button class="btn-icon btn-delete" onclick="deleteCurrentBook()">刪除此簿</button>
         </div>
+        
+        <div class="card" style="border-color: #444;">
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px;">修改基本資訊</div>
+            <div class="flex-row">
+                <input type="text" id="edit-book-name-input" placeholder="單字簿名稱" style="flex:2;">
+                <input type="text" id="edit-book-tag-input" placeholder="標籤 (選填)" style="flex:1;">
+            </div>
+            <button class="btn btn-outline" onclick="saveBookInfo()" style="margin-top:0;">儲存變更</button>
+        </div>
+
+        <div style="margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">新增單字</div>
         <div class="card">
             <input type="text" id="input-en" placeholder="English Word (e.g., Apple)">
             <input type="text" id="input-zh" placeholder="中文意思 (多個意思請用逗號分隔)">
@@ -267,7 +289,6 @@
                     <button class="btn" onclick="checkAnswer()">送出</button>
                 </div>
             </div>
-            
             <div id="feedback-area" class="hidden">
                 <div class="question-text" id="feedback-question-copy" style="font-size: 1.5rem; margin-bottom: 10px; color: var(--text-sub);"></div>
                 <div id="feedback-icon" class="big-icon"></div>
@@ -295,7 +316,6 @@
                 <div class="question-text" id="mcq-question-display"></div>
                 <div class="mcq-grid" id="mcq-options-area"></div>
             </div>
-            
             <div id="mcq-feedback-area" class="hidden">
                 <div class="question-text" id="mcq-feedback-question-copy" style="font-size: 1.5rem; margin-bottom: 10px; color: var(--text-sub);"></div>
                 <div id="mcq-feedback-icon" class="big-icon"></div>
@@ -319,7 +339,6 @@
             <div id="speaking-interaction-area">
                 <div class="question-text" id="speaking-word-display" style="font-size:2.5rem;">Word</div>
                 <div class="yg-zh-display" id="speaking-zh-display">中文意思</div>
-                
                 <button class="mic-btn" id="mic-btn" onclick="startSpeechRecognition()">🎤</button>
                 <div class="speaking-status" id="speaking-status">點擊麥克風，念出上方的單字</div>
             </div>
@@ -398,7 +417,7 @@
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
 
-    // --- Web Speech API 安全初始化 ---
+    // --- Web Speech API 初始化 ---
     let recognition = null;
     try {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -408,15 +427,12 @@
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
         }
-    } catch(e) {
-        console.error("語音 API 初始化失敗", e);
-    }
+    } catch(e) { console.error("語音 API 初始化失敗", e); }
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- 核心導航機制 (完美修復版) ---
-    // ✅ 把 speaking 確實加入 views 陣列中！
-    const views = ['home', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
+    // --- Navigation (保證所有畫面都能正確切換) ---
+    const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
     
     function switchView(viewName) {
         views.forEach(v => {
@@ -433,7 +449,6 @@
         });
     }
     
-    // 強制 UI 切換，保證不重疊
     function setDisplayState(id, isDisplay, displayType = 'block') {
         const el = document.getElementById(id);
         if (el) {
@@ -447,7 +462,17 @@
         }
     }
     
-    function goHome() { renderBookList(); renderSettings(); switchView('home'); }
+    function goHome() { 
+        updateHomeSummary(); 
+        renderSettings(); 
+        switchView('home'); 
+    }
+    
+    function openBookSelect() {
+        renderBookList();
+        switchView('book-select');
+    }
+    
     function quitPractice() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); goHome(); }
 
     function renderSettings() {
@@ -472,50 +497,101 @@
         if(practiceQueue[currentCardIndex]) { speakEnglishWord(practiceQueue[currentCardIndex].en); }
     }
 
-    // --- Book Management (恢復 v15 最穩定的建立 DOM 方法，解決無法點擊問題) ---
-    function renderBookList() {
-        const list = document.getElementById('book-list'); list.innerHTML = '';
-        if(books.length === 0) { list.innerHTML = '<div style="color:var(--text-sub); text-align:center;">目前沒有單字簿</div>'; return; }
-        
-        books.forEach(book => {
-            const div = document.createElement('div'); 
-            div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'checkbox-wrapper';
-            wrapper.style.flex = '1';
-            
-            const checkbox = document.createElement('input'); 
-            checkbox.type = 'checkbox'; 
-            checkbox.checked = selectedBookIds.has(book.id); 
-            checkbox.style.pointerEvents = 'none';
-            
-            const info = document.createElement('div'); 
-            info.style.flex = '1'; 
-            info.style.marginLeft = '15px';
-            info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
-            
-            wrapper.appendChild(checkbox); 
-            wrapper.appendChild(info);
-            
-            const editBtn = document.createElement('button'); 
-            editBtn.className = 'btn-icon'; 
-            editBtn.innerHTML = '✎'; 
-            editBtn.onclick = (e) => { 
-                e.stopPropagation(); // 防止觸發外層的點擊
-                openEditBook(book.id); 
-            };
-            
-            div.appendChild(wrapper); 
-            div.appendChild(editBtn);
-            
-            div.onclick = (e) => { 
-                if(selectedBookIds.has(book.id)) selectedBookIds.delete(book.id); 
-                else selectedBookIds.add(book.id); 
-                renderBookList(); 
-            };
-            list.appendChild(div);
+    // --- 首頁統計邏輯 ---
+    function updateHomeSummary() {
+        const summaryEl = document.getElementById('home-book-summary');
+        if(!summaryEl) return;
+        let selectedCount = 0;
+        let wordCount = 0;
+        books.forEach(b => {
+            if(selectedBookIds.has(b.id)) {
+                selectedCount++;
+                wordCount += b.words.length;
+            }
         });
+        if(selectedCount === 0) {
+            summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先選擇！</span>';
+        } else {
+            summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
+        }
+    }
+
+    // --- Book Management (含標籤分群邏輯) ---
+    function renderBookList() {
+        const list = document.getElementById('book-list'); 
+        list.innerHTML = '';
+        
+        if(books.length === 0) { 
+            list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">目前沒有單字簿，請在下方新增</div>'; 
+            updateHomeSummary();
+            return; 
+        }
+
+        // 依照標籤將單字簿分組
+        const groups = {};
+        books.forEach(book => {
+            const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
+            if(!groups[t]) groups[t] = [];
+            groups[t].push(book);
+        });
+
+        // 排序：未分類永遠放在最後面
+        const keys = Object.keys(groups).sort((a, b) => {
+            if(a === '未分類') return 1;
+            if(b === '未分類') return -1;
+            return a.localeCompare(b);
+        });
+
+        keys.forEach(k => {
+            // 建立標籤標題
+            const header = document.createElement('div');
+            header.className = 'group-title';
+            header.innerText = `🏷️ ${k}`;
+            list.appendChild(header);
+
+            // 渲染該標籤下的單字簿
+            groups[k].forEach(book => {
+                const div = document.createElement('div'); 
+                div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-wrapper';
+                wrapper.style.flex = '1';
+                
+                const checkbox = document.createElement('input'); 
+                checkbox.type = 'checkbox'; 
+                checkbox.checked = selectedBookIds.has(book.id); 
+                checkbox.style.pointerEvents = 'none';
+                
+                const info = document.createElement('div'); 
+                info.style.flex = '1'; 
+                info.style.marginLeft = '15px';
+                info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
+                
+                wrapper.appendChild(checkbox); 
+                wrapper.appendChild(info);
+                
+                const editBtn = document.createElement('button'); 
+                editBtn.className = 'btn-icon'; 
+                editBtn.innerHTML = '✎'; 
+                editBtn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    openEditBook(book.id); 
+                };
+                
+                div.appendChild(wrapper); 
+                div.appendChild(editBtn);
+                
+                div.onclick = (e) => { 
+                    if(selectedBookIds.has(book.id)) selectedBookIds.delete(book.id); 
+                    else selectedBookIds.add(book.id); 
+                    renderBookList(); 
+                };
+                list.appendChild(div);
+            });
+        });
+        
+        updateHomeSummary(); // 確保首頁統計同步
     }
 
     function toggleImportArea() {
@@ -523,15 +599,26 @@
         if (area.classList.contains('hidden')) { setDisplayState('import-area', true); setDisplayState('btn-create-simple', false); } 
         else { setDisplayState('import-area', false); setDisplayState('btn-create-simple', true); }
     }
+
     function addBookSimple() {
-        const input = document.getElementById('new-book-name'); const name = input.value.trim();
+        const name = document.getElementById('new-book-name').value.trim();
+        const tag = document.getElementById('new-book-tag').value.trim();
         if (!name) return alert("請輸入單字簿名稱");
-        books.push({ id: Date.now(), name: name, words: [] }); saveData(); input.value = ''; renderBookList();
+        books.push({ id: Date.now(), name: name, tag: tag, words: [] }); 
+        saveData(); 
+        document.getElementById('new-book-name').value = ''; 
+        document.getElementById('new-book-tag').value = ''; 
+        renderBookList();
     }
+
     function addBookWithImport() {
-        const nameInput = document.getElementById('new-book-name'), contentInput = document.getElementById('import-content');
-        const name = nameInput.value.trim(), rawText = contentInput.value.trim();
-        if (!name) return alert("請輸入單字簿名稱"); if (!rawText) return alert("請貼上單字列表");
+        const name = document.getElementById('new-book-name').value.trim();
+        const tag = document.getElementById('new-book-tag').value.trim();
+        const rawText = document.getElementById('import-content').value.trim();
+        
+        if (!name) return alert("請輸入單字簿名稱"); 
+        if (!rawText) return alert("請貼上單字列表");
+        
         const lines = rawText.split('\n'), newWords = [];
         lines.forEach(line => {
             let separatorIndex = line.indexOf('-'); if(separatorIndex === -1) separatorIndex = line.indexOf('–'); 
@@ -544,13 +631,53 @@
             }
         });
         if (newWords.length === 0) return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
-        books.push({ id: Date.now(), name: name, words: newWords }); saveData();
-        nameInput.value = ''; contentInput.value = ''; toggleImportArea(); renderBookList(); alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
+        
+        books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
+        saveData();
+        
+        document.getElementById('new-book-name').value = ''; 
+        document.getElementById('new-book-tag').value = ''; 
+        document.getElementById('import-content').value = ''; 
+        toggleImportArea(); 
+        renderBookList(); 
+        alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
     }
+
     function deleteCurrentBook() {
-        if(confirm('確定要刪除整個單字簿嗎？')) { books = books.filter(b => b.id !== currentBookId); selectedBookIds.delete(currentBookId); saveData(); goHome(); }
+        if(confirm('確定要刪除整個單字簿嗎？')) { 
+            books = books.filter(b => b.id !== currentBookId); 
+            selectedBookIds.delete(currentBookId); 
+            saveData(); 
+            openBookSelect(); // 刪除後回到選擇清單
+        }
     }
-    function openEditBook(id) { currentBookId = id; document.getElementById('edit-book-title').innerText = books.find(b => b.id === id).name; renderWordList(); switchView('edit'); }
+
+    function openEditBook(id) { 
+        currentBookId = id; 
+        const book = books.find(b => b.id === id);
+        
+        // 填入名稱與標籤讓用戶編輯
+        document.getElementById('edit-book-name-input').value = book.name;
+        document.getElementById('edit-book-tag-input').value = book.tag || '';
+        
+        renderWordList(); 
+        switchView('edit'); 
+    }
+
+    function saveBookInfo() {
+        const book = books.find(b => b.id === currentBookId);
+        if(!book) return;
+        const newName = document.getElementById('edit-book-name-input').value.trim();
+        const newTag = document.getElementById('edit-book-tag-input').value.trim();
+        
+        if(!newName) return alert('單字簿名稱不能為空！');
+        
+        book.name = newName;
+        book.tag = newTag;
+        saveData();
+        alert('已儲存基本資訊變更！');
+    }
+
     function renderWordList() {
         const book = books.find(b => b.id === currentBookId); const list = document.getElementById('word-list'); list.innerHTML = '';
         [...book.words].reverse().forEach((word, index) => {
@@ -559,6 +686,7 @@
             list.appendChild(div);
         });
     }
+
     function addWord() {
         const en = document.getElementById('input-en').value.trim(), zhStr = document.getElementById('input-zh').value.trim();
         if(!en || !zhStr) return alert("請輸入完整");
@@ -566,12 +694,14 @@
         books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); saveData();
         document.getElementById('input-en').value = ''; document.getElementById('input-zh').value = ''; document.getElementById('input-en').focus(); renderWordList();
     }
+
     function deleteWord(index) { books.find(b => b.id === currentBookId).words.splice(index, 1); saveData(); renderWordList(); }
     
     function getPracticeWords() {
-        if (selectedBookIds.size === 0) { alert("請至少選擇一本單字簿！"); return []; }
+        if (selectedBookIds.size === 0) { alert("請先進入「選擇單字簿」勾選你要練習的範圍喔！"); return []; }
         let queue = []; books.forEach(book => { if (selectedBookIds.has(book.id)) queue.push(...book.words); });
-        if (queue.length === 0) { alert("選定的單字簿中沒有單字！"); return []; } return queue;
+        if (queue.length === 0) { alert("選定的單字簿裡面沒有任何單字！"); return []; } 
+        return queue;
     }
     function getAllWords() {
         let all = []; books.forEach(book => { all.push(...book.words); }); return all;
@@ -715,7 +845,7 @@
     // 3. Speaking Challenge Mode 🗣️
     // =====================================
     function setupSpeakingMode() {
-        if (!recognition) return alert("您的瀏覽器目前不支援用語音辨識功能，建議使用最新版 Chrome。");
+        if (!recognition) return alert("您的瀏覽器目前不支援用語音辨識功能，建議使用最新版 Chrome 或同意麥克風存取權限。");
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         
@@ -733,10 +863,9 @@
         
         document.getElementById('speaking-word-display').innerText = word.en;
         document.getElementById('speaking-zh-display').innerText = word.zh.join(' / ');
-        document.getElementById('speaking-status').innerText = '點擊麥克風，對著手機念出單字';
+        document.getElementById('speaking-status').innerText = '點擊麥克風，對著設備念出單字';
         document.getElementById('speaking-progress').innerText = `進度: ${completedCount}/${initialQueueLength}`;
         
-        // 播音示範
         speakEnglishWord(word.en);
     }
 
@@ -780,11 +909,10 @@
         const msgDisplay = document.getElementById('speaking-feedback-msg');
         const heardDisplay = document.getElementById('speaking-heard-text');
         
-        // 只要念出來的字串包含目標字，或者就是目標字
         if (heard === target || heard.includes(target) || target.includes(heard)) {
             lastAnswerCorrect = true;
             let finalScore = Math.round(confidence * 100);
-            if (finalScore < 50) finalScore = 80; // 只要有中就給個鼓勵分
+            if (finalScore < 50) finalScore = 80; 
             
             scoreDisplay.innerText = `${finalScore} 分`;
             scoreDisplay.style.color = 'var(--success)';
@@ -807,7 +935,6 @@
         currentCardIndex++;
         showNextSpeakingCard();
     }
-
 
     // =====================================
     // 4. Puzzle Mode
@@ -885,7 +1012,7 @@
     }
 
     // =====================================
-    // 6. YouGlish Mode (跳轉連結，100% 穩定)
+    // 6. YouGlish Mode (跳轉連結)
     // =====================================
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
