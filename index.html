@@ -5,13 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilenVocab | 極簡英文練習</title>
     
-    <script>
-        window.onYouglishAPIReady = function() {
-            window.isYgApiReady = true;
-            console.log("YouGlish API 準備就緒");
-        };
-    </script>
-    <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
+    <!-- YouGlish JS API removed — using iframe instead for mobile compatibility -->
 
     <style>
         :root {
@@ -128,45 +122,16 @@
         .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
-        /* ======= YouGlish Mode Styles (Fixed) ======= */
-        #youglish-widget-container { 
-            width: 100%; 
-            min-height: 300px; 
-            margin-bottom: 20px; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            background: #111;
-            position: relative;
-        }
-        #yg-player { width: 100%; }
-        
-        /* Loading overlay */
-        #yg-loading-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #111;
+        /* ======= YouGlish Mode Styles (iframe) ======= */
+        #yg-iframe {
+            width: 100%;
+            height: 320px;
+            border: none;
             border-radius: 8px;
-            z-index: 10;
-            gap: 15px;
-            transition: opacity 0.3s;
+            background: #111;
+            display: block;
+            margin-bottom: 20px;
         }
-        #yg-loading-overlay.hidden { 
-            display: none !important; 
-        }
-        .yg-spinner {
-            width: 36px; height: 36px;
-            border: 3px solid #333;
-            border-top-color: #e62117;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .yg-loading-text { color: var(--text-sub); font-size: 0.9rem; }
-        .yg-error-text { color: var(--error); font-size: 0.85rem; text-align: center; padding: 0 20px; display: none; }
 
         .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
@@ -354,18 +319,7 @@
             <div class="yg-word-display" id="yg-word">word</div>
             <div class="yg-zh-display" id="yg-zh">中文意思</div>
             
-            <div id="youglish-widget-container">
-                <!-- Loading overlay (visible by default) -->
-                <div id="yg-loading-overlay">
-                    <div class="yg-spinner"></div>
-                    <div class="yg-loading-text">載入 YouGlish 中...</div>
-                    <div class="yg-error-text" id="yg-error-text">
-                        載入失敗，請確認網路連線後重試
-                    </div>
-                </div>
-                <!-- The actual player div (always stays in DOM) -->
-                <div id="yg-player"></div>
-            </div>
+            <iframe id="yg-iframe" allowfullscreen></iframe>
             
             <div class="flex-row" style="margin-top: 20px;">
                 <button class="btn btn-outline" onclick="prevYouglishCard()">上一個</button>
@@ -389,12 +343,6 @@
     
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
-    
-    // YouGlish singleton
-    let ygWidget = null;
-    let ygInitialized = false;
-    let ygPollTimer = null;
-    let ygLoadTimeout = null;
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
@@ -710,103 +658,16 @@
     }
 
     // =====================================
-    // 5. YouGlish Mode (Fixed)
+    // 5. YouGlish Mode (iframe — works on mobile)
     // =====================================
-
-    function showYgLoading(show) {
-        const overlay = document.getElementById('yg-loading-overlay');
-        if (show) overlay.classList.remove('hidden');
-        else overlay.classList.add('hidden');
-    }
-
-    function showYgError() {
-        const errEl = document.getElementById('yg-error-text');
-        const loadingText = document.querySelector('.yg-loading-text');
-        const spinner = document.querySelector('.yg-spinner');
-        if (errEl) errEl.style.display = 'block';
-        if (loadingText) loadingText.style.display = 'none';
-        if (spinner) spinner.style.display = 'none';
-    }
 
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
         if (practiceQueue.length === 0) return;
         practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0;
-        
         switchView('youglish');
-        showYgLoading(true);
-
-        if (ygInitialized && ygWidget) {
-            // Widget already exists — just load the word
-            loadYouglishCard();
-        } else {
-            // Need to create the widget
-            waitForYgAndInit();
-        }
-    }
-
-    function waitForYgAndInit() {
-        // Clear any existing timers
-        if (ygPollTimer) clearTimeout(ygPollTimer);
-        if (ygLoadTimeout) clearTimeout(ygLoadTimeout);
-
-        let attempts = 0;
-        const maxAttempts = 40; // 10 seconds total (40 × 250ms)
-
-        function poll() {
-            attempts++;
-            // Check if YG constructor is available (more reliable than the callback)
-            if (typeof YG !== 'undefined' && YG.Widget) {
-                createYgWidget();
-                return;
-            }
-            if (attempts >= maxAttempts) {
-                // Timed out
-                showYgError();
-                return;
-            }
-            ygPollTimer = setTimeout(poll, 250);
-        }
-
-        poll();
-    }
-
-    function createYgWidget() {
-        // Prevent double-init
-        if (ygInitialized) { loadYouglishCard(); return; }
-        ygInitialized = true;
-
-        try {
-            ygWidget = new YG.Widget("yg-player", {
-                width: '100%',
-                components: 8415,
-                events: {
-                    'onFetchDone': function(event) {
-                        // Hide loading overlay once a video is ready
-                        if (event && event.totalResults > 0) {
-                            showYgLoading(false);
-                        } else {
-                            // Word has no results but widget is alive
-                            showYgLoading(false);
-                        }
-                    },
-                    'onError': function(e) {
-                        console.error("YG Widget Error:", e);
-                        showYgLoading(false); // Hide loading even on error so UI is usable
-                    }
-                }
-            });
-
-            // Give the iframe 1.5s to bootstrap, then load the first word
-            setTimeout(() => {
-                loadYouglishCard();
-            }, 1500);
-
-        } catch(e) {
-            console.error("Failed to create YG widget:", e);
-            showYgError();
-        }
+        loadYouglishCard();
     }
 
     function loadYouglishCard() {
@@ -817,20 +678,8 @@
         document.getElementById('yg-zh').innerText = word.zh.join(' / ');
         document.getElementById('yg-progress').innerText = `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
         
-        if (ygWidget) {
-            showYgLoading(true); // Show loading while fetching new word
-            
-            // Set a fallback: if onFetchDone doesn't fire within 8s, hide loading anyway
-            if (ygLoadTimeout) clearTimeout(ygLoadTimeout);
-            ygLoadTimeout = setTimeout(() => { showYgLoading(false); }, 8000);
-            
-            try {
-                ygWidget.fetch(word.en, "english");
-            } catch(e) {
-                console.error("YG fetch error:", e);
-                showYgLoading(false);
-            }
-        }
+        const iframe = document.getElementById('yg-iframe');
+        iframe.src = `https://youglish.com/pronounce/${encodeURIComponent(word.en)}/english?`;
     }
 
     function nextYouglishCard() {
@@ -852,8 +701,8 @@
     }
 
     function quitYouglish() {
-        if (ygLoadTimeout) clearTimeout(ygLoadTimeout);
-        if (ygWidget) { try { ygWidget.pause(); } catch(e){} }
+        // Clear iframe src to stop video playback
+        document.getElementById('yg-iframe').src = '';
         goHome();
     }
 
