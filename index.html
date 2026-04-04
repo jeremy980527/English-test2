@@ -6,15 +6,13 @@
     <title>SilenVocab | 極簡英文練習</title>
     
     <script>
-        // 必須在 YouGlish script 載入前定義好 callback
         window.isYgApiReady = false;
         window.onYouglishAPIReady = function() {
             window.isYgApiReady = true;
             console.log("YouGlish API 準備就緒");
         };
     </script>
-    <!-- 移除 async，改用 defer 確保執行順序正確 -->
-    <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
+    <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
 
     <style>
         :root {
@@ -144,17 +142,8 @@
         #youglish-widget-container { width: 100%; min-height: 350px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; display:flex; align-items:center; justify-content:center; background:#111; }
         .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
-        
-        /* YouGlish 載入狀態提示 */
-        #yg-status-msg {
-            color: var(--text-sub);
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-            min-height: 20px;
-            transition: opacity 0.3s;
-        }
 
-        /* 絕對優先隱藏類別 */
+        /* 強制覆蓋所有隱藏屬性 */
         .hidden { display: none !important; }
         
         /* Utilities */
@@ -337,7 +326,6 @@
         <div class="practice-area" style="margin-top: 10px;">
             <div class="yg-word-display" id="yg-word">word</div>
             <div class="yg-zh-display" id="yg-zh">中文意思</div>
-            <div id="yg-status-msg"></div>
             
             <div id="youglish-widget-container">
                 <div id="yg-player"></div>
@@ -367,24 +355,33 @@
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
     
-    // YouGlish state
+    // YouGlish API Reference
     let ygWidget = null;
-    let ygWidgetReady = false;   // widget 本身初始化完成
     let ygInitAttempts = 0;
-    const YG_MAX_ATTEMPTS = 30; // 最多等 15 秒 (30 × 500ms)
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- Navigation ---
+    // --- Navigation (依賴 !important 的 css 切換) ---
     const views = ['home', 'edit', 'practice', 'mcq', 'puzzle', 'memory', 'youglish'];
     function switchView(viewName) {
         views.forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) {
-                if(v === viewName) { el.classList.remove('hidden'); }
-                else { el.classList.add('hidden'); }
+                if(v === viewName) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
             }
         });
+    }
+    
+    function setDisplayState(id, isDisplay) {
+        const el = document.getElementById(id);
+        if (el) {
+            if (isDisplay) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
     }
     
     function goHome() { renderBookList(); renderSettings(); switchView('home'); }
@@ -495,20 +492,23 @@
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
         document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英' : '英翻中';
-        if (isSequentialMode) { document.getElementById('sequential-badge').classList.remove('hidden'); }
-        else { document.getElementById('sequential-badge').classList.add('hidden'); }
-        if (mode === 'zh-to-en') { document.getElementById('hint-btn').classList.remove('hidden'); }
-        else { document.getElementById('hint-btn').classList.add('hidden'); }
+        
+        setDisplayState('sequential-badge', isSequentialMode);
+        setDisplayState('hint-btn', mode === 'zh-to-en');
+        
         switchView('practice'); showNextCard();
     }
     function showNextCard() {
         if (currentCardIndex >= practiceQueue.length) { alert("練習結束！做得好！"); quitPractice(); return; }
         const word = practiceQueue[currentCardIndex];
-        document.getElementById('interaction-area').classList.remove('hidden');
-        document.getElementById('feedback-area').classList.add('hidden');
+        
+        setDisplayState('interaction-area', true);
+        setDisplayState('feedback-area', false);
+        
         document.getElementById('answer-input').value = ''; document.getElementById('hint-display').innerText = '';
         document.getElementById('progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `完成進度: ${completedCount} / ${initialQueueLength}`;
         document.getElementById('answer-input').focus();
+        
         const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
         document.getElementById('question-display').innerText = questionText; 
         document.getElementById('feedback-question-copy').innerText = questionText; 
@@ -529,12 +529,17 @@
         showFeedback(isCorrect, currentWord);
     }
     function showFeedback(isCorrect, word) {
-        document.getElementById('interaction-area').classList.add('hidden');
-        document.getElementById('feedback-area').classList.remove('hidden');
+        setDisplayState('interaction-area', false);
+        setDisplayState('feedback-area', true);
+        
         const icon = document.getElementById('feedback-icon'), status = document.getElementById('feedback-status');
         document.getElementById('feedback-answer').innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
-        if (isCorrect) { icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; } 
-        else { icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; }
+        
+        if (isCorrect) { 
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; 
+        } else { 
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; 
+        }
         speakEnglishWord(word.en); 
     }
     function handleNextClick() {
@@ -551,28 +556,36 @@
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
         const allWords = getAllWords();
         if(allWords.length < 4) return alert("選擇題模式需要您的總單字庫中至少有 4 個不同的單字才能產生選項喔！");
+
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
+        
         document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中';
-        if (isSequentialMode) { document.getElementById('mcq-seq-badge').classList.remove('hidden'); }
-        else { document.getElementById('mcq-seq-badge').classList.add('hidden'); }
+        setDisplayState('mcq-seq-badge', isSequentialMode);
+        
         switchView('mcq'); showMcqNextCard();
     }
+    
     function showMcqNextCard() {
         if (currentCardIndex >= practiceQueue.length) { alert("選擇題練習結束！做得好！"); quitPractice(); return; }
         const currentWord = practiceQueue[currentCardIndex];
-        document.getElementById('mcq-interaction-area').classList.remove('hidden');
-        document.getElementById('mcq-feedback-area').classList.add('hidden');
+        
+        setDisplayState('mcq-interaction-area', true);
+        setDisplayState('mcq-feedback-area', false);
+        
         document.getElementById('mcq-progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `完成進度: ${completedCount} / ${initialQueueLength}`;
+        
         const questionText = currentMode === 'zh-to-en' ? currentWord.zh.join(' / ') : currentWord.en;
         document.getElementById('mcq-question-display').innerText = questionText;
         document.getElementById('mcq-feedback-question-copy').innerText = questionText;
+
         const allWords = getAllWords();
         let options = [currentWord];
         let availableDistractors = allWords.filter(w => w.en !== currentWord.en);
         availableDistractors.sort(() => Math.random() - 0.5);
         options.push(...availableDistractors.slice(0, 3));
         options.sort(() => Math.random() - 0.5);
+        
         const optionsArea = document.getElementById('mcq-options-area');
         optionsArea.innerHTML = '';
         options.forEach(opt => {
@@ -583,18 +596,26 @@
             optionsArea.appendChild(btn);
         });
     }
+
     function checkMcqAnswer(isCorrect) {
         lastAnswerCorrect = isCorrect;
         const currentWord = practiceQueue[currentCardIndex];
         if (!isCorrect && !isSequentialMode) practiceQueue.push(currentWord);
-        document.getElementById('mcq-interaction-area').classList.add('hidden');
-        document.getElementById('mcq-feedback-area').classList.remove('hidden');
+        
+        setDisplayState('mcq-interaction-area', false);
+        setDisplayState('mcq-feedback-area', true);
+        
         const icon = document.getElementById('mcq-feedback-icon'), status = document.getElementById('mcq-feedback-status');
         document.getElementById('mcq-feedback-answer').innerText = currentMode === 'zh-to-en' ? currentWord.en : currentWord.zh.join(', ');
-        if (isCorrect) { icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; } 
-        else { icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; }
+        
+        if (isCorrect) { 
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; 
+        } else { 
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; 
+        }
         speakEnglishWord(currentWord.en); 
     }
+
     function handleMcqNextClick() {
         if (lastAnswerCorrect) completedCount++;
         if (isSequentialMode && !lastAnswerCorrect) { alert("循序漸進模式：錯誤！回到第一題重來！"); currentCardIndex = 0; completedCount = 0; showMcqNextCard(); return; }
@@ -608,8 +629,7 @@
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0; 
-        if(isSequentialMode) { document.getElementById('puzzle-seq-badge').classList.remove('hidden'); }
-        else { document.getElementById('puzzle-seq-badge').classList.add('hidden'); }
+        setDisplayState('puzzle-seq-badge', isSequentialMode);
         switchView('puzzle'); loadPuzzleLevel();
     }
     function loadPuzzleLevel() {
@@ -679,104 +699,60 @@
     }
 
     // =====================================
-    // 5. YouGlish Mode — 修正版
+    // 5. YouGlish Mode (正確官方網址)
     // =====================================
-
-    function setYgStatus(msg) {
-        const el = document.getElementById('yg-status-msg');
-        if (el) el.innerText = msg;
-    }
-
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
-        if (practiceQueue.length === 0) return;
+        if(practiceQueue.length === 0) return;
+
         practiceQueue.sort(() => Math.random() - 0.5);
         currentCardIndex = 0;
-
+        
         switchView('youglish');
-
-        // 若 widget 已存在且正常，直接載入第一個單字
-        if (ygWidget && ygWidgetReady) {
-            setYgStatus('');
-            loadYouglishCard();
-            return;
-        }
-
-        // 重置狀態，重新初始化
-        ygWidget = null;
-        ygWidgetReady = false;
         ygInitAttempts = 0;
-        setYgStatus('正在連線 YouGlish...');
-        document.getElementById('yg-word').innerText = '載入中';
-        document.getElementById('yg-zh').innerText = '';
-        waitForYgApi();
+        checkAndLoadYouglish();
     }
 
-    function waitForYgApi() {
-        // 超時保護：等太久就放棄
-        if (ygInitAttempts >= YG_MAX_ATTEMPTS) {
-            setYgStatus('⚠️ YouGlish API 連線逾時，請確認網路後再試');
-            document.getElementById('yg-word').innerText = '連線失敗';
-            return;
-        }
+    function checkAndLoadYouglish() {
+        document.getElementById('yg-word').innerText = '載入中...';
+        document.getElementById('yg-zh').innerText = '正在等待 API 連線';
 
-        // 兩種就緒條件：
-        //   1. 官方 callback 已被呼叫 (window.isYgApiReady = true)
-        //   2. YG 物件已掛載到 window (有些版本不觸發 callback)
-        const apiAvailable = window.isYgApiReady || (typeof window.YG !== 'undefined' && typeof window.YG.Widget === 'function');
-
-        if (!apiAvailable) {
+        // 等待 YG 物件被定義
+        if (typeof YG === 'undefined' || typeof YG.Widget !== 'function') {
             ygInitAttempts++;
-            setTimeout(waitForYgApi, 500);
+            if (ygInitAttempts > 20) {
+                 document.getElementById('yg-zh').innerText = '⚠️ API 連線失敗，請檢查網路';
+                 return;
+            }
+            setTimeout(checkAndLoadYouglish, 500);
             return;
         }
 
-        // API 就緒，建立 widget
-        try {
+        if (!ygWidget) {
+            document.getElementById('youglish-widget-container').innerHTML = '<div id="yg-player"></div>';
             ygWidget = new YG.Widget("yg-player", {
                 width: '100%',
                 components: 8415,
-                events: {
-                    'onFetchDone': function(result) {
-                        // onFetchDone 表示 widget 實際上已完全就緒
-                        ygWidgetReady = true;
-                        setYgStatus('');
-                    },
-                    'onError': function(e) {
-                        console.error("YouGlish Error:", e);
-                        setYgStatus('⚠️ 找不到此單字的影片');
-                    }
+                events: { 
+                    'onError': function(e) { console.error("YG Error:", e); } 
                 }
             });
-
-            // widget 建立後給一點時間讓 iframe 渲染，再 fetch 第一個單字
-            setTimeout(() => {
-                ygWidgetReady = true;
-                loadYouglishCard();
-            }, 1000);
-
-        } catch(e) {
-            console.error("YouGlish Widget 建立失敗:", e);
-            setYgStatus('⚠️ Widget 初始化失敗，請重新整理頁面');
+            setTimeout(loadYouglishCard, 800);
+        } else {
+            loadYouglishCard();
         }
     }
 
     function loadYouglishCard() {
+        if (!practiceQueue[currentCardIndex]) return;
         const word = practiceQueue[currentCardIndex];
-        if (!word) return;
-
+        
         document.getElementById('yg-word').innerText = word.en;
         document.getElementById('yg-zh').innerText = word.zh.join(' / ');
         document.getElementById('yg-progress').innerText = `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
-        setYgStatus('');
-
+        
         if (ygWidget) {
-            try {
-                ygWidget.fetch(word.en, "english");
-            } catch(e) {
-                console.error("fetch 失敗:", e);
-                setYgStatus('⚠️ 載入影片時發生錯誤');
-            }
+            try { ygWidget.fetch(word.en, "english"); } catch(e) { console.log(e); }
         }
     }
 
@@ -791,9 +767,7 @@
     }
 
     function quitYouglish() {
-        if (ygWidget) {
-            try { ygWidget.pause(); } catch(e) {}
-        }
+        if(ygWidget) { try { ygWidget.pause(); } catch(e){} }
         goHome();
     }
 
