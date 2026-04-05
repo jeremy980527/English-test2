@@ -5,15 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilenVocab | 極簡英文練習</title>
     
-    <script>
-        window.isYgApiReady = false;
-        window.onYouglishAPIReady = function() {
-            window.isYgApiReady = true;
-            console.log("YouGlish API 準備就緒");
-        };
-    </script>
-    <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
-
     <style>
         :root {
             --bg-color: #0a0a0a;
@@ -62,10 +53,9 @@
         .btn-icon:hover { color: var(--accent); }
 
         .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; }
-        .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
+        .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .book-item:hover { border-color: var(--text-sub); }
         .book-item.selected { border-color: var(--accent); background-color: #222; }
-        
         .word-item { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 10px 0; border-bottom: 1px solid #222; }
         .word-item:last-child { border-bottom: none; }
         .word-en { font-weight: 600; color: var(--accent); }
@@ -90,8 +80,8 @@
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
-        #feedback-area, #mcq-feedback-area, #speaking-feedback-area { 
-            display: none; 
+        #feedback-area, #mcq-feedback-area { 
+            display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
@@ -116,15 +106,6 @@
         .btn-mcq:hover { border-color: var(--accent); transform: translateY(-2px); }
         @media (max-width: 480px) { .mcq-grid { grid-template-columns: 1fr; } }
 
-        /* ======= Speaking Mode Styles ======= */
-        .mic-btn {
-            width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 2.5rem; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s;
-        }
-        .mic-btn.listening { border-color: var(--error); color: var(--error); box-shadow: 0 0 20px rgba(244, 67, 54, 0.4); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .speaking-status { color: var(--text-sub); margin-top: 10px; height: 20px; }
-        .score-circle { font-size: 3rem; font-weight: 800; color: var(--success); margin-bottom: 10px; }
-
         .puzzle-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; min-height: 60px; }
         .letter-tile { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border); border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; background: var(--card-bg); color: var(--text-main); user-select: none; }
         .letter-tile:hover { border-color: var(--accent); }
@@ -139,13 +120,44 @@
         .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
-        .yg-open-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none; }
+        /* ======= YouGlish Mode Styles ======= */
+        .yg-open-btn {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #1a0000;
+            border: 2px solid var(--btn-youglish);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
         .yg-open-btn:hover { background: #2d0000; }
         .yg-open-btn .yg-btn-label { font-size: 0.85rem; color: #aaa; margin-top: 5px; }
-        .yg-tip { color: var(--text-sub); font-size: 0.82rem; margin-bottom: 20px; line-height: 1.5; }
+        .yg-tip {
+            color: var(--text-sub);
+            font-size: 0.82rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
         .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
 
+        .hidden { display: none !important; }
+        
+        .flex-row { display: flex; gap: 10px; }
+        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+        input[type="checkbox"] { accent-color: var(--accent); transform: scale(1.2); }
+        .mode-badge { font-size: 0.75rem; background: var(--border); padding: 2px 8px; border-radius: 4px; margin-left: 10px; color: var(--text-sub); }
+        .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
+        .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
+        .import-trigger { font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px; }
+        
         /* --- 新增：標籤群組標題 --- */
         .group-title {
             font-size: 1.1rem;
@@ -156,14 +168,36 @@
             text-align: left;
         }
 
-        .hidden { display: none !important; }
-        .flex-row { display: flex; gap: 10px; }
-        .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-        input[type="checkbox"] { accent-color: var(--accent); transform: scale(1.2); }
-        .mode-badge { font-size: 0.75rem; background: var(--border); padding: 2px 8px; border-radius: 4px; margin-left: 10px; color: var(--text-sub); }
-        .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
-        .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
-        .import-trigger { font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px; }
+        /* ======= Speaking Mode Styles ======= */
+        .mic-btn {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 2.5rem;
+            cursor: pointer;
+            margin: 20px auto;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        .mic-btn.listening {
+            border-color: var(--error);
+            color: var(--error);
+            box-shadow: 0 0 20px rgba(244, 67, 54, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .speaking-status { color: var(--text-sub); margin-top: 10px; height: 20px; }
+        .score-circle {
+            font-size: 3rem; font-weight: 800; color: var(--success);
+            margin-bottom: 10px;
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -171,7 +205,7 @@
 
 <div class="container">
     <header>
-        <h1>SilenVocab</h1>
+        <h1>SilenVocab挑戰</h1>
     </header>
 
     <div id="view-home">
@@ -197,8 +231,8 @@
                 <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
             </div>
             <div class="flex-row">
-                <button class="btn btn-outline" onclick="setupMultipleChoice('en-to-zh')">選擇題(英)</button>
-                <button class="btn btn-outline" onclick="setupMultipleChoice('zh-to-en')">選擇題(中)</button>
+                <button class="btn btn-outline" onclick="setupMultipleChoice('en-to-zh')">⭕ 選擇題 (英選中)</button>
+                <button class="btn btn-outline" onclick="setupMultipleChoice('zh-to-en')">⭕ 選擇題 (中選英)</button>
             </div>
             <div class="flex-row" style="margin-top: 10px;">
                 <button class="btn btn-outline" onclick="setupPuzzleMode()">🧩 拼圖</button>
@@ -497,6 +531,26 @@
         if(practiceQueue[currentCardIndex]) { speakEnglishWord(practiceQueue[currentCardIndex].en); }
     }
 
+    // --- 隨機插隊函數 (Random Re-queue Logic) ---
+    // 將答錯的單字隨機插入到剩下的題目中，避免馬上重複或堆積在最後面
+    function requeueWord(word) {
+        let remaining = practiceQueue.length - 1 - currentCardIndex;
+        if (remaining <= 0) {
+            // 如果這已經是最後一題了，只能放在陣列最後面
+            practiceQueue.push(word);
+        } else {
+            // 在剩餘的題目中隨機挑一個位置插入
+            let minIndex = currentCardIndex + 1;
+            // 為了不讓它「馬上」又出現，如果剩下超過 1 題，我們強迫它至少往後隔一題
+            if (remaining > 1) {
+                minIndex = currentCardIndex + 2;
+            }
+            let maxIndex = practiceQueue.length; // splice 的 maxIndex 包含最後面
+            let randomIndex = Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
+            practiceQueue.splice(randomIndex, 0, word);
+        }
+    }
+
     // --- 首頁統計邏輯 ---
     function updateHomeSummary() {
         const summaryEl = document.getElementById('home-book-summary');
@@ -510,7 +564,7 @@
             }
         });
         if(selectedCount === 0) {
-            summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先選擇！</span>';
+            summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先進入管理區選擇喔！</span>';
         } else {
             summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
         }
@@ -748,7 +802,12 @@
             else { if (currentWord.zh.some(m => m.trim().includes(val) && val.length > 0)) isCorrect = true; }
         }
         lastAnswerCorrect = isCorrect;
-        if (!isCorrect && !isSequentialMode) practiceQueue.push(currentWord);
+        
+        // 若答錯且不是循序漸進模式，則將單字隨機安插到剩下的題庫中
+        if (!isCorrect && !isSequentialMode) {
+            requeueWord(currentWord);
+        }
+        
         showFeedback(isCorrect, currentWord);
     }
     function showFeedback(isCorrect, word) {
@@ -777,8 +836,9 @@
     // =====================================
     function setupMultipleChoice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
-        const allWords = getAllWords();
-        if(allWords.length < 4) return alert("選擇題模式需要您的總單字庫中至少有 4 個不同的單字才能產生選項喔！");
+        
+        const uniqueEn = new Set(practiceQueue.map(w => w.en));
+        if(uniqueEn.size < 4) return alert("選擇題模式需要您勾選的單字簿中「至少有 4 個不同的單字」才能產生選項喔！");
 
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
@@ -800,9 +860,18 @@
         document.getElementById('mcq-question-display').innerText = questionText;
         document.getElementById('mcq-feedback-question-copy').innerText = questionText;
 
-        const allWords = getAllWords();
+        const pool = getPracticeWords(); 
         let options = [currentWord];
-        let availableDistractors = allWords.filter(w => w.en !== currentWord.en);
+        let availableDistractors = [];
+        let seen = new Set([currentWord.en]); 
+        
+        pool.forEach(w => {
+            if (!seen.has(w.en)) {
+                seen.add(w.en);
+                availableDistractors.push(w);
+            }
+        });
+        
         availableDistractors.sort(() => Math.random() - 0.5);
         options.push(...availableDistractors.slice(0, 3));
         options.sort(() => Math.random() - 0.5);
@@ -820,7 +889,10 @@
     function checkMcqAnswer(isCorrect) {
         lastAnswerCorrect = isCorrect;
         const currentWord = practiceQueue[currentCardIndex];
-        if (!isCorrect && !isSequentialMode) practiceQueue.push(currentWord);
+        
+        if (!isCorrect && !isSequentialMode) {
+            requeueWord(currentWord);
+        }
         
         setDisplayState('mcq-interaction-area', false);
         setDisplayState('mcq-feedback-area', true, 'flex');
@@ -925,7 +997,9 @@
             msgDisplay.innerText = `發音有點不對喔...`;
             heardDisplay.innerText = `系統聽到的: "${heard}"`;
             
-            if (!isSequentialMode) practiceQueue.push(practiceQueue[currentCardIndex]);
+            if (!isSequentialMode) {
+                requeueWord(practiceQueue[currentCardIndex]);
+            }
         }
     }
 
@@ -935,6 +1009,7 @@
         currentCardIndex++;
         showNextSpeakingCard();
     }
+
 
     // =====================================
     // 4. Puzzle Mode
@@ -967,10 +1042,19 @@
     function checkPuzzleState() {
         const currentString = puzzleUserAnswer.map(o => o.char).join(''), targetString = puzzleCurrentWord.en.toLowerCase(), msg = document.getElementById('puzzle-message');
         if (puzzleUserAnswer.length === targetString.length) {
-            if (currentString === targetString) { msg.className = 'result-msg result-correct'; msg.innerText = '拼字正確！'; speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800); } 
-            else {
-                if(isSequentialMode) { msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`; speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000); } 
-                else { msg.className = 'result-msg result-wrong'; msg.innerText = '錯誤，請修正'; }
+            if (currentString === targetString) { 
+                msg.className = 'result-msg result-correct'; msg.innerText = '拼字正確！'; 
+                speakEnglishWord(puzzleCurrentWord.en); 
+                setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800); 
+            } else {
+                if(isSequentialMode) { 
+                    msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`; 
+                    speakEnglishWord(puzzleCurrentWord.en); 
+                    setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000); 
+                } else { 
+                    msg.className = 'result-msg result-wrong'; msg.innerText = '錯誤，請修正';
+                    // 拼錯不用重新安插，因為它會強迫你在畫面上拼到對為止
+                }
             }
         }
     }
