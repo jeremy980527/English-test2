@@ -12,7 +12,7 @@
             console.log("YouGlish API 準備就緒");
         };
     </script>
-    <script async src="https://youglish.com/public/emb/widget.js" charset="utf-8"></script>
+    <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
 
     <style>
         :root {
@@ -57,13 +57,14 @@
         h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
         h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; }
 
-        /* Navigation Bar 重新排版以完美容納分享按鈕 */
-        .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+        /* Navigation Bar 重新設計以完美容納分享按鈕，加入 flex-shrink 防止三星瀏覽器擠壓 */
+        .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; min-height: 40px; }
+        .nav-bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
         
         .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
         .btn-icon:hover { color: var(--accent); }
         
+        /* 獨立醒目的分享按鈕，強制不換行 */
         .share-btn { 
             font-size: 0.85rem; 
             border: 1px solid var(--accent); 
@@ -72,8 +73,8 @@
             border-radius: 20px; 
             background: transparent; 
             cursor: pointer; 
-            white-space: nowrap; 
-            display: inline-block;
+            white-space: nowrap !important; 
+            display: inline-block !important; 
             transition: all 0.2s;
         }
         .share-btn:hover { background: var(--accent); color: var(--bg-color); }
@@ -133,18 +134,20 @@
         .btn-mcq:hover { border-color: var(--accent); transform: translateY(-2px); }
         @media (max-width: 480px) { .mcq-grid { grid-template-columns: 1fr; } }
 
-        /* Speaking Mode Styles */
+        /* ======= Speaking Mode Styles ======= */
         .mic-btn { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 2.5rem; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
         .mic-btn.listening { border-color: var(--error); color: var(--error); box-shadow: 0 0 20px rgba(244, 67, 54, 0.4); animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .speaking-status { color: var(--text-sub); margin-top: 10px; height: 20px; }
         .score-circle { font-size: 3rem; font-weight: 800; color: var(--success); margin-bottom: 10px; }
 
+        /* ======= Puzzle Mode Styles ======= */
         .puzzle-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; min-height: 60px; }
         .letter-tile { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border); border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; background: var(--card-bg); color: var(--text-main); user-select: none; }
         .letter-tile:hover { border-color: var(--accent); }
         .letter-tile.empty { border: 1px dashed #333; color: transparent; cursor: default; }
         
+        /* ======= Memory Mode Styles ======= */
         .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
         .memory-card { background-color: transparent; height: 80px; perspective: 1000px; cursor: pointer; }
         .memory-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 8px; }
@@ -154,6 +157,7 @@
         .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
 
+        /* ======= YouGlish Mode Styles ======= */
         .yg-open-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none; }
         .yg-open-btn:hover { background: #2d0000; }
         .yg-open-btn .yg-btn-label { font-size: 0.85rem; color: #aaa; margin-top: 5px; }
@@ -171,6 +175,7 @@
         .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
         .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
         .import-trigger { font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -178,7 +183,7 @@
 
 <div class="container">
     <header>
-        <h1>SilenVocab</h1>
+        <h1>SilenVocab挑戰</h1>
     </header>
 
     <div id="view-home">
@@ -197,7 +202,6 @@
                     開啟「循序漸進」模式 <span style="font-size:0.8rem; color:var(--text-sub);">(錯誤即重來)</span>
                 </label>
             </div>
-
             <div class="flex-row">
                 <button class="btn" onclick="setupPractice('zh-to-en')">中翻英</button>
                 <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
@@ -396,7 +400,7 @@
 
     <div id="view-youglish" class="hidden">
         <div class="nav-bar">
-            <button class="btn-icon btn-quit" onclick="quitYouglish()">← 結束</button>
+            <button class="btn-icon btn-quit" onclick="quitPractice()">← 結束</button>
             <div class="nav-bar-right">
                 <span style="color:var(--text-sub); margin-right:5px;">YouGlish</span>
                 <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
@@ -454,15 +458,20 @@
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- Navigation ---
+    // --- Navigation (保證所有畫面都能正確切換) ---
     const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
     
     function switchView(viewName) {
         views.forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) {
-                if(v === viewName) { el.classList.remove('hidden'); el.style.setProperty('display', 'block', 'important'); } 
-                else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
+                if(v === viewName) { 
+                    el.classList.remove('hidden'); 
+                    el.style.setProperty('display', 'block', 'important'); 
+                } else { 
+                    el.classList.add('hidden'); 
+                    el.style.setProperty('display', 'none', 'important'); 
+                }
             }
         });
     }
@@ -470,16 +479,26 @@
     function setDisplayState(id, isDisplay, displayType = 'block') {
         const el = document.getElementById(id);
         if (el) {
-            if (isDisplay) { el.classList.remove('hidden'); el.style.setProperty('display', displayType, 'important'); } 
-            else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
+            if (isDisplay) { 
+                el.classList.remove('hidden'); 
+                el.style.setProperty('display', displayType, 'important'); 
+            } else { 
+                el.classList.add('hidden'); 
+                el.style.setProperty('display', 'none', 'important'); 
+            }
         }
     }
     
     function goHome() { 
-        updateHomeSummary(); renderSettings(); switchView('home'); 
+        updateHomeSummary(); 
+        renderSettings(); 
+        switchView('home'); 
     }
     
-    function openBookSelect() { renderBookList(); switchView('book-select'); }
+    function openBookSelect() {
+        renderBookList();
+        switchView('book-select');
+    }
     
     function quitPractice() { 
         if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
@@ -608,6 +627,7 @@
         completedCount = 0;
         currentCardIndex = 0;
 
+        // UI 調整：隱藏分享按鈕，修改退出文字
         document.querySelectorAll('.share-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
         document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '🏠 離開');
 
@@ -753,7 +773,7 @@
     function deleteWord(index) { books.find(b => b.id === currentBookId).words.splice(index, 1); saveData(); renderWordList(); }
     
     function getPracticeWords() {
-        if (selectedBookIds.size === 0) { alert("請先進入「選擇單字簿」勾選你要練習的範圍喔！"); return []; }
+        if (selectedBookIds.size === 0) { alert("請先進入「選擇與管理單字簿」勾選你要練習的範圍喔！"); return []; }
         let queue = []; books.forEach(book => { if (selectedBookIds.has(book.id)) queue.push(...book.words); });
         if (queue.length === 0) { alert("選定的單字簿裡面沒有任何單字！"); return []; } 
         return queue;
@@ -837,14 +857,14 @@
     document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
 
     // =====================================
-    // 2. Multiple Choice Mode
+    // 2. Multiple Choice Mode (精準抓取干擾項)
     // =====================================
     function setupMultipleChoice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
         
         const pool = getSelectedWordsPool();
         const uniqueEn = new Set(pool.map(w => w.en));
-        if(uniqueEn.size < 4) return alert("選擇題模式需要您的測驗題庫中「至少有 4 個不同的單字」才能產生選項喔！");
+        if(uniqueEn.size < 4) return alert("選擇題模式需要您勾選的單字簿中「至少有 4 個不重複的單字」才能產生選項喔！");
 
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
