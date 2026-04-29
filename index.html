@@ -57,27 +57,11 @@
         h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
         h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; }
 
-        /* Navigation Bar 重新設計以容納分享按鈕 */
         .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-bar-right { display: flex; align-items: center; flex: 1; justify-content: flex-end; gap: 10px; }
-        
-        .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
+        .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; }
         .btn-icon:hover { color: var(--accent); }
-        
-        /* 獨立醒目的分享按鈕 */
-        .share-btn { 
-            font-size: 0.85rem; 
-            border: 1px solid var(--accent); 
-            color: var(--accent); 
-            padding: 5px 12px; 
-            border-radius: 20px; 
-            background: transparent; 
-            cursor: pointer; 
-            white-space: nowrap; 
-            display: inline-block;
-            transition: all 0.2s;
-        }
-        .share-btn:hover { background: var(--accent); color: var(--bg-color); }
+        .share-btn { font-size: 0.9rem; margin-left: 15px; border: 1px solid var(--border); padding: 5px 10px; border-radius: 20px; background: var(--card-bg); }
+        .share-btn:hover { border-color: var(--accent); color: var(--accent); }
 
         .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; }
         .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
@@ -198,6 +182,7 @@
                     開啟「循序漸進」模式 <span style="font-size:0.8rem; color:var(--text-sub);">(錯誤即重來)</span>
                 </label>
             </div>
+
             <div class="flex-row">
                 <button class="btn" onclick="setupPractice('zh-to-en')">中翻英</button>
                 <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
@@ -278,10 +263,10 @@
     <div id="view-practice" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
-            <div class="nav-bar-right">
+            <div style="display:flex; align-items:center;">
                 <span id="mode-display" style="color:var(--text-sub)"></span>
                 <span id="sequential-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友對戰">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -311,10 +296,10 @@
     <div id="view-mcq" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
-            <div class="nav-bar-right">
+            <div style="display:flex; align-items:center;">
                 <span id="mcq-mode-display" style="color:var(--text-sub)">選擇題</span>
                 <span id="mcq-seq-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友對戰">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -339,9 +324,9 @@
     <div id="view-speaking" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
-            <div class="nav-bar-right">
-                <span style="color:#4caf50">口說挑戰</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+            <div style="display:flex; align-items:center;">
+                <span style="color:#4caf50">口說挑戰模式</span>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友挑戰">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -365,10 +350,10 @@
     <div id="view-puzzle" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
-            <div class="nav-bar-right">
+            <div style="display:flex; align-items:center;">
                 <span style="color:var(--text-sub)">拼圖模式</span>
                 <span id="puzzle-seq-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友挑戰">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -384,9 +369,9 @@
     <div id="view-memory" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
-            <div class="nav-bar-right">
+            <div style="display:flex; align-items:center;">
                 <span style="color:var(--text-sub)">翻卡記憶</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友挑戰">🔗 分享</button>
             </div>
         </div>
         <div style="text-align:center; color:var(--text-sub); margin-bottom:10px;">找出配對的卡片</div>
@@ -396,10 +381,10 @@
 
     <div id="view-youglish" class="hidden">
         <div class="nav-bar">
-            <button class="btn-icon btn-quit" onclick="quitYouglish()">← 結束沉浸</button>
-            <div class="nav-bar-right">
+            <button class="btn-icon btn-quit" onclick="quitPractice()">← 結束</button>
+            <div style="display:flex; align-items:center;">
                 <span style="color:var(--text-sub)">YouGlish 模式</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="share-btn" onclick="shareCurrentQuiz()" title="分享給朋友挑戰">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area" style="margin-top: 10px;">
@@ -487,6 +472,8 @@
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
             document.querySelectorAll('.share-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
+            // 🔥修復：真正退出訪客模式時，清空網址列，避免重新整理又回到測驗
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
         goHome(); 
     }
@@ -567,7 +554,7 @@
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("✅ 測驗連結已複製到剪貼簿！快貼給朋友挑戰吧！");
+                    alert("✅ 測驗連結已複製到剪貼簿！快貼給朋友挑戰吧！\n(此連結可無限次重複使用喔)");
                 }).catch(err => {
                     prompt("請手動複製以下連結分享給朋友：", shareUrl);
                 });
@@ -580,13 +567,13 @@
     }
 
     // --- 載入時檢查是否為訪客模式 ---
+    // 🔥修復：保留網址上的 ?share= 讓分享更穩定
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         const shareCode = urlParams.get('share');
         if (shareCode) {
             try {
                 const decoded = JSON.parse(decodeURIComponent(atob(shareCode)));
-                window.history.replaceState({}, document.title, window.location.pathname);
                 startGuestMode(decoded);
                 return true;
             } catch(e) {
@@ -1103,7 +1090,7 @@
         quitPractice();
     }
 
-    // Initial Load Check (如果是分享連結，就不會去首頁)
+    // Initial Load Check
     if (!checkShareUrl()) {
         goHome(); 
     }
