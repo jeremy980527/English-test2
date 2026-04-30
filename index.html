@@ -64,7 +64,6 @@
         .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
         .btn-icon:hover { color: var(--accent); }
         
-        /* 匯出/分享按鈕 */
         .export-quiz-btn { 
             font-size: 0.85rem; 
             border: 1px solid var(--accent); 
@@ -204,6 +203,7 @@
                     開啟「循序漸進」模式 <span style="font-size:0.8rem; color:var(--text-sub);">(錯誤即重來)</span>
                 </label>
             </div>
+
             <div class="flex-row">
                 <button class="btn" onclick="setupPractice('zh-to-en')">中翻英</button>
                 <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
@@ -493,7 +493,7 @@
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
             document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
-            // 不再清除網址列參數，保留無限次分享能力
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
         goHome(); 
     }
@@ -551,9 +551,10 @@
         quitPractice();
     }
 
-    // --- 分享測驗邏輯 (Share Logic - 修復 URL Encoding) ---
+    // --- ★終極分享加密邏輯 (防網址超長截斷) ---
     function shareCurrentQuiz() {
         let wordsToShare = practiceQueue;
+        // 防呆：如果還是太多，最多限制50題
         if(practiceQueue.length > 50) {
             alert("提醒：為了確保網址能正常在 LINE/FB 分享，系統將只截取前 50 個單字作為測驗包！");
             wordsToShare = practiceQueue.slice(0, 50);
@@ -566,17 +567,28 @@
         else if (!document.getElementById('view-memory').classList.contains('hidden')) view = 'memory';
         else if (!document.getElementById('view-youglish').classList.contains('hidden')) view = 'youglish';
 
-        const shareData = { v: view, m: currentMode, s: isSequentialMode, w: wordsToShare };
+        // 1. 極簡化資料結構 (陣列化，去除多餘的 object keys)
+        // format: [view, mode, isSeq (1/0), [[en, zh1, zh2...], [en, zh1...]]]
+        const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh]);
+        const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
 
         try {
-            // 🔥 雙層安全編碼：將 btoa 的產出再次 URL 編碼，確保 + 號變 %2B
-            const base64Data = btoa(encodeURIComponent(JSON.stringify(shareData)));
-            const encoded = encodeURIComponent(base64Data);
-            const shareUrl = window.location.origin + window.location.pathname + '?share=' + encoded;
+            // 2. 將 JSON 轉字串
+            const jsonStr = JSON.stringify(shareData);
+            
+            // 3. 安全轉 Base64 (解決中文字元的 UTF-8 問題，大幅縮小體積)
+            const binaryStr = unescape(encodeURIComponent(jsonStr));
+            const base64 = btoa(binaryStr);
+            
+            // 4. JWT 風格的 Base64URL 替換，完全避開 URL 的 + 和 / 被亂轉的風險
+            const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            
+            // 使用更短的參數名稱 s
+            const shareUrl = window.location.origin + window.location.pathname + '?s=' + safeBase64;
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("✅ 測驗連結已複製到剪貼簿！快貼給朋友挑戰吧！\n(此連結可無限次重複使用喔)");
+                    alert("✅ 測驗連結已複製到剪貼簿！快貼給朋友挑戰吧！\n(此連結可無限次重複使用)");
                 }).catch(err => {
                     prompt("請手動複製以下連結分享給朋友：", shareUrl);
                 });
@@ -584,6 +596,7 @@
                 prompt("請手動複製以下連結分享給朋友：", shareUrl);
             }
         } catch(e) {
+            console.error(e);
             alert("產生分享連結失敗");
         }
     }
@@ -591,17 +604,42 @@
     // --- 載入時檢查是否為訪客模式 ---
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
-        let shareCode = urlParams.get('share');
+        // 相容舊版 ?share= 與新版 ?s=
+        let shareCode = urlParams.get('s') || urlParams.get('share');
+        
         if (shareCode) {
             try {
-                // 🔥 自動修復：把被瀏覽器誤判成空格的符號還原回 + 號
+                // 1. 舊版相容性：處理舊版殘留的空白
                 shareCode = shareCode.replace(/ /g, '+');
-                const decoded = JSON.parse(decodeURIComponent(atob(shareCode)));
-                startGuestMode(decoded);
+                
+                // 2. Base64URL 還原為標準 Base64
+                shareCode = shareCode.replace(/-/g, '+').replace(/_/g, '/');
+                while (shareCode.length % 4) {
+                    shareCode += '=';
+                }
+                
+                // 3. 解碼 (二進位轉回 UTF-8)
+                const jsonStr = decodeURIComponent(escape(atob(shareCode)));
+                const decoded = JSON.parse(jsonStr);
+                
+                let finalData;
+                // 判斷是舊版物件格式還是新版陣列壓縮格式
+                if (Array.isArray(decoded)) {
+                    finalData = {
+                        v: decoded[0],
+                        m: decoded[1],
+                        s: decoded[2] === 1,
+                        w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) }))
+                    };
+                } else {
+                    finalData = decoded; // 舊版
+                }
+
+                startGuestMode(finalData);
                 return true;
             } catch(e) {
                 console.error(e);
-                alert("❌ 無效或過期的分享連結！");
+                alert("❌ 無效或過期的分享連結！(可能是網址在複製時被截斷了)");
                 return false;
             }
         }
