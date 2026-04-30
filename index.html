@@ -13,6 +13,8 @@
         };
     </script>
     <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
+    
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
     <style>
         :root {
@@ -493,6 +495,7 @@
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
             document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
+            // 退出訪客模式時，清空網址列，避免重新整理又回到測驗
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         goHome(); 
@@ -551,12 +554,17 @@
         quitPractice();
     }
 
-    // --- ★終極分享加密邏輯 (防網址超長截斷) ---
+    // --- 分享測驗邏輯 (LZ-String 壓縮算法) ---
     function shareCurrentQuiz() {
+        if (typeof LZString === 'undefined') {
+            alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！");
+            return;
+        }
+
         let wordsToShare = practiceQueue;
-        // 防呆：如果還是太多，最多限制50題
+        // 防呆：如果還是太多，最多限制50題，保證 IG 絕對過關
         if(practiceQueue.length > 50) {
-            alert("提醒：為了確保網址能正常在 LINE/FB 分享，系統將只截取前 50 個單字作為測驗包！");
+            alert("提醒：為了確保網址能正常在 Instagram / LINE 分享，系統將只截取前 50 個單字作為測驗包！");
             wordsToShare = practiceQueue.slice(0, 50);
         }
         
@@ -567,28 +575,21 @@
         else if (!document.getElementById('view-memory').classList.contains('hidden')) view = 'memory';
         else if (!document.getElementById('view-youglish').classList.contains('hidden')) view = 'youglish';
 
-        // 1. 極簡化資料結構 (陣列化，去除多餘的 object keys)
-        // format: [view, mode, isSeq (1/0), [[en, zh1, zh2...], [en, zh1...]]]
+        // 1. 極簡化資料結構
         const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh]);
         const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
 
         try {
-            // 2. 將 JSON 轉字串
             const jsonStr = JSON.stringify(shareData);
             
-            // 3. 安全轉 Base64 (解決中文字元的 UTF-8 問題，大幅縮小體積)
-            const binaryStr = unescape(encodeURIComponent(jsonStr));
-            const base64 = btoa(binaryStr);
+            // 2. 呼叫 LZString 強力壓縮，並轉成適合 URL 的字串
+            const compressedUrlSafe = LZString.compressToEncodedURIComponent(jsonStr);
             
-            // 4. JWT 風格的 Base64URL 替換，完全避開 URL 的 + 和 / 被亂轉的風險
-            const safeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            
-            // 使用更短的參數名稱 s
-            const shareUrl = window.location.origin + window.location.pathname + '?s=' + safeBase64;
+            const shareUrl = window.location.origin + window.location.pathname + '?lz=' + compressedUrlSafe;
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert("✅ 測驗連結已複製到剪貼簿！快貼給朋友挑戰吧！\n(此連結可無限次重複使用)");
+                    alert("✅ 測驗連結已複製到剪貼簿！網址已高度壓縮，發 IG 限動絕對沒問題！");
                 }).catch(err => {
                     prompt("請手動複製以下連結分享給朋友：", shareUrl);
                 });
@@ -604,42 +605,57 @@
     // --- 載入時檢查是否為訪客模式 ---
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
-        // 相容舊版 ?share= 與新版 ?s=
-        let shareCode = urlParams.get('s') || urlParams.get('share');
         
-        if (shareCode) {
+        // 優先檢查新的 LZ 壓縮網址
+        const lzCode = urlParams.get('lz');
+        if (lzCode) {
             try {
-                // 1. 舊版相容性：處理舊版殘留的空白
-                shareCode = shareCode.replace(/ /g, '+');
-                
-                // 2. Base64URL 還原為標準 Base64
-                shareCode = shareCode.replace(/-/g, '+').replace(/_/g, '/');
-                while (shareCode.length % 4) {
-                    shareCode += '=';
+                if (typeof LZString === 'undefined') {
+                    // 如果 LZString 還沒載入好，延遲 100ms 再試一次
+                    setTimeout(checkShareUrl, 100);
+                    return true; 
                 }
                 
-                // 3. 解碼 (二進位轉回 UTF-8)
-                const jsonStr = decodeURIComponent(escape(atob(shareCode)));
+                const jsonStr = LZString.decompressFromEncodedURIComponent(lzCode);
+                if (!jsonStr) throw new Error("解壓縮失敗");
+                
                 const decoded = JSON.parse(jsonStr);
-                
-                let finalData;
-                // 判斷是舊版物件格式還是新版陣列壓縮格式
-                if (Array.isArray(decoded)) {
-                    finalData = {
-                        v: decoded[0],
-                        m: decoded[1],
-                        s: decoded[2] === 1,
-                        w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) }))
-                    };
-                } else {
-                    finalData = decoded; // 舊版
-                }
-
+                const finalData = {
+                    v: decoded[0],
+                    m: decoded[1],
+                    s: decoded[2] === 1,
+                    w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) }))
+                };
                 startGuestMode(finalData);
                 return true;
             } catch(e) {
                 console.error(e);
-                alert("❌ 無效或過期的分享連結！(可能是網址在複製時被截斷了)");
+                alert("❌ 無效或過期的分享連結！");
+                return false;
+            }
+        }
+        
+        // 為了相容，保留舊版未壓縮的解析邏輯
+        let shareCode = urlParams.get('s') || urlParams.get('share');
+        if (shareCode) {
+            try {
+                shareCode = shareCode.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+                while (shareCode.length % 4) shareCode += '=';
+                
+                const jsonStr = decodeURIComponent(escape(atob(shareCode)));
+                const decoded = JSON.parse(jsonStr);
+                
+                let finalData;
+                if (Array.isArray(decoded)) {
+                    finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) };
+                } else {
+                    finalData = decoded;
+                }
+                startGuestMode(finalData);
+                return true;
+            } catch(e) {
+                console.error(e);
+                alert("❌ 無效或過期的舊版分享連結！");
                 return false;
             }
         }
@@ -1108,7 +1124,7 @@
     }
 
     // =====================================
-    // 6. YouGlish Mode (跳轉連結)
+    // 6. YouGlish Mode
     // =====================================
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
@@ -1152,10 +1168,15 @@
         quitPractice();
     }
 
-    // Initial Load Check
-    if (!checkShareUrl()) {
-        goHome(); 
-    }
+    // 啟動入口
+    window.onload = () => {
+        // 先等一下，確保 LZString 腳本載入完成
+        setTimeout(() => {
+            if (!checkShareUrl()) {
+                goHome(); 
+            }
+        }, 150); // 給 CDN 一點載入時間
+    };
 </script>
 
 </body>
