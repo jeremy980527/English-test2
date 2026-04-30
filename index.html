@@ -64,7 +64,7 @@
         .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
         .btn-icon:hover { color: var(--accent); }
         
-        /* 避開 AdBlock 黑名單的命名，並增強權重 */
+        /* 匯出/分享按鈕 */
         .export-quiz-btn { 
             font-size: 0.85rem; 
             border: 1px solid var(--accent); 
@@ -493,7 +493,7 @@
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
             document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // 不再清除網址列參數，保留無限次分享能力
         }
         goHome(); 
     }
@@ -551,7 +551,7 @@
         quitPractice();
     }
 
-    // --- 分享測驗邏輯 (Share Logic) ---
+    // --- 分享測驗邏輯 (Share Logic - 修復 URL Encoding) ---
     function shareCurrentQuiz() {
         let wordsToShare = practiceQueue;
         if(practiceQueue.length > 50) {
@@ -569,7 +569,9 @@
         const shareData = { v: view, m: currentMode, s: isSequentialMode, w: wordsToShare };
 
         try {
-            const encoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
+            // 🔥 雙層安全編碼：將 btoa 的產出再次 URL 編碼，確保 + 號變 %2B
+            const base64Data = btoa(encodeURIComponent(JSON.stringify(shareData)));
+            const encoded = encodeURIComponent(base64Data);
             const shareUrl = window.location.origin + window.location.pathname + '?share=' + encoded;
             
             if (navigator.clipboard && window.isSecureContext) {
@@ -589,13 +591,16 @@
     // --- 載入時檢查是否為訪客模式 ---
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
-        const shareCode = urlParams.get('share');
+        let shareCode = urlParams.get('share');
         if (shareCode) {
             try {
+                // 🔥 自動修復：把被瀏覽器誤判成空格的符號還原回 + 號
+                shareCode = shareCode.replace(/ /g, '+');
                 const decoded = JSON.parse(decodeURIComponent(atob(shareCode)));
                 startGuestMode(decoded);
                 return true;
             } catch(e) {
+                console.error(e);
                 alert("❌ 無效或過期的分享連結！");
                 return false;
             }
@@ -844,7 +849,7 @@
     document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
 
     // =====================================
-    // 2. Multiple Choice Mode (精準抓取干擾項)
+    // 2. Multiple Choice Mode
     // =====================================
     function setupMultipleChoice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
@@ -1117,4 +1122,3 @@
 
 </body>
 </html>
-
