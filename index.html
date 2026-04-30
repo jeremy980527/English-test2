@@ -57,15 +57,15 @@
         h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
         h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; }
 
-        /* Navigation Bar 重新設計以完美容納分享按鈕，加入 flex-shrink 防止三星瀏覽器擠壓 */
+        /* Navigation Bar */
         .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; min-height: 40px; }
         .nav-bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
         
         .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
         .btn-icon:hover { color: var(--accent); }
         
-        /* 獨立醒目的分享按鈕，強制不換行 */
-        .share-btn { 
+        /* 避開 AdBlock 黑名單的命名，並增強權重 */
+        .export-quiz-btn { 
             font-size: 0.85rem; 
             border: 1px solid var(--accent); 
             color: var(--accent); 
@@ -75,9 +75,12 @@
             cursor: pointer; 
             white-space: nowrap !important; 
             display: inline-block !important; 
+            visibility: visible !important;
+            opacity: 1 !important;
             transition: all 0.2s;
+            z-index: 10;
         }
-        .share-btn:hover { background: var(--accent); color: var(--bg-color); }
+        .export-quiz-btn:hover { background: var(--accent); color: var(--bg-color); }
 
         .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; }
         .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
@@ -175,7 +178,6 @@
         .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
         .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
         .import-trigger { font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -285,7 +287,7 @@
             <div class="nav-bar-right">
                 <span id="mode-display" style="color:var(--text-sub)"></span>
                 <span id="sequential-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -318,7 +320,7 @@
             <div class="nav-bar-right">
                 <span id="mcq-mode-display" style="color:var(--text-sub)">選擇題</span>
                 <span id="mcq-seq-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -345,7 +347,7 @@
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
             <div class="nav-bar-right">
                 <span style="color:#4caf50; margin-right:5px;">口說挑戰</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -372,7 +374,7 @@
             <div class="nav-bar-right">
                 <span style="color:var(--text-sub)">拼圖</span>
                 <span id="puzzle-seq-badge" class="mode-badge hidden">循序漸進</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area">
@@ -390,7 +392,7 @@
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
             <div class="nav-bar-right">
                 <span style="color:var(--text-sub); margin-right:5px;">翻卡</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div style="text-align:center; color:var(--text-sub); margin-bottom:10px;">找出配對的卡片</div>
@@ -403,7 +405,7 @@
             <button class="btn-icon btn-quit" onclick="quitPractice()">← 結束</button>
             <div class="nav-bar-right">
                 <span style="color:var(--text-sub); margin-right:5px;">YouGlish</span>
-                <button class="share-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
+                <button class="export-quiz-btn" onclick="shareCurrentQuiz()">🔗 分享</button>
             </div>
         </div>
         <div class="practice-area" style="margin-top: 10px;">
@@ -458,20 +460,15 @@
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- Navigation (保證所有畫面都能正確切換) ---
+    // --- Navigation ---
     const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
     
     function switchView(viewName) {
         views.forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) {
-                if(v === viewName) { 
-                    el.classList.remove('hidden'); 
-                    el.style.setProperty('display', 'block', 'important'); 
-                } else { 
-                    el.classList.add('hidden'); 
-                    el.style.setProperty('display', 'none', 'important'); 
-                }
+                if(v === viewName) { el.classList.remove('hidden'); el.style.setProperty('display', 'block', 'important'); } 
+                else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
             }
         });
     }
@@ -479,33 +476,23 @@
     function setDisplayState(id, isDisplay, displayType = 'block') {
         const el = document.getElementById(id);
         if (el) {
-            if (isDisplay) { 
-                el.classList.remove('hidden'); 
-                el.style.setProperty('display', displayType, 'important'); 
-            } else { 
-                el.classList.add('hidden'); 
-                el.style.setProperty('display', 'none', 'important'); 
-            }
+            if (isDisplay) { el.classList.remove('hidden'); el.style.setProperty('display', displayType, 'important'); } 
+            else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
         }
     }
     
     function goHome() { 
-        updateHomeSummary(); 
-        renderSettings(); 
-        switchView('home'); 
+        updateHomeSummary(); renderSettings(); switchView('home'); 
     }
     
-    function openBookSelect() {
-        renderBookList();
-        switchView('book-select');
-    }
+    function openBookSelect() { renderBookList(); switchView('book-select'); }
     
     function quitPractice() { 
         if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
         if (isGuestMode) {
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
-            document.querySelectorAll('.share-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
+            document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         goHome(); 
@@ -628,7 +615,7 @@
         currentCardIndex = 0;
 
         // UI 調整：隱藏分享按鈕，修改退出文字
-        document.querySelectorAll('.share-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
+        document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
         document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '🏠 離開');
 
         if (data.v === 'mcq') {
@@ -1130,3 +1117,4 @@
 
 </body>
 </html>
+
