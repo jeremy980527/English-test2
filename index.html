@@ -93,8 +93,8 @@
         .word-en { font-weight: 600; color: var(--accent); }
         .word-zh { color: var(--text-sub); font-size: 0.9rem; }
 
-        input[type="text"], textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-main); padding: 10px 0; font-size: 1rem; margin-bottom: 20px; transition: border-color 0.3s; font-family: var(--font-family); }
-        input[type="text"]:focus, textarea:focus { border-bottom-color: var(--accent); }
+        input[type="text"], input[type="number"], textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-main); padding: 10px 0; font-size: 1rem; margin-bottom: 20px; transition: border-color 0.3s; font-family: var(--font-family); }
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus { border-bottom-color: var(--accent); }
         textarea { border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 120px; margin-top: 10px; font-size: 0.9rem; line-height: 1.5; resize: vertical; }
 
         .btn { background-color: var(--accent); color: var(--bg-color); border: none; padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer; font-size: 0.9rem; width: 100%; margin-top: 10px; transition: background 0.3s; }
@@ -112,14 +112,7 @@
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
-        #feedback-area, #mcq-feedback-area, #speaking-feedback-area { 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            animation: fadeIn 0.3s ease; 
-            width: 100%; 
-        }
+        #feedback-area, #mcq-feedback-area, #speaking-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
         
         .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
         .icon-correct { color: var(--success); }
@@ -169,6 +162,12 @@
         .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
 
+        /* ======= Daily GSAT Styles ======= */
+        .daily-list { max-height: 400px; overflow-y: auto; text-align: left; padding: 10px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .daily-item { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 10px 0; }
+        .daily-item:last-child { border-bottom: none; }
+        select { width: 100%; padding: 12px; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; margin-bottom: 15px; outline: none; }
+
         .group-title { font-size: 1.1rem; color: var(--accent); margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #333; text-align: left; }
 
         .hidden { display: none !important; }
@@ -195,6 +194,7 @@
                 尚未選擇單字簿
             </div>
             <button class="btn btn-outline" style="border-color: var(--accent); color: var(--accent);" onclick="openBookSelect()">📚 選擇與管理單字簿</button>
+            <button id="btn-daily-gsat" class="btn btn-outline" style="border-color: #ff9800; color: #ff9800; margin-top: 10px;" onclick="openDailyGsat()">📅 領取今日學測單字</button>
         </div>
         
         <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -229,6 +229,10 @@
             <div class="card checkbox-wrapper" onclick="togglePronunciation()">
                 <input type="checkbox" id="auto-pronounce-toggle" style="pointer-events: none;">
                 <label for="auto-pronounce-toggle" style="flex:1;">自動朗讀英文單字 (建議開啟)</label>
+            </div>
+            <div class="card flex-row" style="align-items: center; justify-content: space-between;">
+                <label style="color:var(--text-main);">每日派發學測單字數量：</label>
+                <input type="number" id="daily-count-input" min="1" max="100" style="width: 60px; margin:0; padding: 5px; text-align: center; border: 1px solid var(--border); border-radius: 5px;" onchange="saveDailyCount()">
             </div>
         </div>
     </div>
@@ -281,6 +285,44 @@
             <button class="btn btn-small" onclick="addWord()">加入單字</button>
         </div>
         <div id="word-list"></div>
+    </div>
+
+    <div id="view-daily" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="goHome()">← 返回首頁</button>
+            <h2 style="color: #ff9800;">今日學測單字</h2>
+            <div style="width: 60px;"></div>
+        </div>
+
+        <div id="daily-content-area">
+            <p style="color:var(--text-sub); margin-bottom: 15px; font-size: 0.9rem;">
+                系統已從網路字庫為您抽取。並自動避開你單字簿內擁有的單字！
+            </p>
+            
+            <div class="daily-list" id="daily-word-list">
+                </div>
+
+            <div class="card" style="border-color: var(--accent);">
+                <h3 style="margin-top: 0; font-size: 1.1rem;">📥 儲存至單字簿</h3>
+                <select id="daily-book-select" onchange="toggleDailyNewFields()">
+                    <option value="new">➕ 建立全新單字簿</option>
+                    </select>
+                
+                <div id="daily-new-fields">
+                    <input type="text" id="daily-new-name" placeholder="新單字簿名稱 (例：2026-05-07 每日單字)">
+                    <input type="text" id="daily-new-tag" placeholder="標籤分類 (例：每日任務)">
+                </div>
+
+                <button class="btn" onclick="saveDailyWordsToBook()">確認儲存</button>
+            </div>
+        </div>
+
+        <div id="daily-empty-area" class="hidden" style="text-align: center; padding: 40px 0;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+            <h2 style="color: var(--success);">今日任務已完成！</h2>
+            <p style="color: var(--text-sub);">你已經將今天的單字存入單字簿了。<br>快去「開始練習」複習它們吧！</p>
+            <button class="btn" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="goHome()">回首頁</button>
+        </div>
     </div>
 
     <div id="view-practice" class="hidden">
@@ -437,6 +479,11 @@
     let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
     let isSequentialMode = false;
     
+    // Daily GSAT Variables
+    let dailyGsatCount = JSON.parse(localStorage.getItem('sv_daily_count')) || 10;
+    let dailyCache = JSON.parse(localStorage.getItem('sv_daily_cache')) || null;
+    let currentDailyWords = []; 
+
     let currentBookId = null, practiceQueue = [], currentCardIndex = 0;
     let initialQueueLength = 0, completedCount = 0;
     let currentMode = '', selectedBookIds = new Set(), lastAnswerCorrect = false;
@@ -463,7 +510,7 @@
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
     // --- Navigation ---
-    const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
+    const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'daily'];
     
     function switchView(viewName) {
         views.forEach(v => {
@@ -495,7 +542,6 @@
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
             document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
-            // 退出訪客模式時，清空網址列，避免重新整理又回到測驗
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         goHome(); 
@@ -504,9 +550,16 @@
     function renderSettings() {
         const pToggle = document.getElementById('auto-pronounce-toggle'); if (pToggle) pToggle.checked = autoPronounce;
         const sToggle = document.getElementById('sequential-toggle'); if (sToggle) sToggle.checked = isSequentialMode;
+        const dCount = document.getElementById('daily-count-input'); if (dCount) dCount.value = dailyGsatCount;
     }
     function togglePronunciation() { autoPronounce = !autoPronounce; localStorage.setItem('sv_autoPronounce', autoPronounce); renderSettings(); }
     function toggleSequential() { isSequentialMode = !isSequentialMode; renderSettings(); }
+    function saveDailyCount() {
+        let val = parseInt(document.getElementById('daily-count-input').value);
+        if (isNaN(val) || val < 1) val = 10;
+        dailyGsatCount = val;
+        localStorage.setItem('sv_daily_count', dailyGsatCount);
+    }
     
     function speakEnglishWord(word) {
         if (!autoPronounce && !window.forceSpeak) return; 
@@ -537,7 +590,7 @@
         }
     }
 
-    // --- 測驗結束共用邏輯 (支援訪客儲存) ---
+    // --- 測驗結束共用邏輯 ---
     function endQuiz() {
         if (isGuestMode) {
             if (confirm("測驗結束！🎉\n\n你要將這份「朋友分享的單字庫」儲存到你的 SilenVocab 嗎？")) {
@@ -556,18 +609,12 @@
 
     // --- 分享測驗邏輯 (LZ-String 壓縮算法) ---
     function shareCurrentQuiz() {
-        if (typeof LZString === 'undefined') {
-            alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！");
-            return;
-        }
-
+        if (typeof LZString === 'undefined') { alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); return; }
         let wordsToShare = practiceQueue;
-        // 防呆：如果還是太多，最多限制50題，保證 IG 絕對過關
         if(practiceQueue.length > 50) {
             alert("提醒：為了確保網址能正常在 Instagram / LINE 分享，系統將只截取前 50 個單字作為測驗包！");
             wordsToShare = practiceQueue.slice(0, 50);
         }
-        
         let view = 'practice';
         if (!document.getElementById('view-mcq').classList.contains('hidden')) view = 'mcq';
         else if (!document.getElementById('view-speaking').classList.contains('hidden')) view = 'speaking';
@@ -575,137 +622,189 @@
         else if (!document.getElementById('view-memory').classList.contains('hidden')) view = 'memory';
         else if (!document.getElementById('view-youglish').classList.contains('hidden')) view = 'youglish';
 
-        // 1. 極簡化資料結構
         const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh]);
         const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
 
         try {
             const jsonStr = JSON.stringify(shareData);
-            
-            // 2. 呼叫 LZString 強力壓縮，並轉成適合 URL 的字串
             const compressedUrlSafe = LZString.compressToEncodedURIComponent(jsonStr);
-            
             const shareUrl = window.location.origin + window.location.pathname + '?lz=' + compressedUrlSafe;
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     alert("✅ 測驗連結已複製到剪貼簿！網址已高度壓縮，發 IG 限動絕對沒問題！");
-                }).catch(err => {
-                    prompt("請手動複製以下連結分享給朋友：", shareUrl);
-                });
+                }).catch(err => { prompt("請手動複製以下連結分享給朋友：", shareUrl); });
             } else {
                 prompt("請手動複製以下連結分享給朋友：", shareUrl);
             }
-        } catch(e) {
-            console.error(e);
-            alert("產生分享連結失敗");
-        }
+        } catch(e) { console.error(e); alert("產生分享連結失敗"); }
     }
 
     // --- 載入時檢查是否為訪客模式 ---
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
-        
-        // 優先檢查新的 LZ 壓縮網址
         const lzCode = urlParams.get('lz');
         if (lzCode) {
             try {
-                if (typeof LZString === 'undefined') {
-                    // 如果 LZString 還沒載入好，延遲 100ms 再試一次
-                    setTimeout(checkShareUrl, 100);
-                    return true; 
-                }
-                
+                if (typeof LZString === 'undefined') { setTimeout(checkShareUrl, 100); return true; }
                 const jsonStr = LZString.decompressFromEncodedURIComponent(lzCode);
                 if (!jsonStr) throw new Error("解壓縮失敗");
-                
                 const decoded = JSON.parse(jsonStr);
-                const finalData = {
-                    v: decoded[0],
-                    m: decoded[1],
-                    s: decoded[2] === 1,
-                    w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) }))
-                };
-                startGuestMode(finalData);
-                return true;
-            } catch(e) {
-                console.error(e);
-                alert("❌ 無效或過期的分享連結！");
-                return false;
-            }
+                const finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) };
+                startGuestMode(finalData); return true;
+            } catch(e) { console.error(e); alert("❌ 無效或過期的分享連結！"); return false; }
         }
         
-        // 為了相容，保留舊版未壓縮的解析邏輯
         let shareCode = urlParams.get('s') || urlParams.get('share');
         if (shareCode) {
             try {
                 shareCode = shareCode.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
                 while (shareCode.length % 4) shareCode += '=';
-                
                 const jsonStr = decodeURIComponent(escape(atob(shareCode)));
                 const decoded = JSON.parse(jsonStr);
-                
                 let finalData;
-                if (Array.isArray(decoded)) {
-                    finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) };
-                } else {
-                    finalData = decoded;
-                }
-                startGuestMode(finalData);
-                return true;
-            } catch(e) {
-                console.error(e);
-                alert("❌ 無效或過期的舊版分享連結！");
-                return false;
-            }
+                if (Array.isArray(decoded)) { finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) }; } 
+                else { finalData = decoded; }
+                startGuestMode(finalData); return true;
+            } catch(e) { console.error(e); alert("❌ 無效或過期的舊版分享連結！"); return false; }
         }
         return false;
     }
 
     function startGuestMode(data) {
-        isGuestMode = true;
-        guestWords = data.w;
-        practiceQueue = [...data.w];
-        currentMode = data.m;
-        isSequentialMode = data.s;
-        
-        initialQueueLength = practiceQueue.length;
-        completedCount = 0;
-        currentCardIndex = 0;
+        isGuestMode = true; guestWords = data.w; practiceQueue = [...data.w]; currentMode = data.m; isSequentialMode = data.s;
+        initialQueueLength = practiceQueue.length; completedCount = 0; currentCardIndex = 0;
 
-        // UI 調整：隱藏分享按鈕，修改退出文字
         document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
         document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '🏠 離開');
 
         if (data.v === 'mcq') {
             document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (訪客對戰)';
-            setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block');
-            switchView('mcq'); showMcqNextCard();
-        } else if (data.v === 'speaking') {
-            switchView('speaking'); showNextSpeakingCard();
-        } else if (data.v === 'puzzle') {
-            setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block');
-            switchView('puzzle'); loadPuzzleLevel();
-        } else if (data.v === 'memory') {
-            setupMemoryModeGuest();
-        } else if (data.v === 'youglish') {
-            switchView('youglish'); loadYouglishCard();
+            setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); switchView('mcq'); showMcqNextCard();
+        } else if (data.v === 'speaking') { switchView('speaking'); showNextSpeakingCard();
+        } else if (data.v === 'puzzle') { setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); switchView('puzzle'); loadPuzzleLevel();
+        } else if (data.v === 'memory') { setupMemoryModeGuest();
+        } else if (data.v === 'youglish') { switchView('youglish'); loadYouglishCard();
         } else {
             document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (訪客對戰)';
-            setDisplayState('sequential-badge', isSequentialMode, 'inline-block');
-            setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
+            setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
             switchView('practice'); showNextCard();
         }
     }
+
+    // =====================================
+    // ★ 每日學測單字 (Fetch API 連網版)
+    // =====================================
+    async function openDailyGsat() {
+        const todayStr = new Date().toLocaleDateString();
+        
+        if (dailyCache && dailyCache.date === todayStr && dailyCache.words && dailyCache.words.length > 0) {
+            currentDailyWords = dailyCache.words;
+            renderDailyView();
+            switchView('daily');
+            return;
+        }
+
+        const btn = document.getElementById('btn-daily-gsat');
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ 正在從網路載入字庫...";
+        btn.disabled = true;
+
+        try {
+            // 透過網路請求獲取 gsat.json (請確保你有上傳 gsat.json 到你的 GitHub)
+            const response = await fetch('gsat.json');
+            if (!response.ok) throw new Error("無法取得 gsat.json");
+            const GSAT_DB = await response.json();
+
+            let allUserWords = new Set();
+            books.forEach(b => b.words.forEach(w => allUserWords.add(w.en.toLowerCase().trim())));
+            
+            let availableGsat = GSAT_DB.filter(w => !allUserWords.has(w.en.toLowerCase().trim()));
+            
+            if (availableGsat.length === 0) {
+                alert("太神啦！你已經將學測字庫全數掌握了！🎉");
+                btn.innerText = originalText; btn.disabled = false; return;
+            }
+
+            availableGsat.sort(() => Math.random() - 0.5);
+            currentDailyWords = availableGsat.slice(0, dailyGsatCount);
+
+            dailyCache = { date: todayStr, words: currentDailyWords, completed: false };
+            localStorage.setItem('sv_daily_cache', JSON.stringify(dailyCache));
+
+            renderDailyView();
+            switchView('daily');
+        } catch (e) {
+            console.error(e);
+            alert("⚠️ 載入字庫失敗！\n請確定你有建立一個名為 'gsat.json' 的檔案，並且把它跟 index.html 放在同一個 GitHub 資料夾裡喔！\n\n(提示: gsat.json 的格式應為 [{\"en\":\"apple\",\"zh\":[\"蘋果\"]},...])");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    function renderDailyView() {
+        const contentArea = document.getElementById('daily-content-area');
+        const emptyArea = document.getElementById('daily-empty-area');
+
+        if (dailyCache && dailyCache.completed) {
+            setDisplayState('daily-content-area', false); setDisplayState('daily-empty-area', true); return;
+        }
+
+        setDisplayState('daily-content-area', true); setDisplayState('daily-empty-area', false);
+
+        const listDiv = document.getElementById('daily-word-list'); listDiv.innerHTML = '';
+        currentDailyWords.forEach(w => {
+            const row = document.createElement('div'); row.className = 'daily-item';
+            row.innerHTML = `<span class="word-en">${w.en}</span> <span class="word-zh">${w.zh.join(' / ')}</span>`;
+            listDiv.appendChild(row);
+        });
+
+        const select = document.getElementById('daily-book-select');
+        select.innerHTML = '<option value="new">➕ 建立全新單字簿</option>';
+        books.forEach(b => {
+            const opt = document.createElement('option'); opt.value = b.id; opt.innerText = `📁 ${b.name} (${b.tag || '未分類'})`;
+            select.appendChild(opt);
+        });
+        
+        toggleDailyNewFields();
+        
+        const todayStr = new Date().toLocaleDateString();
+        document.getElementById('daily-new-name').value = `${todayStr} 每日單字`;
+        document.getElementById('daily-new-tag').value = "學測計畫";
+    }
+
+    function toggleDailyNewFields() {
+        const val = document.getElementById('daily-book-select').value;
+        setDisplayState('daily-new-fields', val === 'new');
+    }
+
+    function saveDailyWordsToBook() {
+        const selectVal = document.getElementById('daily-book-select').value;
+        
+        if (selectVal === 'new') {
+            const newName = document.getElementById('daily-new-name').value.trim(), newTag = document.getElementById('daily-new-tag').value.trim();
+            if (!newName) return alert("請輸入新單字簿名稱！");
+            books.push({ id: Date.now(), name: newName, tag: newTag, words: [...currentDailyWords] });
+        } else {
+            const targetBook = books.find(b => b.id === parseInt(selectVal));
+            if (!targetBook) return alert("找不到目標單字簿");
+            targetBook.words.push(...currentDailyWords);
+        }
+
+        saveData();
+        dailyCache.completed = true; dailyCache.words = []; localStorage.setItem('sv_daily_cache', JSON.stringify(dailyCache));
+        alert("✅ 單字已成功加入！今日目標達成！");
+        renderDailyView(); 
+    }
+
 
     // --- Book Management ---
     function updateHomeSummary() {
         const summaryEl = document.getElementById('home-book-summary');
         if(!summaryEl) return;
         let selectedCount = 0, wordCount = 0;
-        books.forEach(b => {
-            if(selectedBookIds.has(b.id)) { selectedCount++; wordCount += b.words.length; }
-        });
+        books.forEach(b => { if(selectedBookIds.has(b.id)) { selectedCount++; wordCount += b.words.length; } });
         if(selectedCount === 0) summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先進入管理區選擇喔！</span>';
         else summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
     }
@@ -724,9 +823,7 @@
             groups[t].push(book);
         });
 
-        const keys = Object.keys(groups).sort((a, b) => {
-            if(a === '未分類') return 1; if(b === '未分類') return -1; return a.localeCompare(b);
-        });
+        const keys = Object.keys(groups).sort((a, b) => { if(a === '未分類') return 1; if(b === '未分類') return -1; return a.localeCompare(b); });
 
         keys.forEach(k => {
             const header = document.createElement('div'); header.className = 'group-title'; header.innerText = `🏷️ ${k}`; list.appendChild(header);
@@ -825,13 +922,9 @@
         return queue;
     }
 
-    // ⭐ 精準抓取干擾項：只從已選取（或訪客分享）的單字池抓取
     function getSelectedWordsPool() {
         if (isGuestMode) return guestWords;
-        let pool = []; 
-        books.forEach(book => { 
-            if (selectedBookIds.has(book.id)) pool.push(...book.words); 
-        }); 
+        let pool = []; books.forEach(book => { if (selectedBookIds.has(book.id)) pool.push(...book.words); }); 
         return pool;
     }
 
@@ -843,26 +936,18 @@
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
         document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英' : '英翻中';
-        
-        setDisplayState('sequential-badge', isSequentialMode, 'inline-block');
-        setDisplayState('hint-btn', mode === 'zh-to-en', 'inline-block');
-        
+        setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', mode === 'zh-to-en', 'inline-block');
         switchView('practice'); showNextCard();
     }
     function showNextCard() {
         if (currentCardIndex >= practiceQueue.length) { endQuiz(); return; }
         const word = practiceQueue[currentCardIndex];
-        
-        setDisplayState('interaction-area', true, 'block');
-        setDisplayState('feedback-area', false);
-        
+        setDisplayState('interaction-area', true, 'block'); setDisplayState('feedback-area', false);
         document.getElementById('answer-input').value = ''; document.getElementById('hint-display').innerText = '';
         document.getElementById('progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `完成進度: ${completedCount} / ${initialQueueLength}`;
         document.getElementById('answer-input').focus();
-        
         const questionText = currentMode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
-        document.getElementById('question-display').innerText = questionText; 
-        document.getElementById('feedback-question-copy').innerText = questionText; 
+        document.getElementById('question-display').innerText = questionText; document.getElementById('feedback-question-copy').innerText = questionText; 
     }
     function showHint() {
         const word = practiceQueue[currentCardIndex].en; if(word.length <= 2) { document.getElementById('hint-display').innerText = word; return; }
@@ -876,23 +961,15 @@
             else { if (currentWord.zh.some(m => m.trim().includes(val) && val.length > 0)) isCorrect = true; }
         }
         lastAnswerCorrect = isCorrect;
-        
         if (!isCorrect && !isSequentialMode) requeueWord(currentWord);
-        
         showFeedback(isCorrect, currentWord);
     }
     function showFeedback(isCorrect, word) {
-        setDisplayState('interaction-area', false);
-        setDisplayState('feedback-area', true, 'flex');
-        
+        setDisplayState('interaction-area', false); setDisplayState('feedback-area', true, 'flex');
         const icon = document.getElementById('feedback-icon'), status = document.getElementById('feedback-status');
         document.getElementById('feedback-answer').innerText = currentMode === 'zh-to-en' ? word.en : word.zh.join(', ');
-        
-        if (isCorrect) { 
-            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; 
-        } else { 
-            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; 
-        }
+        if (isCorrect) { icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; } 
+        else { icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; }
         speakEnglishWord(word.en); 
     }
     function handleNextClick() {
@@ -907,73 +984,37 @@
     // =====================================
     function setupMultipleChoice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
-        
-        const pool = getSelectedWordsPool();
-        const uniqueEn = new Set(pool.map(w => w.en));
+        const pool = getSelectedWordsPool(); const uniqueEn = new Set(pool.map(w => w.en));
         if(uniqueEn.size < 4) return alert("選擇題模式需要您勾選的單字簿中「至少有 4 個不重複的單字」才能產生選項喔！");
-
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
         currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
-        
         document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中';
-        setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block');
-        
-        switchView('mcq'); showMcqNextCard();
+        setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); switchView('mcq'); showMcqNextCard();
     }
     function showMcqNextCard() {
         if (currentCardIndex >= practiceQueue.length) { endQuiz(); return; }
         const currentWord = practiceQueue[currentCardIndex];
-        
-        setDisplayState('mcq-interaction-area', true, 'block');
-        setDisplayState('mcq-feedback-area', false);
-        
+        setDisplayState('mcq-interaction-area', true, 'block'); setDisplayState('mcq-feedback-area', false);
         document.getElementById('mcq-progress-display').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `完成進度: ${completedCount} / ${initialQueueLength}`;
         const questionText = currentMode === 'zh-to-en' ? currentWord.zh.join(' / ') : currentWord.en;
-        document.getElementById('mcq-question-display').innerText = questionText;
-        document.getElementById('mcq-feedback-question-copy').innerText = questionText;
-
-        const pool = getSelectedWordsPool();
-        let options = [currentWord];
-        let availableDistractors = [];
-        let seen = new Set([currentWord.en]); 
-        
-        pool.forEach(w => {
-            if (!seen.has(w.en)) {
-                seen.add(w.en);
-                availableDistractors.push(w);
-            }
-        });
-        
-        availableDistractors.sort(() => Math.random() - 0.5);
-        options.push(...availableDistractors.slice(0, 3));
-        options.sort(() => Math.random() - 0.5);
-        
-        const optionsArea = document.getElementById('mcq-options-area');
-        optionsArea.innerHTML = '';
+        document.getElementById('mcq-question-display').innerText = questionText; document.getElementById('mcq-feedback-question-copy').innerText = questionText;
+        const pool = getSelectedWordsPool(); let options = [currentWord], availableDistractors = [], seen = new Set([currentWord.en]); 
+        pool.forEach(w => { if (!seen.has(w.en)) { seen.add(w.en); availableDistractors.push(w); } });
+        availableDistractors.sort(() => Math.random() - 0.5); options.push(...availableDistractors.slice(0, 3)); options.sort(() => Math.random() - 0.5);
+        const optionsArea = document.getElementById('mcq-options-area'); optionsArea.innerHTML = '';
         options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'btn-mcq';
-            btn.innerText = currentMode === 'zh-to-en' ? opt.en : opt.zh.join(' / ');
-            btn.onclick = () => checkMcqAnswer(opt.en === currentWord.en);
-            optionsArea.appendChild(btn);
+            const btn = document.createElement('button'); btn.className = 'btn-mcq'; btn.innerText = currentMode === 'zh-to-en' ? opt.en : opt.zh.join(' / ');
+            btn.onclick = () => checkMcqAnswer(opt.en === currentWord.en); optionsArea.appendChild(btn);
         });
     }
     function checkMcqAnswer(isCorrect) {
-        lastAnswerCorrect = isCorrect;
-        const currentWord = practiceQueue[currentCardIndex];
+        lastAnswerCorrect = isCorrect; const currentWord = practiceQueue[currentCardIndex];
         if (!isCorrect && !isSequentialMode) requeueWord(currentWord);
-        
-        setDisplayState('mcq-interaction-area', false);
-        setDisplayState('mcq-feedback-area', true, 'flex');
-        
+        setDisplayState('mcq-interaction-area', false); setDisplayState('mcq-feedback-area', true, 'flex');
         const icon = document.getElementById('mcq-feedback-icon'), status = document.getElementById('mcq-feedback-status');
         document.getElementById('mcq-feedback-answer').innerText = currentMode === 'zh-to-en' ? currentWord.en : currentWord.zh.join(', ');
-        
-        if (isCorrect) { 
-            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; 
-        } else { 
-            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; 
-        }
+        if (isCorrect) { icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確!'; status.className = 'result-status status-correct'; } 
+        else { icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤!'; status.className = 'result-status status-wrong'; }
         speakEnglishWord(currentWord.en); 
     }
     function handleMcqNextClick() {
@@ -989,21 +1030,15 @@
         if (!recognition) return alert("您的瀏覽器目前不支援用語音辨識功能，建議使用最新版 Chrome 或同意麥克風存取權限。");
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
         if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5);
-        
         currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0;
         switchView('speaking'); showNextSpeakingCard();
     }
     function showNextSpeakingCard() {
         if(currentCardIndex >= practiceQueue.length) { endQuiz(); return; }
         const word = practiceQueue[currentCardIndex];
-        
-        setDisplayState('speaking-interaction-area', true, 'block');
-        setDisplayState('speaking-feedback-area', false);
-        
-        document.getElementById('speaking-word-display').innerText = word.en;
-        document.getElementById('speaking-zh-display').innerText = word.zh.join(' / ');
-        document.getElementById('speaking-status').innerText = '點擊麥克風，對著設備念出單字';
-        document.getElementById('speaking-progress').innerText = `進度: ${completedCount}/${initialQueueLength}`;
+        setDisplayState('speaking-interaction-area', true, 'block'); setDisplayState('speaking-feedback-area', false);
+        document.getElementById('speaking-word-display').innerText = word.en; document.getElementById('speaking-zh-display').innerText = word.zh.join(' / ');
+        document.getElementById('speaking-status').innerText = '點擊麥克風，對著設備念出單字'; document.getElementById('speaking-progress').innerText = `進度: ${completedCount}/${initialQueueLength}`;
         speakEnglishWord(word.en);
     }
     function startSpeechRecognition() {
@@ -1011,26 +1046,21 @@
         try { recognition.start(); btn.classList.add('listening'); status.innerText = '正在聆聽中... (請說話)'; } catch(e) { }
         recognition.onresult = function(event) {
             const heardWord = event.results[0][0].transcript.toLowerCase().replace(/[.,?!]/g, "").trim();
-            const confidence = event.results[0][0].confidence;
-            const targetWord = practiceQueue[currentCardIndex].en.toLowerCase().trim();
+            const confidence = event.results[0][0].confidence; const targetWord = practiceQueue[currentCardIndex].en.toLowerCase().trim();
             btn.classList.remove('listening'); processSpeakingResult(heardWord, targetWord, confidence);
         };
         recognition.onerror = function(event) { btn.classList.remove('listening'); status.innerText = '辨識失敗，請再按一次重試'; };
         recognition.onspeechend = function() { recognition.stop(); btn.classList.remove('listening'); };
     }
     function processSpeakingResult(heard, target, confidence) {
-        setDisplayState('speaking-interaction-area', false);
-        setDisplayState('speaking-feedback-area', true, 'flex');
+        setDisplayState('speaking-interaction-area', false); setDisplayState('speaking-feedback-area', true, 'flex');
         const scoreDisplay = document.getElementById('speaking-score'), msgDisplay = document.getElementById('speaking-feedback-msg'), heardDisplay = document.getElementById('speaking-heard-text');
-        
         if (heard === target || heard.includes(target) || target.includes(heard)) {
-            lastAnswerCorrect = true;
-            let finalScore = Math.round(confidence * 100); if (finalScore < 50) finalScore = 80; 
+            lastAnswerCorrect = true; let finalScore = Math.round(confidence * 100); if (finalScore < 50) finalScore = 80; 
             scoreDisplay.innerText = `${finalScore} 分`; scoreDisplay.style.color = 'var(--success)';
             msgDisplay.innerText = '發音非常標準！'; heardDisplay.innerText = `系統聽到的: "${heard}"`;
         } else {
-            lastAnswerCorrect = false;
-            scoreDisplay.innerText = `0 分`; scoreDisplay.style.color = 'var(--error)';
+            lastAnswerCorrect = false; scoreDisplay.innerText = `0 分`; scoreDisplay.style.color = 'var(--error)';
             msgDisplay.innerText = `發音有點不對喔...`; heardDisplay.innerText = `系統聽到的: "${heard}"`;
             if (!isSequentialMode) requeueWord(practiceQueue[currentCardIndex]);
         }
@@ -1138,7 +1168,6 @@
     function loadYouglishCard() {
         if (!practiceQueue[currentCardIndex]) return;
         const word = practiceQueue[currentCardIndex];
-        
         document.getElementById('yg-word').innerText = word.en;
         document.getElementById('yg-zh').innerText = word.zh.join(' / ');
         document.getElementById('yg-progress').innerText = `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
@@ -1147,35 +1176,24 @@
     }
 
     function nextYouglishCard() {
-        if (currentCardIndex < practiceQueue.length - 1) { 
-            currentCardIndex++; 
-            loadYouglishCard();
-        } else { 
-            endQuiz();
-        }
+        if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; loadYouglishCard(); } 
+        else { endQuiz(); }
     }
 
     function prevYouglishCard() {
-        if (currentCardIndex > 0) { 
-            currentCardIndex--; 
-            loadYouglishCard();
-        } else { 
-            alert("已經是第一個單字囉！"); 
-        }
+        if (currentCardIndex > 0) { currentCardIndex--; loadYouglishCard(); } 
+        else { alert("已經是第一個單字囉！"); }
     }
 
-    function quitYouglish() {
-        quitPractice();
-    }
+    function quitYouglish() { quitPractice(); }
 
-    // 啟動入口
+    // Initial Load Check
     window.onload = () => {
-        // 先等一下，確保 LZString 腳本載入完成
         setTimeout(() => {
             if (!checkShareUrl()) {
                 goHome(); 
             }
-        }, 150); // 給 CDN 一點載入時間
+        }, 150); 
     };
 </script>
 
