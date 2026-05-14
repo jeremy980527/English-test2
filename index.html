@@ -114,7 +114,8 @@
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
-        #feedback-area, #mcq-feedback-area, #speaking-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
+        /* 修正了這裡：加入了 #mastery-feedback-area 確保垂直排列 */
+        #feedback-area, #mcq-feedback-area, #speaking-feedback-area, #mastery-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
         
         .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
         .icon-correct { color: var(--success); }
@@ -182,7 +183,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         /* Mastery Mode Custom Colors */
-        .mastery-btn { background-color: #9c27b0; color: white; transition: background 0.3s; }
+        .mastery-btn { background-color: #9c27b0; color: white; transition: background 0.3s; border: none; }
         .mastery-btn:hover { background-color: #7b1fa2; }
     </style>
 </head>
@@ -206,7 +207,7 @@
             <h2>開始練習</h2>
             
             <!-- 🌟 終極精通模式按鈕 🌟 -->
-            <button class="btn mastery-btn" style="width: 100%; margin-bottom: 20px; padding: 15px; font-size: 1.05rem;" onclick="setupMasteryMode()">🚀 終極精通模式 (Mastery)</button>
+            <button class="btn mastery-btn" style="width: 100%; margin-bottom: 20px; padding: 15px; font-size: 1.05rem;" onclick="setupMasteryMode()">🚀 終極精通模式</button>
             
             <div class="checkbox-wrapper" style="margin-bottom: 15px;" onclick="toggleSequential()">
                 <input type="checkbox" id="sequential-toggle" style="pointer-events: none;">
@@ -327,12 +328,12 @@
 
         <!-- L0: Tinder 式字卡預備 -->
         <div id="mastery-l0-area" class="hidden practice-area" style="margin-top: 0;">
-            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 0: 破冰暖身 (仔細聽)</div>
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 0: 暖身準備</div>
             <div class="card" style="border-color: #9c27b0; padding: 40px 20px; margin-bottom: 30px;">
                 <div id="mastery-l0-en" style="font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 10px;">Word</div>
                 <div id="mastery-l0-zh" style="font-size: 1.2rem; color: var(--text-sub);">翻譯</div>
             </div>
-            <button class="btn mastery-btn" style="padding: 15px;" onclick="masteryL0Next()">👉 記住了，滑下一張</button>
+            <button class="btn mastery-btn" style="padding: 15px;" onclick="masteryL0Next()">下一步</button>
         </div>
 
         <!-- L1: MCQ 中選英 -->
@@ -374,9 +375,9 @@
         <!-- Mastery Success (100%) -->
         <div id="mastery-success-area" class="hidden" style="text-align: center; padding: 40px 0;">
             <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
-            <h2 style="color: #9c27b0;">完美精通！</h2>
-            <p style="color: var(--text-sub);">你已經將這批單字深深印入腦海了，<br>科學記憶法真的有效對吧！</p>
-            <button class="btn mastery-btn" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="quitPractice()">回首頁休息</button>
+            <h2 style="color: #9c27b0;">已精通全部單字！</h2>
+            <p style="color: var(--text-sub);">你已經完成此階段的學習。</p>
+            <button class="btn mastery-btn" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="quitPractice()">完成並返回</button>
         </div>
     </div>
 
@@ -1176,25 +1177,24 @@
             status.innerText = '正確!'; status.className = 'result-status status-correct';
             
             if (currentMasteryTarget.level === 1) { 
-                currentMasteryTarget.level = 2; msg.innerText = "✅ 升級！下一步：結構重組"; msg.style.color = "var(--success)";
+                currentMasteryTarget.level = 2; msg.innerText = "升級至 Level 2"; msg.style.color = "var(--success)";
             }
             else if (currentMasteryTarget.level === 2) { 
-                currentMasteryTarget.level = 3; msg.innerText = "✅ 升級！下一步：盲打輸出"; msg.style.color = "var(--success)";
+                currentMasteryTarget.level = 3; msg.innerText = "升級至 Level 3"; msg.style.color = "var(--success)";
             }
             else if (currentMasteryTarget.level === 3) { 
                 currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; 
-                msg.innerText = "⏳ 進入潛伏期！稍後將進行延遲測驗"; msg.style.color = "var(--warning)";
+                msg.innerText = "進入延遲測驗階段"; msg.style.color = "var(--warning)";
             }
             else if (currentMasteryTarget.level === 3.9) { 
-                currentMasteryTarget.level = 4; msg.innerText = "🎉 完美精通此單字！"; msg.style.color = "var(--success)";
+                currentMasteryTarget.level = 4; msg.innerText = "單字已精通"; msg.style.color = "var(--success)";
             }
             
         } else {
             icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
             status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
-            // 無情降級機制：全部掉回 Level 1
             currentMasteryTarget.level = 1;
-            msg.innerText = "💀 無情降級！退回 Lv 1 重新辨識"; msg.style.color = "var(--error)";
+            msg.innerText = "掉回 Level 1"; msg.style.color = "var(--error)";
         }
     }
     
