@@ -114,6 +114,7 @@
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
+        /* 修復排版問題：確保 Feedback Area 為垂直排列 */
         #feedback-area, #mcq-feedback-area, #speaking-feedback-area, #mastery-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
         
         .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
@@ -132,6 +133,16 @@
         .btn-mcq { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 20px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s; word-break: break-all; }
         .btn-mcq:hover { border-color: var(--accent); transform: translateY(-2px); }
         @media (max-width: 480px) { .mcq-grid { grid-template-columns: 1fr; } }
+
+        /* ======= 雙向連接 (Match) Mode Styles ======= */
+        .match-container { display: flex; gap: 15px; justify-content: space-between; width: 100%; margin-top: 20px; }
+        .match-col { display: flex; flex-direction: column; gap: 10px; width: 48%; }
+        .match-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 15px 10px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.2s; word-break: break-all; }
+        .match-btn:hover { border-color: var(--accent); }
+        .match-btn.selected { border-color: var(--btn-primary); background: rgba(59, 130, 246, 0.2); }
+        .match-btn.matched { border-color: var(--success); background: rgba(76, 175, 80, 0.1); color: var(--success); opacity: 0.6; cursor: default; }
+        .match-btn.wrong { border-color: var(--error); background: rgba(244, 67, 54, 0.2); animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
 
         /* ======= Speaking Mode Styles ======= */
         .mic-btn { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 2.5rem; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
@@ -155,14 +166,6 @@
         .memory-front, .memory-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; padding: 5px; font-size: 0.8rem; border: 1px solid var(--border); }
         .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
         .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
-
-        /* ======= YouGlish Mode Styles ======= */
-        .yg-open-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none; }
-        .yg-open-btn:hover { background: #2d0000; }
-        .yg-open-btn .yg-btn-label { font-size: 0.85rem; color: #aaa; margin-top: 5px; }
-        .yg-tip { color: var(--text-sub); font-size: 0.82rem; margin-bottom: 20px; line-height: 1.5; }
-        .yg-word-display { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; }
-        .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
 
         /* ======= Export Menu Styles ======= */
         .export-menu { position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; z-index: 100; flex-direction: column; gap: 8px; min-width: 130px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: none; }
@@ -262,7 +265,6 @@
             <div style="display: flex; justify-content: flex-end;"><span class="import-trigger" onclick="toggleImportArea()">▼ 批量匯入 / 讀取檔案</span></div>
             <div id="import-area" class="hidden import-section">
                 <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0;">格式: <span style="color:var(--accent)">英文 - 中文</span> (換行新增)</p>
-                <!-- 加入檔案讀取按鈕 -->
                 <div style="margin-bottom: 10px;">
                     <input type="file" id="import-file" accept=".txt" style="display: none;" onchange="handleFileUpload(event)">
                     <button class="btn btn-outline btn-small" onclick="document.getElementById('import-file').click()">📂 選擇 txt 檔案</button>
@@ -280,7 +282,6 @@
             <button class="btn-icon" onclick="switchView('book-select')">← 返回</button>
             <h2 id="edit-book-title" style="font-size: 1.1rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">編輯單字簿</h2>
             <div class="nav-bar-right">
-                <!-- 匯出下拉選單按鈕 -->
                 <button class="btn-icon" onclick="toggleExportMenu()">📤 匯出</button>
                 <div id="export-menu" class="export-menu">
                     <button class="btn btn-outline btn-small" style="width:100%; margin:0;" onclick="exportBook('copy')">📄 複製文字</button>
@@ -342,28 +343,38 @@
             <div class="mcq-grid" id="mastery-l1-options"></div>
         </div>
 
-        <!-- L2: 拼圖重組 -->
+        <!-- L2: 雙向連接 (Match) -->
         <div id="mastery-l2-area" class="hidden practice-area" style="margin-top:0;">
-            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 結構重組</div>
-            <div class="hint-text" id="mastery-l2-hint-display"></div>
-            <div class="question-text" id="mastery-l2-q"></div>
-            <div id="mastery-l2-ans" class="puzzle-container"></div>
-            <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
-            <div id="mastery-l2-pool" class="puzzle-container"></div>
-            
-            <!-- 加入提示與強制送出按鈕 -->
-            <div class="flex-row" style="justify-content: center; margin-top: 20px;">
-                <button class="btn btn-outline" onclick="showMasteryL2Hint()">提示</button>
-                <button class="btn mastery-btn" onclick="checkMasteryL2(true)">送出</button>
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 雙向連接</div>
+            <div style="color:var(--text-sub); margin-bottom:15px; font-size: 0.9rem;">請將左側英文與右側中文正確配對</div>
+            <div class="match-container">
+                <div id="match-col-en" class="match-col"></div>
+                <div id="match-col-zh" class="match-col"></div>
             </div>
         </div>
 
-        <!-- L3 / L4: 盲打輸出 -->
+        <!-- L3: 拼圖重組 -->
         <div id="mastery-l3-area" class="hidden practice-area" style="margin-top:0;">
-            <div class="mode-badge" id="mastery-l3-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 3: 主動輸出</div>
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 3: 結構重組</div>
+            <div class="hint-text" id="mastery-l3-hint-display"></div>
             <div class="question-text" id="mastery-l3-q"></div>
-            <input type="text" id="mastery-l3-input" placeholder="輸入英文單字..." autocomplete="off">
-            <button class="btn mastery-btn" onclick="checkMasteryL3()">送出解答</button>
+            <div id="mastery-l3-ans" class="puzzle-container"></div>
+            <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
+            <div id="mastery-l3-pool" class="puzzle-container"></div>
+            
+            <!-- 加入提示與強制送出按鈕 -->
+            <div class="flex-row" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="showMasteryL3Hint()">提示</button>
+                <button class="btn mastery-btn" onclick="checkMasteryL3(true)">送出</button>
+            </div>
+        </div>
+
+        <!-- L4 / L5: 盲打輸出 -->
+        <div id="mastery-l4-area" class="hidden practice-area" style="margin-top:0;">
+            <div class="mode-badge" id="mastery-l4-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 4: 主動輸出</div>
+            <div class="question-text" id="mastery-l4-q"></div>
+            <input type="text" id="mastery-l4-input" placeholder="輸入英文單字..." autocomplete="off">
+            <button class="btn mastery-btn" onclick="checkMasteryL4()">送出解答</button>
         </div>
 
         <!-- Mastery Feedback -->
@@ -480,7 +491,7 @@
         </div>
     </div>
 
-    <!-- Puzzle Mode (獨立模式更新) -->
+    <!-- Puzzle Mode (獨立模式) -->
     <div id="view-puzzle" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
@@ -497,7 +508,6 @@
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="puzzle-pool-area" class="puzzle-container"></div>
             
-            <!-- 加入提示與強制送出按鈕 -->
             <div class="flex-row" style="justify-content: center; margin-top: 20px;">
                 <button class="btn btn-outline" onclick="showPuzzleHint()">提示</button>
                 <button class="btn" onclick="checkPuzzleState(true)">送出</button>
@@ -565,11 +575,10 @@
     let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
     let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
 
-    // --- Guest / Share Mode Variables ---
     let isGuestMode = false;
     let guestWords = [];
 
-    // --- Web Speech API 初始化 ---
+    // --- Web Speech API ---
     let recognition = null;
     try {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -583,7 +592,6 @@
 
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
-    // --- Navigation ---
     const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
     
     function switchView(viewName) {
@@ -643,7 +651,6 @@
         if(practiceQueue[currentCardIndex]) { speakEnglishWord(practiceQueue[currentCardIndex].en); }
     }
 
-    // --- 隨機插隊函數 (Random Re-queue) ---
     function requeueWord(word) {
         let remaining = practiceQueue.length - 1 - currentCardIndex;
         if (remaining <= 0) {
@@ -657,7 +664,6 @@
         }
     }
 
-    // --- 測驗結束共用邏輯 ---
     function endQuiz() {
         if (isGuestMode) {
             if (confirm("測驗結束！🎉\n\n你要將這份「朋友分享的單字庫」儲存到你的 SilenVocab 嗎？")) {
@@ -674,7 +680,6 @@
         quitPractice();
     }
 
-    // --- 分享測驗邏輯 (LZ-String 壓縮算法) ---
     function shareCurrentQuiz() {
         if (typeof LZString === 'undefined') { alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); return; }
         let wordsToShare = practiceQueue;
@@ -707,7 +712,6 @@
         } catch(e) { console.error(e); alert("產生分享連結失敗"); }
     }
 
-    // --- 載入時檢查是否為訪客模式 ---
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         const lzCode = urlParams.get('lz');
@@ -806,9 +810,6 @@
         updateHomeSummary(); 
     }
 
-    // =====================================
-    // ★ 檔案讀取功能 (File Import)
-    // =====================================
     function handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -816,7 +817,6 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById('import-content').value = e.target.result;
-            // 讀取完畢後清空 input 的值，這樣如果使用者選同一個檔案才能再次觸發 onchange
             event.target.value = '';
         };
         reader.readAsText(file);
@@ -855,9 +855,6 @@
         toggleImportArea(); renderBookList(); alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
     }
 
-    // =====================================
-    // ★ 匯出功能 (Export: Copy & Download)
-    // =====================================
     function toggleExportMenu() {
         const menu = document.getElementById('export-menu');
         menu.classList.toggle('active');
@@ -957,7 +954,7 @@
     }
 
     // =====================================
-    // 🚀 終極精通模式 (Mastery Mode) 🚀
+    // 🚀 終極精通模式 (Mastery Mode 6 Levels) 🚀
     // =====================================
     let masteryPool = [];
     let currentMasteryTarget = null;
@@ -976,7 +973,7 @@
     }
     
     function updateMasteryProgress() {
-        let mastered = masteryPool.filter(w => w.level === 4).length;
+        let mastered = masteryPool.filter(w => w.level === 5).length;
         let total = masteryPool.length;
         let pct = (mastered / total) * 100;
         document.getElementById('mastery-progress-bar').style.width = pct + '%';
@@ -993,6 +990,7 @@
 
         hideAllMasteryAreas();
 
+        // 優先度 1: Level 0 (暖身)
         let candidatesL0 = masteryPool.filter(w => w.level === 0);
         if (candidatesL0.length > 0) {
             currentMasteryTarget = candidatesL0[0];
@@ -1000,43 +998,47 @@
             return;
         }
 
-        let candidatesL4Ready = masteryPool.filter(w => w.level === 3.9);
+        // 優先度 2: Level 4.9 (延遲測驗)
+        let candidatesL4Ready = masteryPool.filter(w => w.level === 4.9);
         if (candidatesL4Ready.length > 0) {
             currentMasteryTarget = candidatesL4Ready.sort(() => Math.random() - 0.5)[0];
-            showMasteryL3(currentMasteryTarget, true);
+            showMasteryL4(currentMasteryTarget, true);
             return;
         }
 
-        let candidatesActive = masteryPool.filter(w => w.level >= 1 && w.level <= 3);
+        // 優先度 3: 隨機抽取進行中的單字 (Lv1 ~ Lv4)
+        let candidatesActive = masteryPool.filter(w => w.level >= 1 && w.level <= 4);
         if (candidatesActive.length > 0) {
             currentMasteryTarget = candidatesActive.sort(() => Math.random() - 0.5)[0];
             if (currentMasteryTarget.level === 1) showMasteryL1(currentMasteryTarget);
             else if (currentMasteryTarget.level === 2) showMasteryL2(currentMasteryTarget);
-            else if (currentMasteryTarget.level === 3) showMasteryL3(currentMasteryTarget, false);
+            else if (currentMasteryTarget.level === 3) showMasteryL3(currentMasteryTarget);
+            else if (currentMasteryTarget.level === 4) showMasteryL4(currentMasteryTarget, false);
             return;
         }
 
-        let candidatesWaiting = masteryPool.filter(w => w.level === 3.5);
+        // 防卡死: 強制推進潛伏期的單字
+        let candidatesWaiting = masteryPool.filter(w => w.level === 4.5);
         if (candidatesWaiting.length > 0) {
             let forceTarget = candidatesWaiting[0];
-            forceTarget.level = 3.9;
+            forceTarget.level = 4.9;
             currentMasteryTarget = forceTarget;
-            showMasteryL3(currentMasteryTarget, true);
+            showMasteryL4(currentMasteryTarget, true);
             return;
         }
     }
     
     function tickMasteryDelays() {
         masteryPool.forEach(w => {
-            if (w.level === 3.5) {
+            if (w.level === 4.5) {
                 w.delay--;
-                if (w.delay <= 0) w.level = 3.9;
+                if (w.delay <= 0) w.level = 4.9;
             }
         });
     }
 
     function hideAllMasteryAreas() {
-        ['mastery-l0-area', 'mastery-l1-area', 'mastery-l2-area', 'mastery-l3-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => {
+        ['mastery-l0-area', 'mastery-l1-area', 'mastery-l2-area', 'mastery-l3-area', 'mastery-l4-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => {
             setDisplayState(id, false);
         });
     }
@@ -1064,7 +1066,7 @@
         nextMasteryTurn();
     }
 
-    // --- L1 視覺辨識 ---
+    // --- L1 視覺辨識 (MCQ) ---
     function showMasteryL1(word) {
         setDisplayState('mastery-l1-area', true);
         document.getElementById('mastery-l1-q').innerText = word.zh.join(' / ');
@@ -1092,32 +1094,130 @@
         });
     }
 
-    // --- L2 結構重組 (包含提示與送出) ---
+    // --- L2 雙向連接 (Match 連連看) ---
+    let matchEnSelected = null;
+    let matchZhSelected = null;
+    let matchMistake = false;
+    let matchPairsLeft = 4;
+    
     function showMasteryL2(word) {
         setDisplayState('mastery-l2-area', true);
-        document.getElementById('mastery-l2-q').innerText = word.zh.join(' / ');
-        document.getElementById('mastery-l2-hint-display').innerText = ''; // 重置提示
+        matchMistake = false;
+        
+        let pool = masteryPool.filter(w => w.en !== word.en);
+        pool.sort(() => Math.random() - 0.5);
+        let selectedDistractors = pool.slice(0, 3);
+        
+        if (selectedDistractors.length < 3) {
+            let globalPool = getSelectedWordsPool().filter(w => w.en !== word.en);
+            globalPool.sort(() => Math.random() - 0.5);
+            selectedDistractors.push(...globalPool.slice(0, 3 - selectedDistractors.length));
+        }
+        
+        let currentMatchPairs = [word, ...selectedDistractors].slice(0, 4);
+        matchPairsLeft = currentMatchPairs.length;
+        
+        let enList = currentMatchPairs.map(w => ({ text: w.en, ref: w })).sort(() => Math.random() - 0.5);
+        let zhList = currentMatchPairs.map(w => ({ text: w.zh[0], ref: w })).sort(() => Math.random() - 0.5);
+        
+        renderMatchColumns(enList, zhList);
+    }
+    
+    function renderMatchColumns(enList, zhList) {
+        const enCol = document.getElementById('match-col-en');
+        const zhCol = document.getElementById('match-col-zh');
+        enCol.innerHTML = ''; zhCol.innerHTML = '';
+        matchEnSelected = null; matchZhSelected = null;
+        
+        enList.forEach((item, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'match-btn';
+            btn.innerText = item.text;
+            btn.onclick = () => handleMatchClick('en', item, btn);
+            enCol.appendChild(btn);
+        });
+        
+        zhList.forEach((item, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'match-btn';
+            btn.innerText = item.text;
+            btn.onclick = () => handleMatchClick('zh', item, btn);
+            zhCol.appendChild(btn);
+        });
+    }
+    
+    function handleMatchClick(type, item, btnElement) {
+        if (btnElement.classList.contains('matched')) return;
+        
+        if (type === 'en') {
+            if (matchEnSelected) matchEnSelected.btn.classList.remove('selected');
+            matchEnSelected = { item, btn: btnElement };
+            btnElement.classList.add('selected');
+            if ('speechSynthesis' in window && autoPronounce) {
+                 window.speechSynthesis.cancel();
+                 let u = new SpeechSynthesisUtterance(item.text); u.lang = 'en-US'; window.speechSynthesis.speak(u);
+            }
+        } else {
+            if (matchZhSelected) matchZhSelected.btn.classList.remove('selected');
+            matchZhSelected = { item, btn: btnElement };
+            btnElement.classList.add('selected');
+        }
+        
+        if (matchEnSelected && matchZhSelected) {
+            checkMatchPair();
+        }
+    }
+    
+    function checkMatchPair() {
+        let en = matchEnSelected;
+        let zh = matchZhSelected;
+        
+        if (en.item.ref.en === zh.item.ref.en) { 
+            en.btn.classList.remove('selected'); zh.btn.classList.remove('selected');
+            en.btn.classList.add('matched'); zh.btn.classList.add('matched');
+            matchEnSelected = null; matchZhSelected = null;
+            matchPairsLeft--;
+            
+            if (matchPairsLeft === 0) {
+                setTimeout(() => { checkMasteryAnswer(!matchMistake); }, 400);
+            }
+        } else { 
+            matchMistake = true;
+            en.btn.classList.add('wrong'); zh.btn.classList.add('wrong');
+            setTimeout(() => {
+                en.btn.classList.remove('wrong', 'selected');
+                zh.btn.classList.remove('wrong', 'selected');
+                matchEnSelected = null; matchZhSelected = null;
+            }, 500);
+        }
+    }
+
+    // --- L3 結構重組 (Puzzle) ---
+    function showMasteryL3(word) {
+        setDisplayState('mastery-l3-area', true);
+        document.getElementById('mastery-l3-q').innerText = word.zh.join(' / ');
+        document.getElementById('mastery-l3-hint-display').innerText = ''; 
         
         puzzleUserAnswer = [];
         let letters = word.en.toLowerCase().split('');
         for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
         puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false }));
         
-        renderMasteryL2Board();
+        renderMasteryL3Board();
     }
     
-    function showMasteryL2Hint() {
+    function showMasteryL3Hint() {
         const word = currentMasteryTarget.en;
-        if(word.length <= 2) { document.getElementById('mastery-l2-hint-display').innerText = word; return; }
-        document.getElementById('mastery-l2-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
+        if(word.length <= 2) { document.getElementById('mastery-l3-hint-display').innerText = word; return; }
+        document.getElementById('mastery-l3-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
     }
 
-    function renderMasteryL2Board() {
-        const ansArea = document.getElementById('mastery-l2-ans'), poolArea = document.getElementById('mastery-l2-pool');
+    function renderMasteryL3Board() {
+        const ansArea = document.getElementById('mastery-l3-ans'), poolArea = document.getElementById('mastery-l3-pool');
         ansArea.innerHTML = ''; poolArea.innerHTML = '';
         puzzleUserAnswer.forEach((letterObj, idx) => { 
             const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
-            tile.onclick = () => { puzzleUserAnswer[idx].used = false; puzzleUserAnswer.splice(idx, 1); renderMasteryL2Board(); }; 
+            tile.onclick = () => { puzzleUserAnswer[idx].used = false; puzzleUserAnswer.splice(idx, 1); renderMasteryL3Board(); }; 
             ansArea.appendChild(tile); 
         });
         if(puzzleUserAnswer.length < currentMasteryTarget.en.length) { 
@@ -1126,36 +1226,33 @@
         puzzleSourceLetters.forEach(letterObj => { 
             if(!letterObj.used) { 
                 const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
-                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryL2Board(); checkMasteryL2(false); }; 
+                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryL3Board(); checkMasteryL3(false); }; 
                 poolArea.appendChild(tile); 
             } 
         });
     }
 
-    function checkMasteryL2(forced = false) {
+    function checkMasteryL3(forced = false) {
         const currentString = puzzleUserAnswer.map(o => o.char).join('');
         const targetString = currentMasteryTarget.en.toLowerCase();
-        
-        // 如果手動按送出，或者已經填滿長度
         if (puzzleUserAnswer.length === targetString.length || forced) {
             checkMasteryAnswer(currentString === targetString);
         }
     }
 
-    // --- L3 & L4 盲打輸出 ---
-    let masteryIsL4Test = false;
-    function showMasteryL3(word, isL4) {
-        masteryIsL4Test = isL4;
-        setDisplayState('mastery-l3-area', true);
-        document.getElementById('mastery-l3-badge').innerText = isL4 ? "Lv 4: 延遲固化 (畢業測驗)" : "Lv 3: 主動輸出";
-        document.getElementById('mastery-l3-q').innerText = word.zh.join(' / ');
-        const input = document.getElementById('mastery-l3-input');
+    // --- L4 & L5 盲打輸出 (Typing) ---
+    function showMasteryL4(word, isDelayed) {
+        setDisplayState('mastery-l4-area', true);
+        document.getElementById('mastery-l4-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業測驗)" : "Lv 4: 主動輸出";
+        document.getElementById('mastery-l4-q').innerText = word.zh.join(' / ');
+        const input = document.getElementById('mastery-l4-input');
         input.value = '';
         setTimeout(() => input.focus(), 50); 
-        input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); checkMasteryL3(); }};
+        input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); checkMasteryL4(); }};
     }
-    function checkMasteryL3() {
-        const val = document.getElementById('mastery-l3-input').value.trim().toLowerCase();
+    
+    function checkMasteryL4() {
+        const val = document.getElementById('mastery-l4-input').value.trim().toLowerCase();
         const target = currentMasteryTarget.en.toLowerCase();
         checkMasteryAnswer(val === target);
     }
@@ -1184,24 +1281,27 @@
             status.innerText = '正確!'; status.className = 'result-status status-correct';
             
             if (currentMasteryTarget.level === 1) { 
-                currentMasteryTarget.level = 2; msg.innerText = "升級至 Level 2"; msg.style.color = "var(--success)";
+                currentMasteryTarget.level = 2; msg.innerText = "升級！下一步：雙向連接"; msg.style.color = "var(--success)";
             }
             else if (currentMasteryTarget.level === 2) { 
-                currentMasteryTarget.level = 3; msg.innerText = "升級至 Level 3"; msg.style.color = "var(--success)";
+                currentMasteryTarget.level = 3; msg.innerText = "升級！下一步：結構重組"; msg.style.color = "var(--success)";
             }
             else if (currentMasteryTarget.level === 3) { 
-                currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; 
-                msg.innerText = "進入延遲測驗階段"; msg.style.color = "var(--warning)";
+                currentMasteryTarget.level = 4; msg.innerText = "升級！下一步：盲打輸出"; msg.style.color = "var(--success)";
             }
-            else if (currentMasteryTarget.level === 3.9) { 
-                currentMasteryTarget.level = 4; msg.innerText = "單字已精通"; msg.style.color = "var(--success)";
+            else if (currentMasteryTarget.level === 4) { 
+                currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; 
+                msg.innerText = "進入潛伏期！稍後將進行延遲測驗"; msg.style.color = "var(--warning)";
+            }
+            else if (currentMasteryTarget.level === 4.9) { 
+                currentMasteryTarget.level = 5; msg.innerText = "單字已精通"; msg.style.color = "var(--success)";
             }
             
         } else {
             icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
             status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
             currentMasteryTarget.level = 1;
-            msg.innerText = "掉回 Level 1"; msg.style.color = "var(--error)";
+            msg.innerText = "退回 Lv 1 重新辨識"; msg.style.color = "var(--error)";
         }
     }
     
