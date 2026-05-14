@@ -114,7 +114,6 @@
         .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
         .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
 
-        /* 修正了這裡：加入了 #mastery-feedback-area 確保垂直排列 */
         #feedback-area, #mcq-feedback-area, #speaking-feedback-area, #mastery-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
         
         .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
@@ -346,10 +345,17 @@
         <!-- L2: 拼圖重組 -->
         <div id="mastery-l2-area" class="hidden practice-area" style="margin-top:0;">
             <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 結構重組</div>
+            <div class="hint-text" id="mastery-l2-hint-display"></div>
             <div class="question-text" id="mastery-l2-q"></div>
             <div id="mastery-l2-ans" class="puzzle-container"></div>
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="mastery-l2-pool" class="puzzle-container"></div>
+            
+            <!-- 加入提示與強制送出按鈕 -->
+            <div class="flex-row" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="showMasteryL2Hint()">提示</button>
+                <button class="btn mastery-btn" onclick="checkMasteryL2(true)">送出</button>
+            </div>
         </div>
 
         <!-- L3 / L4: 盲打輸出 -->
@@ -474,7 +480,7 @@
         </div>
     </div>
 
-    <!-- Puzzle Mode -->
+    <!-- Puzzle Mode (獨立模式更新) -->
     <div id="view-puzzle" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
@@ -485,10 +491,18 @@
             </div>
         </div>
         <div class="practice-area">
+            <div class="hint-text" id="puzzle-hint-display"></div>
             <div class="question-text" id="puzzle-question"></div>
             <div id="puzzle-answer-area" class="puzzle-container"></div>
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="puzzle-pool-area" class="puzzle-container"></div>
+            
+            <!-- 加入提示與強制送出按鈕 -->
+            <div class="flex-row" style="justify-content: center; margin-top: 20px;">
+                <button class="btn btn-outline" onclick="showPuzzleHint()">提示</button>
+                <button class="btn" onclick="checkPuzzleState(true)">送出</button>
+            </div>
+            
             <div class="result-msg" id="puzzle-message" style="margin-top:10px; height: 30px;"></div>
             <div class="progress-text" id="puzzle-progress"></div>
         </div>
@@ -857,7 +871,6 @@
             return;
         }
 
-        // 組裝成 英文 - 中文 格式
         const content = book.words.map(w => `${w.en} - ${w.zh.join(' / ')}`).join('\n');
 
         if (type === 'copy') {
@@ -885,7 +898,6 @@
         toggleExportMenu();
     }
 
-    // 點擊空白處關閉匯出選單
     document.addEventListener('click', function(event) {
         const menu = document.getElementById('export-menu');
         const exportBtn = document.querySelector('.nav-bar-right .btn-icon');
@@ -901,7 +913,7 @@
     function openEditBook(id) { 
         currentBookId = id; const book = books.find(b => b.id === id);
         document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
-        document.getElementById('export-menu').classList.remove('active'); // 確保打開時選單是關閉的
+        document.getElementById('export-menu').classList.remove('active');
         renderWordList(); switchView('edit'); 
     }
 
@@ -949,21 +961,14 @@
     // =====================================
     let masteryPool = [];
     let currentMasteryTarget = null;
-    let delayWaitTurns = 4; // 需要間隔幾題才進入最後的Lv4測驗
+    let delayWaitTurns = 4;
 
     function setupMasteryMode() {
         let words = getPracticeWords();
         if(words.length === 0) return;
         
-        // 建立精通池，所有人初始等級 0
-        masteryPool = words.map(w => ({
-            en: w.en,
-            zh: w.zh,
-            level: 0,
-            delay: 0
-        }));
-        
-        masteryPool.sort(() => Math.random() - 0.5); // 隨機打亂初始順序
+        masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0 }));
+        masteryPool.sort(() => Math.random() - 0.5);
         
         switchView('mastery');
         updateMasteryProgress();
@@ -979,7 +984,6 @@
         return mastered === total;
     }
 
-    // 主迴圈分發器
     function nextMasteryTurn() {
         if (updateMasteryProgress()) {
             hideAllMasteryAreas();
@@ -989,7 +993,6 @@
 
         hideAllMasteryAreas();
 
-        // 抽取優先度 1: Level 0 (所有單字都要先暖身)
         let candidatesL0 = masteryPool.filter(w => w.level === 0);
         if (candidatesL0.length > 0) {
             currentMasteryTarget = candidatesL0[0];
@@ -997,7 +1000,6 @@
             return;
         }
 
-        // 抽取優先度 2: Level 3.9 (潛伏期結束，準備考 Lv4)
         let candidatesL4Ready = masteryPool.filter(w => w.level === 3.9);
         if (candidatesL4Ready.length > 0) {
             currentMasteryTarget = candidatesL4Ready.sort(() => Math.random() - 0.5)[0];
@@ -1005,7 +1007,6 @@
             return;
         }
 
-        // 抽取優先度 3: Level 1, 2, 3 (隨機抽取學習中的單字)
         let candidatesActive = masteryPool.filter(w => w.level >= 1 && w.level <= 3);
         if (candidatesActive.length > 0) {
             currentMasteryTarget = candidatesActive.sort(() => Math.random() - 0.5)[0];
@@ -1015,7 +1016,6 @@
             return;
         }
 
-        // 抽取優先度 4: 防卡死機制 (如果全部單字都在 3.5 潛伏中，強制挑一個進入 3.9)
         let candidatesWaiting = masteryPool.filter(w => w.level === 3.5);
         if (candidatesWaiting.length > 0) {
             let forceTarget = candidatesWaiting[0];
@@ -1026,7 +1026,6 @@
         }
     }
     
-    // 全局潛伏期倒數
     function tickMasteryDelays() {
         masteryPool.forEach(w => {
             if (w.level === 3.5) {
@@ -1048,13 +1047,12 @@
         document.getElementById('mastery-l0-en').innerText = word.en;
         document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
         
-        // 強制播放語音 (先英後中，利用語音系統自動排隊的特性)
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let uEn = new SpeechSynthesisUtterance(word.en);
             uEn.lang = 'en-US';
             uEn.rate = 0.95;
-            let uZh = new SpeechSynthesisUtterance(word.zh[0]); // 念第一個中文解釋即可
+            let uZh = new SpeechSynthesisUtterance(word.zh[0]);
             uZh.lang = 'zh-TW';
             window.speechSynthesis.speak(uEn);
             window.speechSynthesis.speak(uZh);
@@ -1066,7 +1064,7 @@
         nextMasteryTurn();
     }
 
-    // --- L1 視覺辨識 (中選英) ---
+    // --- L1 視覺辨識 ---
     function showMasteryL1(word) {
         setDisplayState('mastery-l1-area', true);
         document.getElementById('mastery-l1-q').innerText = word.zh.join(' / ');
@@ -1076,7 +1074,6 @@
         distractors.sort(() => Math.random() - 0.5);
         options.push(...distractors.slice(0, 3));
         
-        // 如果單字庫太少，從全域補干擾項
         if (options.length < 4) {
             let fallback = getSelectedWordsPool().filter(w => w.en !== word.en);
             fallback.sort(() => Math.random() - 0.5);
@@ -1095,10 +1092,11 @@
         });
     }
 
-    // --- L2 結構重組 (拼圖) ---
+    // --- L2 結構重組 (包含提示與送出) ---
     function showMasteryL2(word) {
         setDisplayState('mastery-l2-area', true);
         document.getElementById('mastery-l2-q').innerText = word.zh.join(' / ');
+        document.getElementById('mastery-l2-hint-display').innerText = ''; // 重置提示
         
         puzzleUserAnswer = [];
         let letters = word.en.toLowerCase().split('');
@@ -1107,6 +1105,13 @@
         
         renderMasteryL2Board();
     }
+    
+    function showMasteryL2Hint() {
+        const word = currentMasteryTarget.en;
+        if(word.length <= 2) { document.getElementById('mastery-l2-hint-display').innerText = word; return; }
+        document.getElementById('mastery-l2-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
+    }
+
     function renderMasteryL2Board() {
         const ansArea = document.getElementById('mastery-l2-ans'), poolArea = document.getElementById('mastery-l2-pool');
         ansArea.innerHTML = ''; poolArea.innerHTML = '';
@@ -1121,15 +1126,18 @@
         puzzleSourceLetters.forEach(letterObj => { 
             if(!letterObj.used) { 
                 const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
-                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryL2Board(); checkMasteryL2(); }; 
+                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryL2Board(); checkMasteryL2(false); }; 
                 poolArea.appendChild(tile); 
             } 
         });
     }
-    function checkMasteryL2() {
+
+    function checkMasteryL2(forced = false) {
         const currentString = puzzleUserAnswer.map(o => o.char).join('');
         const targetString = currentMasteryTarget.en.toLowerCase();
-        if (puzzleUserAnswer.length === targetString.length) {
+        
+        // 如果手動按送出，或者已經填滿長度
+        if (puzzleUserAnswer.length === targetString.length || forced) {
             checkMasteryAnswer(currentString === targetString);
         }
     }
@@ -1143,7 +1151,7 @@
         document.getElementById('mastery-l3-q').innerText = word.zh.join(' / ');
         const input = document.getElementById('mastery-l3-input');
         input.value = '';
-        setTimeout(() => input.focus(), 50); // 延遲 Focus 確保游標出現
+        setTimeout(() => input.focus(), 50); 
         input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); checkMasteryL3(); }};
     }
     function checkMasteryL3() {
@@ -1162,7 +1170,6 @@
         const msg = document.getElementById('mastery-fb-msg');
         document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
         
-        // 唸出正確英文
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let u = new SpeechSynthesisUtterance(currentMasteryTarget.en);
@@ -1170,7 +1177,7 @@
             window.speechSynthesis.speak(u);
         }
         
-        tickMasteryDelays(); // 消耗一回合，推進潛伏期
+        tickMasteryDelays();
 
         if (isCorrect) {
             icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
@@ -1355,7 +1362,7 @@
     }
 
     // =====================================
-    // 4. Puzzle Mode (原版)
+    // 4. Puzzle Mode (獨立模式 包含提示與送出)
     // =====================================
     function setupPuzzleMode() {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
@@ -1363,16 +1370,27 @@
         currentCardIndex = 0; setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block');
         switchView('puzzle'); loadPuzzleLevel();
     }
+    
     function loadPuzzleLevel() {
         if (currentCardIndex >= practiceQueue.length) { endQuiz(); return; }
         puzzleCurrentWord = practiceQueue[currentCardIndex]; puzzleUserAnswer = [];
         let letters = puzzleCurrentWord.en.toLowerCase().split('');
         for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
         puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false }));
+        
+        document.getElementById('puzzle-hint-display').innerText = ''; // 重置提示
         document.getElementById('puzzle-question').innerText = puzzleCurrentWord.zh.join(' / '); document.getElementById('puzzle-message').innerText = '';
         document.getElementById('puzzle-progress').innerText = isSequentialMode ? `循序漸進: 第 ${currentCardIndex + 1} 關` : `進度: ${currentCardIndex + 1} / ${practiceQueue.length}`;
+        
         renderPuzzleBoard();
     }
+    
+    function showPuzzleHint() {
+        const word = puzzleCurrentWord.en;
+        if(word.length <= 2) { document.getElementById('puzzle-hint-display').innerText = word; return; }
+        document.getElementById('puzzle-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
+    }
+
     function renderPuzzleBoard() {
         const ansArea = document.getElementById('puzzle-answer-area'), poolArea = document.getElementById('puzzle-pool-area');
         ansArea.innerHTML = ''; poolArea.innerHTML = '';
@@ -1380,15 +1398,33 @@
         if(puzzleUserAnswer.length < puzzleCurrentWord.en.length) { const placeholder = document.createElement('div'); placeholder.className = 'letter-tile empty'; placeholder.innerText = '_'; ansArea.appendChild(placeholder); }
         puzzleSourceLetters.forEach(letterObj => { if(!letterObj.used) { const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; tile.onclick = () => { addLetterToAnswer(letterObj); }; poolArea.appendChild(tile); } });
     }
-    function addLetterToAnswer(letterObj) { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderPuzzleBoard(); checkPuzzleState(); }
+    
+    function addLetterToAnswer(letterObj) { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderPuzzleBoard(); checkPuzzleState(false); }
     function removeLetterFromAnswer(index) { puzzleUserAnswer[index].used = false; puzzleUserAnswer.splice(index, 1); renderPuzzleBoard(); }
-    function checkPuzzleState() {
-        const currentString = puzzleUserAnswer.map(o => o.char).join(''), targetString = puzzleCurrentWord.en.toLowerCase(), msg = document.getElementById('puzzle-message');
-        if (puzzleUserAnswer.length === targetString.length) {
-            if (currentString === targetString) { msg.className = 'result-msg result-correct'; msg.innerText = '拼字正確！'; speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800); } 
-            else {
-                if(isSequentialMode) { msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`; speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000); } 
-                else { msg.className = 'result-msg result-wrong'; msg.innerText = '錯誤，請修正'; }
+    
+    function checkPuzzleState(forced = false) {
+        const currentString = puzzleUserAnswer.map(o => o.char).join('');
+        const targetString = puzzleCurrentWord.en.toLowerCase();
+        const msg = document.getElementById('puzzle-message');
+        
+        if (puzzleUserAnswer.length === targetString.length || forced) {
+            if (currentString === targetString) { 
+                msg.className = 'result-msg result-correct'; msg.innerText = '拼字正確！'; 
+                speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800); 
+            } else {
+                if(isSequentialMode) { 
+                    msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}。重頭開始！`; 
+                    speakEnglishWord(puzzleCurrentWord.en); setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000); 
+                } else { 
+                    if (forced) {
+                        msg.className = 'result-msg result-wrong'; msg.innerText = `錯誤！答案是 ${puzzleCurrentWord.en}`;
+                        speakEnglishWord(puzzleCurrentWord.en);
+                        requeueWord(puzzleCurrentWord); // 答錯或放棄，重新排到後面
+                        setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 2000);
+                    } else {
+                        msg.className = 'result-msg result-wrong'; msg.innerText = '錯誤，請修正';
+                    }
+                }
             }
         }
     }
