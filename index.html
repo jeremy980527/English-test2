@@ -178,7 +178,12 @@
         .mode-badge.active { background: var(--warning); color: #000; font-weight: bold; }
         .import-section { margin-top: 15px; border: 1px dashed var(--border); padding: 15px; border-radius: 8px; }
         .import-trigger { font-size: 0.85rem; color: var(--text-sub); text-decoration: underline; cursor: pointer; text-align: right; display: block; margin-bottom: 5px; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Mastery Mode Custom Colors */
+        .mastery-btn { background-color: #9c27b0; color: white; transition: background 0.3s; }
+        .mastery-btn:hover { background-color: #7b1fa2; }
     </style>
 </head>
 <body>
@@ -199,6 +204,10 @@
         
         <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
             <h2>開始練習</h2>
+            
+            <!-- 🌟 終極精通模式按鈕 🌟 -->
+            <button class="btn mastery-btn" style="width: 100%; margin-bottom: 20px; padding: 15px; font-size: 1.05rem;" onclick="setupMasteryMode()">🚀 終極精通模式 (Mastery)</button>
+            
             <div class="checkbox-wrapper" style="margin-bottom: 15px;" onclick="toggleSequential()">
                 <input type="checkbox" id="sequential-toggle" style="pointer-events: none;">
                 <label for="sequential-toggle" style="flex:1; cursor:pointer;">
@@ -277,7 +286,6 @@
                     <button class="btn btn-outline btn-small" style="width:100%; margin:0;" onclick="exportBook('copy')">📄 複製文字</button>
                     <button class="btn btn-outline btn-small" style="width:100%; margin:0;" onclick="exportBook('download')">⬇️ 下載 txt</button>
                 </div>
-                <!-- 刪除按鈕縮減文字以適應手機版 -->
                 <button class="btn-icon btn-delete" onclick="deleteCurrentBook()">🗑️ 刪除</button>
             </div>
         </div>
@@ -300,7 +308,80 @@
         <div id="word-list"></div>
     </div>
 
-    <!-- ======= 以下為各練習模式視圖 ======= -->
+    <!-- ======= 🚀 終極精通模式 (Mastery Mode) ======= -->
+    <div id="view-mastery" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon btn-quit" onclick="quitPractice()">✕ 結束</button>
+            <div class="nav-bar-right">
+                <span style="color:#9c27b0; font-weight:bold;">精通模式</span>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div style="width: 100%; background: #333; height: 8px; border-radius: 4px; margin-bottom: 20px; overflow: hidden;">
+            <div id="mastery-progress-bar" style="width: 0%; height: 100%; background: #9c27b0; transition: width 0.4s ease;"></div>
+        </div>
+        <div id="mastery-status-text" style="text-align: center; color: var(--text-sub); font-size: 0.85rem; margin-bottom: 20px;">
+            精通進度: 0 / 10
+        </div>
+
+        <!-- L0: Tinder 式字卡預備 -->
+        <div id="mastery-l0-area" class="hidden practice-area" style="margin-top: 0;">
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 0: 破冰暖身 (仔細聽)</div>
+            <div class="card" style="border-color: #9c27b0; padding: 40px 20px; margin-bottom: 30px;">
+                <div id="mastery-l0-en" style="font-size: 2.5rem; font-weight: bold; color: var(--accent); margin-bottom: 10px;">Word</div>
+                <div id="mastery-l0-zh" style="font-size: 1.2rem; color: var(--text-sub);">翻譯</div>
+            </div>
+            <button class="btn mastery-btn" style="padding: 15px;" onclick="masteryL0Next()">👉 記住了，滑下一張</button>
+        </div>
+
+        <!-- L1: MCQ 中選英 -->
+        <div id="mastery-l1-area" class="hidden practice-area" style="margin-top:0;">
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 1: 視覺辨識</div>
+            <div class="question-text" id="mastery-l1-q"></div>
+            <div class="mcq-grid" id="mastery-l1-options"></div>
+        </div>
+
+        <!-- L2: 拼圖重組 -->
+        <div id="mastery-l2-area" class="hidden practice-area" style="margin-top:0;">
+            <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 結構重組</div>
+            <div class="question-text" id="mastery-l2-q"></div>
+            <div id="mastery-l2-ans" class="puzzle-container"></div>
+            <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
+            <div id="mastery-l2-pool" class="puzzle-container"></div>
+        </div>
+
+        <!-- L3 / L4: 盲打輸出 -->
+        <div id="mastery-l3-area" class="hidden practice-area" style="margin-top:0;">
+            <div class="mode-badge" id="mastery-l3-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 3: 主動輸出</div>
+            <div class="question-text" id="mastery-l3-q"></div>
+            <input type="text" id="mastery-l3-input" placeholder="輸入英文單字..." autocomplete="off">
+            <button class="btn mastery-btn" onclick="checkMasteryL3()">送出解答</button>
+        </div>
+
+        <!-- Mastery Feedback -->
+        <div id="mastery-feedback-area" class="hidden practice-area" style="margin-top:0;">
+            <div id="mastery-fb-icon" class="big-icon"></div>
+            <div id="mastery-fb-status" class="result-status"></div>
+            <div class="answer-reveal">
+                正確答案: <span id="mastery-fb-ans" style="color: var(--accent); margin-left: 5px;"></span>
+                <button class="tts-btn-large" onclick="replayMasteryAudio()">🔊</button>
+            </div>
+            <div id="mastery-fb-msg" style="color:var(--warning); margin-bottom: 20px; font-weight: bold;"></div>
+            <button class="btn btn-next-big mastery-btn" onclick="masteryFeedbackNext()">繼續挑戰</button>
+        </div>
+        
+        <!-- Mastery Success (100%) -->
+        <div id="mastery-success-area" class="hidden" style="text-align: center; padding: 40px 0;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
+            <h2 style="color: #9c27b0;">完美精通！</h2>
+            <p style="color: var(--text-sub);">你已經將這批單字深深印入腦海了，<br>科學記憶法真的有效對吧！</p>
+            <button class="btn mastery-btn" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="quitPractice()">回首頁休息</button>
+        </div>
+    </div>
+
+
+    <!-- ======= 以下為原版各練習模式視圖 ======= -->
     
     <!-- Standard Practice -->
     <div id="view-practice" class="hidden">
@@ -488,7 +569,7 @@
     function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
 
     // --- Navigation ---
-    const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish'];
+    const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
     
     function switchView(viewName) {
         views.forEach(v => {
@@ -863,7 +944,275 @@
     }
 
     // =====================================
-    // 1. Standard Practice Mode
+    // 🚀 終極精通模式 (Mastery Mode) 🚀
+    // =====================================
+    let masteryPool = [];
+    let currentMasteryTarget = null;
+    let delayWaitTurns = 4; // 需要間隔幾題才進入最後的Lv4測驗
+
+    function setupMasteryMode() {
+        let words = getPracticeWords();
+        if(words.length === 0) return;
+        
+        // 建立精通池，所有人初始等級 0
+        masteryPool = words.map(w => ({
+            en: w.en,
+            zh: w.zh,
+            level: 0,
+            delay: 0
+        }));
+        
+        masteryPool.sort(() => Math.random() - 0.5); // 隨機打亂初始順序
+        
+        switchView('mastery');
+        updateMasteryProgress();
+        nextMasteryTurn();
+    }
+    
+    function updateMasteryProgress() {
+        let mastered = masteryPool.filter(w => w.level === 4).length;
+        let total = masteryPool.length;
+        let pct = (mastered / total) * 100;
+        document.getElementById('mastery-progress-bar').style.width = pct + '%';
+        document.getElementById('mastery-status-text').innerText = `精通進度: ${mastered} / ${total}`;
+        return mastered === total;
+    }
+
+    // 主迴圈分發器
+    function nextMasteryTurn() {
+        if (updateMasteryProgress()) {
+            hideAllMasteryAreas();
+            setDisplayState('mastery-success-area', true);
+            return;
+        }
+
+        hideAllMasteryAreas();
+
+        // 抽取優先度 1: Level 0 (所有單字都要先暖身)
+        let candidatesL0 = masteryPool.filter(w => w.level === 0);
+        if (candidatesL0.length > 0) {
+            currentMasteryTarget = candidatesL0[0];
+            showMasteryL0(currentMasteryTarget);
+            return;
+        }
+
+        // 抽取優先度 2: Level 3.9 (潛伏期結束，準備考 Lv4)
+        let candidatesL4Ready = masteryPool.filter(w => w.level === 3.9);
+        if (candidatesL4Ready.length > 0) {
+            currentMasteryTarget = candidatesL4Ready.sort(() => Math.random() - 0.5)[0];
+            showMasteryL3(currentMasteryTarget, true);
+            return;
+        }
+
+        // 抽取優先度 3: Level 1, 2, 3 (隨機抽取學習中的單字)
+        let candidatesActive = masteryPool.filter(w => w.level >= 1 && w.level <= 3);
+        if (candidatesActive.length > 0) {
+            currentMasteryTarget = candidatesActive.sort(() => Math.random() - 0.5)[0];
+            if (currentMasteryTarget.level === 1) showMasteryL1(currentMasteryTarget);
+            else if (currentMasteryTarget.level === 2) showMasteryL2(currentMasteryTarget);
+            else if (currentMasteryTarget.level === 3) showMasteryL3(currentMasteryTarget, false);
+            return;
+        }
+
+        // 抽取優先度 4: 防卡死機制 (如果全部單字都在 3.5 潛伏中，強制挑一個進入 3.9)
+        let candidatesWaiting = masteryPool.filter(w => w.level === 3.5);
+        if (candidatesWaiting.length > 0) {
+            let forceTarget = candidatesWaiting[0];
+            forceTarget.level = 3.9;
+            currentMasteryTarget = forceTarget;
+            showMasteryL3(currentMasteryTarget, true);
+            return;
+        }
+    }
+    
+    // 全局潛伏期倒數
+    function tickMasteryDelays() {
+        masteryPool.forEach(w => {
+            if (w.level === 3.5) {
+                w.delay--;
+                if (w.delay <= 0) w.level = 3.9;
+            }
+        });
+    }
+
+    function hideAllMasteryAreas() {
+        ['mastery-l0-area', 'mastery-l1-area', 'mastery-l2-area', 'mastery-l3-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => {
+            setDisplayState(id, false);
+        });
+    }
+    
+    // --- L0 破冰暖身 ---
+    function showMasteryL0(word) {
+        setDisplayState('mastery-l0-area', true);
+        document.getElementById('mastery-l0-en').innerText = word.en;
+        document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
+        
+        // 強制播放語音 (先英後中，利用語音系統自動排隊的特性)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let uEn = new SpeechSynthesisUtterance(word.en);
+            uEn.lang = 'en-US';
+            uEn.rate = 0.95;
+            let uZh = new SpeechSynthesisUtterance(word.zh[0]); // 念第一個中文解釋即可
+            uZh.lang = 'zh-TW';
+            window.speechSynthesis.speak(uEn);
+            window.speechSynthesis.speak(uZh);
+        }
+    }
+    function masteryL0Next() {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        currentMasteryTarget.level = 1;
+        nextMasteryTurn();
+    }
+
+    // --- L1 視覺辨識 (中選英) ---
+    function showMasteryL1(word) {
+        setDisplayState('mastery-l1-area', true);
+        document.getElementById('mastery-l1-q').innerText = word.zh.join(' / ');
+        
+        let options = [word];
+        let distractors = masteryPool.filter(w => w.en !== word.en);
+        distractors.sort(() => Math.random() - 0.5);
+        options.push(...distractors.slice(0, 3));
+        
+        // 如果單字庫太少，從全域補干擾項
+        if (options.length < 4) {
+            let fallback = getSelectedWordsPool().filter(w => w.en !== word.en);
+            fallback.sort(() => Math.random() - 0.5);
+            options.push(...fallback.slice(0, 4 - options.length));
+        }
+        options = options.slice(0, 4).sort(() => Math.random() - 0.5);
+        
+        const optArea = document.getElementById('mastery-l1-options');
+        optArea.innerHTML = '';
+        options.forEach(opt => {
+            let btn = document.createElement('button');
+            btn.className = 'btn-mcq';
+            btn.innerText = opt.en;
+            btn.onclick = () => checkMasteryAnswer(opt.en === word.en);
+            optArea.appendChild(btn);
+        });
+    }
+
+    // --- L2 結構重組 (拼圖) ---
+    function showMasteryL2(word) {
+        setDisplayState('mastery-l2-area', true);
+        document.getElementById('mastery-l2-q').innerText = word.zh.join(' / ');
+        
+        puzzleUserAnswer = [];
+        let letters = word.en.toLowerCase().split('');
+        for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
+        puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false }));
+        
+        renderMasteryL2Board();
+    }
+    function renderMasteryL2Board() {
+        const ansArea = document.getElementById('mastery-l2-ans'), poolArea = document.getElementById('mastery-l2-pool');
+        ansArea.innerHTML = ''; poolArea.innerHTML = '';
+        puzzleUserAnswer.forEach((letterObj, idx) => { 
+            const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
+            tile.onclick = () => { puzzleUserAnswer[idx].used = false; puzzleUserAnswer.splice(idx, 1); renderMasteryL2Board(); }; 
+            ansArea.appendChild(tile); 
+        });
+        if(puzzleUserAnswer.length < currentMasteryTarget.en.length) { 
+            const placeholder = document.createElement('div'); placeholder.className = 'letter-tile empty'; placeholder.innerText = '_'; ansArea.appendChild(placeholder); 
+        }
+        puzzleSourceLetters.forEach(letterObj => { 
+            if(!letterObj.used) { 
+                const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
+                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryL2Board(); checkMasteryL2(); }; 
+                poolArea.appendChild(tile); 
+            } 
+        });
+    }
+    function checkMasteryL2() {
+        const currentString = puzzleUserAnswer.map(o => o.char).join('');
+        const targetString = currentMasteryTarget.en.toLowerCase();
+        if (puzzleUserAnswer.length === targetString.length) {
+            checkMasteryAnswer(currentString === targetString);
+        }
+    }
+
+    // --- L3 & L4 盲打輸出 ---
+    let masteryIsL4Test = false;
+    function showMasteryL3(word, isL4) {
+        masteryIsL4Test = isL4;
+        setDisplayState('mastery-l3-area', true);
+        document.getElementById('mastery-l3-badge').innerText = isL4 ? "Lv 4: 延遲固化 (畢業測驗)" : "Lv 3: 主動輸出";
+        document.getElementById('mastery-l3-q').innerText = word.zh.join(' / ');
+        const input = document.getElementById('mastery-l3-input');
+        input.value = '';
+        setTimeout(() => input.focus(), 50); // 延遲 Focus 確保游標出現
+        input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); checkMasteryL3(); }};
+    }
+    function checkMasteryL3() {
+        const val = document.getElementById('mastery-l3-input').value.trim().toLowerCase();
+        const target = currentMasteryTarget.en.toLowerCase();
+        checkMasteryAnswer(val === target);
+    }
+
+    // --- Mastery 回饋判定核心 ---
+    function checkMasteryAnswer(isCorrect) {
+        hideAllMasteryAreas();
+        setDisplayState('mastery-feedback-area', true, 'flex');
+        
+        const icon = document.getElementById('mastery-fb-icon');
+        const status = document.getElementById('mastery-fb-status');
+        const msg = document.getElementById('mastery-fb-msg');
+        document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
+        
+        // 唸出正確英文
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let u = new SpeechSynthesisUtterance(currentMasteryTarget.en);
+            u.lang = 'en-US';
+            window.speechSynthesis.speak(u);
+        }
+        
+        tickMasteryDelays(); // 消耗一回合，推進潛伏期
+
+        if (isCorrect) {
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
+            status.innerText = '正確!'; status.className = 'result-status status-correct';
+            
+            if (currentMasteryTarget.level === 1) { 
+                currentMasteryTarget.level = 2; msg.innerText = "✅ 升級！下一步：結構重組"; msg.style.color = "var(--success)";
+            }
+            else if (currentMasteryTarget.level === 2) { 
+                currentMasteryTarget.level = 3; msg.innerText = "✅ 升級！下一步：盲打輸出"; msg.style.color = "var(--success)";
+            }
+            else if (currentMasteryTarget.level === 3) { 
+                currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; 
+                msg.innerText = "⏳ 進入潛伏期！稍後將進行延遲測驗"; msg.style.color = "var(--warning)";
+            }
+            else if (currentMasteryTarget.level === 3.9) { 
+                currentMasteryTarget.level = 4; msg.innerText = "🎉 完美精通此單字！"; msg.style.color = "var(--success)";
+            }
+            
+        } else {
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
+            status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
+            // 無情降級機制：全部掉回 Level 1
+            currentMasteryTarget.level = 1;
+            msg.innerText = "💀 無情降級！退回 Lv 1 重新辨識"; msg.style.color = "var(--error)";
+        }
+    }
+    
+    function masteryFeedbackNext() {
+        nextMasteryTurn();
+    }
+    
+    function replayMasteryAudio() {
+        if(currentMasteryTarget && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            let u = new SpeechSynthesisUtterance(currentMasteryTarget.en);
+            u.lang = 'en-US';
+            window.speechSynthesis.speak(u);
+        }
+    }
+
+    // =====================================
+    // 1. Standard Practice Mode (原版)
     // =====================================
     function setupPractice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
@@ -914,7 +1263,7 @@
     document.getElementById('answer-input').addEventListener('keypress', (e) => { if(e.key === 'Enter'){ e.preventDefault(); checkAnswer(); }});
 
     // =====================================
-    // 2. Multiple Choice Mode
+    // 2. Multiple Choice Mode (原版)
     // =====================================
     function setupMultipleChoice(mode) {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
@@ -958,7 +1307,7 @@
     }
 
     // =====================================
-    // 3. Speaking Challenge Mode 🗣️
+    // 3. Speaking Challenge Mode 🗣️ (原版)
     // =====================================
     function setupSpeakingMode() {
         if (!recognition) return alert("您的瀏覽器目前不支援用語音辨識功能，建議使用最新版 Chrome 或同意麥克風存取權限。");
@@ -1006,7 +1355,7 @@
     }
 
     // =====================================
-    // 4. Puzzle Mode
+    // 4. Puzzle Mode (原版)
     // =====================================
     function setupPuzzleMode() {
         practiceQueue = getPracticeWords(); if(practiceQueue.length === 0) return;
@@ -1045,7 +1394,7 @@
     }
 
     // =====================================
-    // 5. Memory Match Mode
+    // 5. Memory Match Mode (原版)
     // =====================================
     function setupMemoryMode() {
         let pool = getPracticeWords(); if(pool.length === 0) return; if (pool.length < 2) return alert("翻卡遊戲至少需要 2 個單字！");
@@ -1088,7 +1437,7 @@
     }
 
     // =====================================
-    // 6. YouGlish Mode
+    // 6. YouGlish Mode (原版)
     // =====================================
     function setupYouglishMode() {
         practiceQueue = getPracticeWords(); 
