@@ -34,7 +34,10 @@
             --warning: #ff9800;
         }
 
-        * { box-sizing: border-box; outline: none; }
+        * {
+            box-sizing: border-box;
+            outline: none;
+        }
 
         body {
             background-color: var(--bg-color);
@@ -55,16 +58,58 @@
             flex-direction: column;
         }
 
-        header { margin-bottom: 40px; text-align: center; letter-spacing: 2px; text-transform: uppercase; font-weight: 200; }
-        h1 { font-size: 1.5rem; margin: 0; color: var(--accent); }
-        h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 20px; }
+        header {
+            margin-bottom: 40px;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 200;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
 
         /* Navigation Bar */
-        .nav-bar { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; min-height: 40px; }
-        .nav-bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0; position: relative; }
+        .nav-bar {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 40px;
+        }
+
+        .nav-bar-right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+            position: relative;
+        }
         
-        .btn-icon { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 1rem; transition: color 0.3s; padding: 5px; white-space: nowrap; }
-        .btn-icon:hover { color: var(--accent); }
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: color 0.3s;
+            padding: 5px;
+            white-space: nowrap;
+        }
+
+        .btn-icon:hover {
+            color: var(--accent);
+        }
         
         .export-quiz-btn { 
             font-size: 0.85rem; 
@@ -81,92 +126,451 @@
             transition: all 0.2s;
             z-index: 10;
         }
-        .export-quiz-btn:hover { background: var(--accent); color: var(--bg-color); }
 
-        .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: transform 0.2s, border-color 0.2s; }
-        .book-item { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); }
-        .book-item:hover { border-color: var(--text-sub); }
-        .book-item.selected { border-color: var(--accent); background-color: #222; }
+        .export-quiz-btn:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .book-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+
+        .book-item:hover {
+            border-color: var(--text-sub);
+        }
+
+        .book-item.selected {
+            border-color: var(--accent);
+            background-color: #222;
+        }
         
-        .word-item { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 10px 0; border-bottom: 1px solid #222; }
-        .word-item:last-child { border-bottom: none; }
-        .word-en { font-weight: 600; color: var(--accent); }
-        .word-zh { color: var(--text-sub); font-size: 0.9rem; }
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+        }
 
-        input[type="text"], input[type="number"], textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-main); padding: 10px 0; font-size: 1rem; margin-bottom: 20px; transition: border-color 0.3s; font-family: var(--font-family); }
-        input[type="text"]:focus, input[type="number"]:focus, textarea:focus { border-bottom-color: var(--accent); }
-        textarea { border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 120px; margin-top: 10px; font-size: 0.9rem; line-height: 1.5; resize: vertical; }
+        .word-item:last-child {
+            border-bottom: none;
+        }
 
-        .btn { background-color: var(--accent); color: var(--bg-color); border: none; padding: 12px 24px; border-radius: 30px; font-weight: 600; cursor: pointer; font-size: 0.9rem; width: 100%; margin-top: 10px; transition: background 0.3s; }
-        .btn:hover { background-color: var(--accent-hover); }
-        .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
-        .btn-outline:hover { border-color: var(--accent); }
-        .btn-small { padding: 5px 10px; font-size: 0.8rem; width: auto; margin: 0; }
-        .btn-delete { background: transparent; color: #555; border: 1px solid #333; }
-        .btn-delete:hover { color: var(--error); border-color: var(--error); background: transparent; }
-        .btn-yg { border-color: var(--btn-youglish); color: var(--text-main); }
-        .btn-yg:hover { background-color: var(--btn-youglish); border-color: var(--btn-youglish); color: white; }
+        .word-en {
+            font-weight: 600;
+            color: var(--accent);
+        }
 
-        .practice-area { text-align: center; margin-top: 40px; position: relative; }
-        .question-text { font-size: 2rem; margin-bottom: 30px; font-weight: 600; }
-        .hint-text { color: var(--text-sub); margin-bottom: 10px; font-style: italic; height: 20px;}
-        .progress-text { color: var(--text-sub); margin-top: 20px; font-size: 0.8rem; }
+        .word-zh {
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 0;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+            font-family: var(--font-family);
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+            border-bottom-color: var(--accent);
+        }
+
+        textarea {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 120px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent);
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            width: auto;
+            margin: 0;
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: #555;
+            border: 1px solid #333;
+        }
+
+        .btn-delete:hover {
+            color: var(--error);
+            border-color: var(--error);
+            background: transparent;
+        }
+
+        .btn-yg {
+            border-color: var(--btn-youglish);
+            color: var(--text-main);
+        }
+
+        .btn-yg:hover {
+            background-color: var(--btn-youglish);
+            border-color: var(--btn-youglish);
+            color: white;
+        }
+
+        .practice-area {
+            text-align: center;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .question-text {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .hint-text {
+            color: var(--text-sub);
+            margin-bottom: 10px;
+            font-style: italic;
+            height: 20px;
+        }
+
+        .progress-text {
+            color: var(--text-sub);
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
 
         /* 確保 Feedback Area 為垂直排列 */
-        #feedback-area, #mcq-feedback-area, #speaking-feedback-area, #mastery-feedback-area { display: none; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.3s ease; width: 100%; }
+        #feedback-area, #mcq-feedback-area, #speaking-feedback-area, #mastery-feedback-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+            width: 100%;
+        }
         
-        .big-icon { font-size: 4rem; margin-bottom: 15px; font-weight: bold; }
+        .big-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
         .icon-correct { color: var(--success); }
         .icon-wrong { color: var(--error); }
-        .result-status { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; }
+        
+        .result-status {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
         .status-correct { color: var(--success); }
         .status-wrong { color: var(--error); }
-        .answer-reveal { font-size: 1.5rem; margin-bottom: 10px; color: var(--accent); display: flex; align-items: center; gap: 10px; justify-content: center; }
-        .tts-btn-large { background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--text-sub); }
-        .tts-btn-large:hover { color: var(--accent); }
-        .btn-next-big { background-color: var(--btn-primary); color: white; font-size: 1.1rem; padding: 15px; margin-top: 30px; border-radius: 8px; width: 100%; }
-        .btn-next-big:hover { background-color: var(--btn-primary-hover); }
+        
+        .answer-reveal {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
 
-        .mcq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .btn-mcq { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 20px; border-radius: 12px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s; word-break: break-all; }
-        .btn-mcq:hover { border-color: var(--accent); transform: translateY(-2px); }
-        @media (max-width: 480px) { .mcq-grid { grid-template-columns: 1fr; } }
+        .tts-btn-large {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-sub);
+        }
+
+        .tts-btn-large:hover {
+            color: var(--accent);
+        }
+
+        .btn-next-big {
+            background-color: var(--btn-primary);
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .btn-next-big:hover {
+            background-color: var(--btn-primary-hover);
+        }
+
+        .mcq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-mcq {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: break-all;
+        }
+
+        .btn-mcq:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 480px) {
+            .mcq-grid { grid-template-columns: 1fr; }
+        }
 
         /* ======= 雙向連接 (Match) Mode Styles ======= */
-        .match-container { display: flex; gap: 15px; justify-content: space-between; width: 100%; margin-top: 20px; }
-        .match-col { display: flex; flex-direction: column; gap: 10px; width: 48%; }
-        .match-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 15px 10px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.2s; word-break: break-all; }
+        .match-container {
+            display: flex;
+            gap: 15px;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .match-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 48%;
+        }
+
+        .match-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 15px 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            word-break: break-all;
+        }
+
         .match-btn:hover { border-color: var(--accent); }
         .match-btn.selected { border-color: var(--btn-primary); background: rgba(59, 130, 246, 0.2); }
         .match-btn.matched { border-color: var(--success); background: rgba(76, 175, 80, 0.1); color: var(--success); opacity: 0.6; cursor: default; }
         .match-btn.wrong { border-color: var(--error); background: rgba(244, 67, 54, 0.2); animation: shake 0.3s; }
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        
+        @keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            25% {transform: translateX(-5px);}
+            75% {transform: translateX(5px);}
+        }
 
         /* ======= Speaking Mode Styles ======= */
-        .mic-btn { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 2.5rem; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
-        .mic-btn.listening { border-color: var(--error); color: var(--error); box-shadow: 0 0 20px rgba(244, 67, 54, 0.4); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .speaking-status { color: var(--text-sub); margin-top: 10px; height: 20px; }
-        .score-circle { font-size: 3rem; font-weight: 800; color: var(--success); margin-bottom: 10px; }
+        .mic-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 2.5rem;
+            cursor: pointer;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .mic-btn.listening {
+            border-color: var(--error);
+            color: var(--error);
+            box-shadow: 0 0 20px rgba(244, 67, 54, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .speaking-status {
+            color: var(--text-sub);
+            margin-top: 10px;
+            height: 20px;
+        }
+
+        .score-circle {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--success);
+            margin-bottom: 10px;
+        }
 
         /* ======= Puzzle Mode Styles ======= */
-        .puzzle-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; min-height: 60px; }
-        .letter-tile { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 1px solid var(--border); border-radius: 8px; font-weight: bold; font-size: 1.2rem; cursor: pointer; background: var(--card-bg); color: var(--text-main); user-select: none; }
+        .puzzle-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            min-height: 60px;
+        }
+
+        .letter-tile {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background: var(--card-bg);
+            color: var(--text-main);
+            user-select: none;
+        }
+
         .letter-tile:hover { border-color: var(--accent); }
         .letter-tile.empty { border: 1px dashed #333; color: transparent; cursor: default; }
         
         /* ======= Memory Mode Styles ======= */
-        .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
-        .memory-card { background-color: transparent; height: 80px; perspective: 1000px; cursor: pointer; }
-        .memory-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 8px; }
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .memory-card {
+            background-color: transparent;
+            height: 80px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .memory-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 8px;
+        }
+
         .memory-card.flipped .memory-inner { transform: rotateY(180deg); }
         .memory-card.matched .memory-inner { transform: rotateY(180deg); opacity: 0.5; }
-        .memory-front, .memory-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 8px; padding: 5px; font-size: 0.8rem; border: 1px solid var(--border); }
-        .memory-back { background-color: #222; color: var(--text-sub); font-size: 1.5rem; }
-        .memory-front { background-color: var(--card-bg); color: var(--accent); transform: rotateY(180deg); word-break: break-all; line-height: 1.2; }
+        
+        .memory-front, .memory-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            padding: 5px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+        }
+
+        .memory-back {
+            background-color: #222;
+            color: var(--text-sub);
+            font-size: 1.5rem;
+        }
+
+        .memory-front {
+            background-color: var(--card-bg);
+            color: var(--accent);
+            transform: rotateY(180deg);
+            word-break: break-all;
+            line-height: 1.2;
+        }
 
         /* ======= YouGlish Mode Styles ======= */
-        .yg-open-btn { display: block; width: 100%; padding: 20px; margin-bottom: 15px; background: #1a0000; border: 2px solid var(--btn-youglish); border-radius: 12px; color: white; font-size: 1rem; cursor: pointer; text-align: center; transition: background 0.2s; text-decoration: none; }
+        .yg-open-btn {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #1a0000;
+            border: 2px solid var(--btn-youglish);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+
         .yg-open-btn:hover { background: #2d0000; }
         .yg-open-btn .yg-btn-label { font-size: 0.85rem; color: #aaa; margin-top: 5px; }
         .yg-tip { color: var(--text-sub); font-size: 0.82rem; margin-bottom: 20px; line-height: 1.5; }
@@ -174,11 +578,25 @@
         .yg-zh-display { font-size: 1.2rem; color: var(--text-sub); margin-bottom: 20px; }
 
         /* ======= Export Menu Styles ======= */
-        .export-menu { position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; z-index: 100; flex-direction: column; gap: 8px; min-width: 130px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: none; }
+        .export-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 100;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 130px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none;
+        }
+
         .export-menu.active { display: flex; }
 
         .group-title { font-size: 1.1rem; color: var(--accent); margin: 25px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #333; text-align: left; }
-
         .hidden { display: none !important; }
         .flex-row { display: flex; gap: 10px; }
         .checkbox-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
@@ -555,7 +973,9 @@
 </div>
 
 <script>
-    // --- Data Management ---
+    // =====================================
+    // 1. 全局變數與初始化 (Global Setup)
+    // =====================================
     let books = JSON.parse(localStorage.getItem('sv_books')) || [];
     let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
     let isSequentialMode = false;
@@ -570,7 +990,6 @@
     let isGuestMode = false;
     let guestWords = [];
 
-    // --- Web Speech API ---
     let recognition = null;
     try {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -580,18 +999,27 @@
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
         }
-    } catch(e) { console.error("語音 API 初始化失敗", e); }
+    } catch(e) { 
+        console.error("語音 API 初始化失敗", e); 
+    }
 
-    function saveData() { localStorage.setItem('sv_books', JSON.stringify(books)); }
+    function saveData() { 
+        localStorage.setItem('sv_books', JSON.stringify(books)); 
+    }
 
     const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
     
     function switchView(viewName) {
         views.forEach(v => {
             const el = document.getElementById(`view-${v}`);
-            if(el) {
-                if(v === viewName) { el.classList.remove('hidden'); el.style.setProperty('display', 'block', 'important'); } 
-                else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
+            if (el) {
+                if (v === viewName) { 
+                    el.classList.remove('hidden'); 
+                    el.style.setProperty('display', 'block', 'important'); 
+                } else { 
+                    el.classList.add('hidden'); 
+                    el.style.setProperty('display', 'none', 'important'); 
+                }
             }
         });
     }
@@ -599,19 +1027,31 @@
     function setDisplayState(id, isDisplay, displayType = 'block') {
         const el = document.getElementById(id);
         if (el) {
-            if (isDisplay) { el.classList.remove('hidden'); el.style.setProperty('display', displayType, 'important'); } 
-            else { el.classList.add('hidden'); el.style.setProperty('display', 'none', 'important'); }
+            if (isDisplay) { 
+                el.classList.remove('hidden'); 
+                el.style.setProperty('display', displayType, 'important'); 
+            } else { 
+                el.classList.add('hidden'); 
+                el.style.setProperty('display', 'none', 'important'); 
+            }
         }
     }
     
     function goHome() { 
-        updateHomeSummary(); renderSettings(); switchView('home'); 
+        updateHomeSummary(); 
+        renderSettings(); 
+        switchView('home'); 
     }
     
-    function openBookSelect() { renderBookList(); switchView('book-select'); }
+    function openBookSelect() { 
+        renderBookList(); 
+        switchView('book-select'); 
+    }
     
     function quitPractice() { 
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); 
+        }
         if (isGuestMode) {
             isGuestMode = false;
             document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
@@ -622,25 +1062,40 @@
     }
 
     function renderSettings() {
-        const pToggle = document.getElementById('auto-pronounce-toggle'); if (pToggle) pToggle.checked = autoPronounce;
-        const sToggle = document.getElementById('sequential-toggle'); if (sToggle) sToggle.checked = isSequentialMode;
+        const pToggle = document.getElementById('auto-pronounce-toggle'); 
+        if (pToggle) pToggle.checked = autoPronounce;
+        const sToggle = document.getElementById('sequential-toggle'); 
+        if (sToggle) sToggle.checked = isSequentialMode;
     }
-    function togglePronunciation() { autoPronounce = !autoPronounce; localStorage.setItem('sv_autoPronounce', autoPronounce); renderSettings(); }
-    function toggleSequential() { isSequentialMode = !isSequentialMode; renderSettings(); }
+
+    function togglePronunciation() { 
+        autoPronounce = !autoPronounce; 
+        localStorage.setItem('sv_autoPronounce', autoPronounce); 
+        renderSettings(); 
+    }
+
+    function toggleSequential() { 
+        isSequentialMode = !isSequentialMode; 
+        renderSettings(); 
+    }
     
     function speakEnglishWord(word) {
         if (!autoPronounce && !window.forceSpeak) return; 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(word);
-            utterance.lang = 'en-US'; utterance.rate = 0.95; 
+            utterance.lang = 'en-US'; 
+            utterance.rate = 0.95; 
             window.speechSynthesis.speak(utterance);
         }
         window.forceSpeak = false;
     }
+
     function replayAudio() { 
         window.forceSpeak = true; 
-        if(practiceQueue[currentCardIndex]) { speakEnglishWord(practiceQueue[currentCardIndex].en); }
+        if (practiceQueue[currentCardIndex]) {
+            speakEnglishWord(practiceQueue[currentCardIndex].en); 
+        }
     }
 
     function requeueWord(word) {
@@ -660,7 +1115,7 @@
         if (isGuestMode) {
             if (confirm("測驗結束！🎉\n\n你要將這份「朋友分享的單字庫」儲存到你的 SilenVocab 嗎？")) {
                 const newName = prompt("請為這份單字簿取個名字：", "分享的單字包");
-                if(newName) {
+                if (newName) {
                     books.push({ id: Date.now(), name: newName, tag: "來自分享", words: guestWords });
                     saveData();
                     alert("✅ 儲存成功！已加入你的單字庫中。");
@@ -672,13 +1127,21 @@
         quitPractice();
     }
 
+    // =====================================
+    // 2. 分享與連網功能 (Share & LZ-String)
+    // =====================================
     function shareCurrentQuiz() {
-        if (typeof LZString === 'undefined') { alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); return; }
+        if (typeof LZString === 'undefined') { 
+            alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); 
+            return; 
+        }
+        
         let wordsToShare = practiceQueue;
-        if(practiceQueue.length > 50) {
+        if (practiceQueue.length > 50) {
             alert("提醒：為了確保網址能正常在 Instagram / LINE 分享，系統將只截取前 50 個單字作為測驗包！");
             wordsToShare = practiceQueue.slice(0, 50);
         }
+        
         let view = 'practice';
         if (!document.getElementById('view-mcq').classList.contains('hidden')) view = 'mcq';
         else if (!document.getElementById('view-speaking').classList.contains('hidden')) view = 'speaking';
@@ -697,104 +1160,209 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     alert("✅ 測驗連結已複製到剪貼簿！網址已高度壓縮，發 IG 限動絕對沒問題！");
-                }).catch(err => { prompt("請手動複製以下連結分享給朋友：", shareUrl); });
+                }).catch(err => { 
+                    prompt("請手動複製以下連結分享給朋友：", shareUrl); 
+                });
             } else {
                 prompt("請手動複製以下連結分享給朋友：", shareUrl);
             }
-        } catch(e) { console.error(e); alert("產生分享連結失敗"); }
+        } catch(e) { 
+            console.error(e); 
+            alert("產生分享連結失敗"); 
+        }
     }
 
     function checkShareUrl() {
         const urlParams = new URLSearchParams(window.location.search);
         const lzCode = urlParams.get('lz');
+        
         if (lzCode) {
             try {
-                if (typeof LZString === 'undefined') { setTimeout(checkShareUrl, 100); return true; }
+                if (typeof LZString === 'undefined') { 
+                    setTimeout(checkShareUrl, 100); 
+                    return true; 
+                }
                 const jsonStr = LZString.decompressFromEncodedURIComponent(lzCode);
                 if (!jsonStr) throw new Error("解壓縮失敗");
+                
                 const decoded = JSON.parse(jsonStr);
-                const finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) };
-                startGuestMode(finalData); return true;
-            } catch(e) { console.error(e); alert("❌ 無效或過期的分享連結！"); return false; }
+                const finalData = { 
+                    v: decoded[0], 
+                    m: decoded[1], 
+                    s: decoded[2] === 1, 
+                    w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
+                };
+                startGuestMode(finalData); 
+                return true;
+            } catch(e) { 
+                console.error(e); 
+                alert("❌ 無效或過期的分享連結！"); 
+                return false; 
+            }
         }
         
         let shareCode = urlParams.get('s') || urlParams.get('share');
         if (shareCode) {
             try {
                 shareCode = shareCode.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
-                while (shareCode.length % 4) shareCode += '=';
+                while (shareCode.length % 4) {
+                    shareCode += '=';
+                }
                 const jsonStr = decodeURIComponent(escape(atob(shareCode)));
                 const decoded = JSON.parse(jsonStr);
+                
                 let finalData;
-                if (Array.isArray(decoded)) { finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) }; } 
-                else { finalData = decoded; }
-                startGuestMode(finalData); return true;
-            } catch(e) { console.error(e); alert("❌ 無效或過期的舊版分享連結！"); return false; }
+                if (Array.isArray(decoded)) { 
+                    finalData = { 
+                        v: decoded[0], 
+                        m: decoded[1], 
+                        s: decoded[2] === 1, 
+                        w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
+                    }; 
+                } else { 
+                    finalData = decoded; 
+                }
+                startGuestMode(finalData); 
+                return true;
+            } catch(e) { 
+                console.error(e); 
+                alert("❌ 無效或過期的舊版分享連結！"); 
+                return false; 
+            }
         }
         return false;
     }
 
     function startGuestMode(data) {
-        isGuestMode = true; guestWords = data.w; practiceQueue = [...data.w]; currentMode = data.m; isSequentialMode = data.s;
-        initialQueueLength = practiceQueue.length; completedCount = 0; currentCardIndex = 0;
+        isGuestMode = true; 
+        guestWords = data.w; 
+        practiceQueue = [...data.w]; 
+        currentMode = data.m; 
+        isSequentialMode = data.s;
+        
+        initialQueueLength = practiceQueue.length; 
+        completedCount = 0; 
+        currentCardIndex = 0;
 
         document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
         document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '🏠 離開');
 
         if (data.v === 'mcq') {
             document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (訪客對戰)';
-            setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); switchView('mcq'); showMcqNextCard();
-        } else if (data.v === 'speaking') { switchView('speaking'); showNextSpeakingCard();
-        } else if (data.v === 'puzzle') { setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); switchView('puzzle'); loadPuzzleLevel();
-        } else if (data.v === 'memory') { setupMemoryModeGuest();
-        } else if (data.v === 'youglish') { switchView('youglish'); loadYouglishCard();
+            setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
+            switchView('mcq'); 
+            showMcqNextCard();
+        } else if (data.v === 'speaking') { 
+            switchView('speaking'); 
+            showNextSpeakingCard();
+        } else if (data.v === 'puzzle') { 
+            setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
+            switchView('puzzle'); 
+            loadPuzzleLevel();
+        } else if (data.v === 'memory') { 
+            setupMemoryModeGuest();
+        } else if (data.v === 'youglish') { 
+            switchView('youglish'); 
+            loadYouglishCard();
         } else {
             document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (訪客對戰)';
-            setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
-            switchView('practice'); showNextCard();
+            setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); 
+            setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
+            switchView('practice'); 
+            showNextCard();
         }
     }
 
-    // --- Book Management ---
+    // =====================================
+    // 3. 單字簿管理 (Book Management)
+    // =====================================
     function updateHomeSummary() {
         const summaryEl = document.getElementById('home-book-summary');
-        if(!summaryEl) return;
+        if (!summaryEl) return;
+        
         let selectedCount = 0, wordCount = 0;
-        books.forEach(b => { if(selectedBookIds.has(b.id)) { selectedCount++; wordCount += b.words.length; } });
-        if(selectedCount === 0) summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先進入管理區選擇喔！</span>';
-        else summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
+        books.forEach(b => { 
+            if (selectedBookIds.has(b.id)) { 
+                selectedCount++; 
+                wordCount += b.words.length; 
+            } 
+        });
+        
+        if (selectedCount === 0) {
+            summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先進入管理區選擇喔！</span>';
+        } else {
+            summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
+        }
     }
 
     function renderBookList() {
-        const list = document.getElementById('book-list'); list.innerHTML = '';
-        if(books.length === 0) { 
+        const list = document.getElementById('book-list'); 
+        list.innerHTML = '';
+        
+        if (books.length === 0) { 
             list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">目前沒有單字簿，請在下方新增</div>'; 
-            updateHomeSummary(); return; 
+            updateHomeSummary(); 
+            return; 
         }
 
         const groups = {};
         books.forEach(book => {
             const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
-            if(!groups[t]) groups[t] = [];
+            if (!groups[t]) groups[t] = [];
             groups[t].push(book);
         });
 
-        const keys = Object.keys(groups).sort((a, b) => { if(a === '未分類') return 1; if(b === '未分類') return -1; return a.localeCompare(b); });
+        const keys = Object.keys(groups).sort((a, b) => { 
+            if (a === '未分類') return 1; 
+            if (b === '未分類') return -1; 
+            return a.localeCompare(b); 
+        });
 
         keys.forEach(k => {
-            const header = document.createElement('div'); header.className = 'group-title'; header.innerText = `🏷️ ${k}`; list.appendChild(header);
+            const header = document.createElement('div'); 
+            header.className = 'group-title'; 
+            header.innerText = `🏷️ ${k}`; 
+            list.appendChild(header);
+            
             groups[k].forEach(book => {
-                const div = document.createElement('div'); div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
-                const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; wrapper.style.flex = '1';
-                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selectedBookIds.has(book.id); checkbox.style.pointerEvents = 'none';
-                const info = document.createElement('div'); info.style.flex = '1'; info.style.marginLeft = '15px';
+                const div = document.createElement('div'); 
+                div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                
+                const wrapper = document.createElement('div'); 
+                wrapper.className = 'checkbox-wrapper'; 
+                wrapper.style.flex = '1';
+                
+                const checkbox = document.createElement('input'); 
+                checkbox.type = 'checkbox'; 
+                checkbox.checked = selectedBookIds.has(book.id); 
+                checkbox.style.pointerEvents = 'none';
+                
+                const info = document.createElement('div'); 
+                info.style.flex = '1'; 
+                info.style.marginLeft = '15px';
                 info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
-                wrapper.appendChild(checkbox); wrapper.appendChild(info);
-                const editBtn = document.createElement('button'); editBtn.className = 'btn-icon'; editBtn.innerHTML = '✎'; 
-                editBtn.onclick = (e) => { e.stopPropagation(); openEditBook(book.id); };
-                div.appendChild(wrapper); div.appendChild(editBtn);
+                
+                wrapper.appendChild(checkbox); 
+                wrapper.appendChild(info);
+                
+                const editBtn = document.createElement('button'); 
+                editBtn.className = 'btn-icon'; 
+                editBtn.innerHTML = '✎'; 
+                editBtn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    openEditBook(book.id); 
+                };
+                
+                div.appendChild(wrapper); 
+                div.appendChild(editBtn);
+                
                 div.onclick = (e) => { 
-                    if(selectedBookIds.has(book.id)) selectedBookIds.delete(book.id); else selectedBookIds.add(book.id); renderBookList(); 
+                    if (selectedBookIds.has(book.id)) {
+                        selectedBookIds.delete(book.id); 
+                    } else {
+                        selectedBookIds.add(book.id); 
+                    }
+                    renderBookList(); 
                 };
                 list.appendChild(div);
             });
@@ -816,35 +1384,66 @@
 
     function toggleImportArea() {
         const area = document.getElementById('import-area');
-        if (area.classList.contains('hidden')) { setDisplayState('import-area', true); setDisplayState('btn-create-simple', false); } 
-        else { setDisplayState('import-area', false); setDisplayState('btn-create-simple', true); }
+        if (area.classList.contains('hidden')) { 
+            setDisplayState('import-area', true); 
+            setDisplayState('btn-create-simple', false); 
+        } else { 
+            setDisplayState('import-area', false); 
+            setDisplayState('btn-create-simple', true); 
+        }
     }
 
     function addBookSimple() {
-        const name = document.getElementById('new-book-name').value.trim(), tag = document.getElementById('new-book-tag').value.trim();
+        const name = document.getElementById('new-book-name').value.trim();
+        const tag = document.getElementById('new-book-tag').value.trim();
         if (!name) return alert("請輸入單字簿名稱");
-        books.push({ id: Date.now(), name: name, tag: tag, words: [] }); saveData(); 
-        document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; renderBookList();
+        
+        books.push({ id: Date.now(), name: name, tag: tag, words: [] }); 
+        saveData(); 
+        
+        document.getElementById('new-book-name').value = ''; 
+        document.getElementById('new-book-tag').value = ''; 
+        renderBookList();
     }
 
     function addBookWithImport() {
-        const name = document.getElementById('new-book-name').value.trim(), tag = document.getElementById('new-book-tag').value.trim(), rawText = document.getElementById('import-content').value.trim();
-        if (!name) return alert("請輸入單字簿名稱"); if (!rawText) return alert("請貼上單字列表");
-        const lines = rawText.split('\n'), newWords = [];
+        const name = document.getElementById('new-book-name').value.trim();
+        const tag = document.getElementById('new-book-tag').value.trim();
+        const rawText = document.getElementById('import-content').value.trim();
+        
+        if (!name) return alert("請輸入單字簿名稱"); 
+        if (!rawText) return alert("請貼上單字列表");
+        
+        const lines = rawText.split('\n');
+        const newWords = [];
+        
         lines.forEach(line => {
-            let separatorIndex = line.indexOf('-'); if(separatorIndex === -1) separatorIndex = line.indexOf('–'); 
+            let separatorIndex = line.indexOf('-'); 
+            if (separatorIndex === -1) separatorIndex = line.indexOf('–'); 
+            
             if (separatorIndex > 0) {
-                const en = line.substring(0, separatorIndex).trim(), zhStr = line.substring(separatorIndex + 1).trim();
+                const en = line.substring(0, separatorIndex).trim();
+                const zhStr = line.substring(separatorIndex + 1).trim();
                 if (en && zhStr) {
                     const zh = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
                     newWords.push({ en: en, zh: zh });
                 }
             }
         });
-        if (newWords.length === 0) return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
-        books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); saveData();
-        document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; document.getElementById('import-content').value = ''; 
-        toggleImportArea(); renderBookList(); alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
+        
+        if (newWords.length === 0) {
+            return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
+        }
+        
+        books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
+        saveData();
+        
+        document.getElementById('new-book-name').value = ''; 
+        document.getElementById('new-book-tag').value = ''; 
+        document.getElementById('import-content').value = ''; 
+        toggleImportArea(); 
+        renderBookList(); 
+        alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
     }
 
     function toggleExportMenu() {
@@ -866,8 +1465,12 @@
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(content).then(() => {
                     alert("✅ 單字已成功複製到剪貼簿！\n(格式: 英文 - 中文)");
-                }).catch(() => { prompt("請手動複製以下內容：", content); });
-            } else { prompt("請手動複製以下內容：", content); }
+                }).catch(() => {
+                    prompt("請手動複製以下內容：", content);
+                });
+            } else {
+                prompt("請手動複製以下內容：", content);
+            }
         } else if (type === 'download') {
             const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
@@ -879,6 +1482,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
+        
         toggleExportMenu();
     }
 
@@ -891,61 +1495,115 @@
     });
 
     function deleteCurrentBook() {
-        if(confirm('確定要刪除整個單字簿嗎？')) { books = books.filter(b => b.id !== currentBookId); selectedBookIds.delete(currentBookId); saveData(); openBookSelect(); }
+        if(confirm('確定要刪除整個單字簿嗎？')) { 
+            books = books.filter(b => b.id !== currentBookId); 
+            selectedBookIds.delete(currentBookId); 
+            saveData(); 
+            openBookSelect(); 
+        }
     }
 
     function openEditBook(id) { 
-        currentBookId = id; const book = books.find(b => b.id === id);
-        document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
+        currentBookId = id; 
+        const book = books.find(b => b.id === id);
+        document.getElementById('edit-book-name-input').value = book.name; 
+        document.getElementById('edit-book-tag-input').value = book.tag || '';
         document.getElementById('export-menu').classList.remove('active');
-        renderWordList(); switchView('edit'); 
+        renderWordList(); 
+        switchView('edit'); 
     }
 
     function saveBookInfo() {
-        const book = books.find(b => b.id === currentBookId); if(!book) return;
-        const newName = document.getElementById('edit-book-name-input').value.trim(), newTag = document.getElementById('edit-book-tag-input').value.trim();
+        const book = books.find(b => b.id === currentBookId); 
+        if(!book) return;
+        
+        const newName = document.getElementById('edit-book-name-input').value.trim();
+        const newTag = document.getElementById('edit-book-tag-input').value.trim();
+        
         if(!newName) return alert('單字簿名稱不能為空！');
-        book.name = newName; book.tag = newTag; saveData(); alert('已儲存基本資訊變更！');
+        
+        book.name = newName; 
+        book.tag = newTag; 
+        saveData(); 
+        alert('已儲存基本資訊變更！');
     }
 
     function renderWordList() {
-        const book = books.find(b => b.id === currentBookId); const list = document.getElementById('word-list'); list.innerHTML = '';
+        const book = books.find(b => b.id === currentBookId); 
+        const list = document.getElementById('word-list'); 
+        list.innerHTML = '';
+        
         [...book.words].reverse().forEach((word, index) => {
-            const div = document.createElement('div'); div.className = 'word-item';
-            div.innerHTML = `<div><div class="word-en">${word.en}</div><div class="word-zh">${word.zh.join(', ')}</div></div><button class="btn-icon btn-delete" onclick="deleteWord(${book.words.length - 1 - index})">✕</button>`;
+            const div = document.createElement('div'); 
+            div.className = 'word-item';
+            div.innerHTML = `
+                <div>
+                    <div class="word-en">${word.en}</div>
+                    <div class="word-zh">${word.zh.join(', ')}</div>
+                </div>
+                <button class="btn-icon btn-delete" onclick="deleteWord(${book.words.length - 1 - index})">✕</button>
+            `;
             list.appendChild(div);
         });
     }
 
     function addWord() {
-        const en = document.getElementById('input-en').value.trim(), zhStr = document.getElementById('input-zh').value.trim();
+        const en = document.getElementById('input-en').value.trim();
+        const zhStr = document.getElementById('input-zh').value.trim();
+        
         if(!en || !zhStr) return alert("請輸入完整");
+        
         const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
-        books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); saveData();
-        document.getElementById('input-en').value = ''; document.getElementById('input-zh').value = ''; document.getElementById('input-en').focus(); renderWordList();
+        books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
+        saveData();
+        
+        document.getElementById('input-en').value = ''; 
+        document.getElementById('input-zh').value = ''; 
+        document.getElementById('input-en').focus(); 
+        renderWordList();
     }
 
-    function deleteWord(index) { books.find(b => b.id === currentBookId).words.splice(index, 1); saveData(); renderWordList(); }
+    function deleteWord(index) { 
+        books.find(b => b.id === currentBookId).words.splice(index, 1); 
+        saveData(); 
+        renderWordList(); 
+    }
     
     function getPracticeWords() {
-        if (selectedBookIds.size === 0) { alert("請先進入「選擇與管理單字簿」勾選你要練習的範圍喔！"); return []; }
-        let queue = []; books.forEach(book => { if (selectedBookIds.has(book.id)) queue.push(...book.words); });
-        if (queue.length === 0) { alert("選定的單字簿裡面沒有任何單字！"); return []; } 
+        if (selectedBookIds.size === 0) { 
+            alert("請先進入「選擇與管理單字簿」勾選你要練習的範圍喔！"); 
+            return []; 
+        }
+        let queue = []; 
+        books.forEach(book => { 
+            if (selectedBookIds.has(book.id)) {
+                queue.push(...book.words); 
+            }
+        });
+        if (queue.length === 0) { 
+            alert("選定的單字簿裡面沒有任何單字！"); 
+            return []; 
+        } 
         return queue;
     }
 
     function getSelectedWordsPool() {
         if (isGuestMode) return guestWords;
-        let pool = []; books.forEach(book => { if (selectedBookIds.has(book.id)) pool.push(...book.words); }); 
+        let pool = []; 
+        books.forEach(book => { 
+            if (selectedBookIds.has(book.id)) {
+                pool.push(...book.words); 
+            }
+        }); 
         return pool;
     }
 
     // =====================================
-    // 🚀 雙軌精通模式 (Mastery Mode) 🚀
+    // 4. 🚀 雙軌精通模式 (Mastery Mode) 🚀
     // =====================================
     let masteryPool = [];
     let currentMasteryTarget = null;
-    let masteryModeType = 'comprehensive'; // 'comprehensive' 或 'connection'
+    let masteryModeType = 'comprehensive'; 
     let delayWaitTurns = 4;
 
     function setupMasteryMode(type) {
@@ -956,7 +1614,6 @@
         masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0 }));
         masteryPool.sort(() => Math.random() - 0.5);
         
-        // 根據模式設定標題和按鈕顏色
         const headerTitle = document.getElementById('mastery-header-title');
         const progressBar = document.getElementById('mastery-progress-bar');
         const l0Card = document.getElementById('mastery-l0-card');
@@ -967,13 +1624,23 @@
             headerTitle.style.color = "#9c27b0";
             progressBar.style.background = "#9c27b0";
             l0Card.style.borderColor = "#9c27b0";
-            nextBtns.forEach(b => { b.className = "btn mastery-btn-comp btn-next-big"; if(b.id === 'mastery-btn-l0' || b.id === 'mastery-btn-puzzle' || b.id === 'mastery-btn-typing' || b.id === 'mastery-btn-finish') b.classList.remove('btn-next-big'); });
+            nextBtns.forEach(b => { 
+                b.className = "btn mastery-btn-comp btn-next-big"; 
+                if (['mastery-btn-l0', 'mastery-btn-puzzle', 'mastery-btn-typing', 'mastery-btn-finish'].includes(b.id)) {
+                    b.classList.remove('btn-next-big'); 
+                }
+            });
         } else {
             headerTitle.innerText = "連結力訓練模式";
             headerTitle.style.color = "#009688";
             progressBar.style.background = "#009688";
             l0Card.style.borderColor = "#009688";
-            nextBtns.forEach(b => { b.className = "btn mastery-btn-conn btn-next-big"; if(b.id === 'mastery-btn-l0' || b.id === 'mastery-btn-puzzle' || b.id === 'mastery-btn-typing' || b.id === 'mastery-btn-finish') b.classList.remove('btn-next-big'); });
+            nextBtns.forEach(b => { 
+                b.className = "btn mastery-btn-conn btn-next-big"; 
+                if (['mastery-btn-l0', 'mastery-btn-puzzle', 'mastery-btn-typing', 'mastery-btn-finish'].includes(b.id)) {
+                    b.classList.remove('btn-next-big'); 
+                }
+            });
         }
 
         switchView('mastery');
@@ -986,6 +1653,7 @@
         let mastered = masteryPool.filter(w => w.level === targetLevel).length;
         let total = masteryPool.length;
         let pct = (mastered / total) * 100;
+        
         document.getElementById('mastery-progress-bar').style.width = pct + '%';
         document.getElementById('mastery-status-text').innerText = `進度: ${mastered} / ${total}`;
         return mastered === total;
@@ -1001,7 +1669,6 @@
 
         hideAllMasteryAreas();
 
-        // 優先度 1: Level 0 (暖身)
         let l0 = masteryPool.filter(w => w.level === 0);
         if (l0.length > 0) {
             currentMasteryTarget = l0[0];
@@ -1009,19 +1676,17 @@
             return;
         }
 
-        // 優先度 2: 潛伏期結束 (準備畢業測驗)
         let delayReady = masteryPool.filter(w => w.level === 3.9 || w.level === 2.9);
         if (delayReady.length > 0) {
             currentMasteryTarget = delayReady.sort(() => Math.random() - 0.5)[0];
             if (masteryModeType === 'comprehensive') {
-                showMasteryTyping(currentMasteryTarget, true); // 3.9 -> L4 Typing
+                showMasteryTyping(currentMasteryTarget, true); 
             } else {
-                showMasteryMCQ(currentMasteryTarget, true); // 2.9 -> L3 MCQ
+                showMasteryMCQ(currentMasteryTarget, true); 
             }
             return;
         }
 
-        // 優先度 3: 隨機抽取進行中的單字
         let active = masteryPool.filter(w => w.level >= 1 && w.level <= 3 && Number.isInteger(w.level));
         if (active.length > 0) {
             currentMasteryTarget = active.sort(() => Math.random() - 0.5)[0];
@@ -1029,23 +1694,28 @@
             if (currentMasteryTarget.level === 1) {
                 showMasteryMCQ(currentMasteryTarget, false);
             } else if (currentMasteryTarget.level === 2) {
-                if (masteryModeType === 'comprehensive') showMasteryPuzzle(currentMasteryTarget);
-                else showMasteryMatch(currentMasteryTarget);
+                if (masteryModeType === 'comprehensive') {
+                    showMasteryPuzzle(currentMasteryTarget);
+                } else {
+                    showMasteryMatch(currentMasteryTarget);
+                }
             } else if (currentMasteryTarget.level === 3) {
                 showMasteryTyping(currentMasteryTarget, false);
             }
             return;
         }
 
-        // 防卡死: 強制推進潛伏期的單字
         let waiting = masteryPool.filter(w => w.level === 3.5 || w.level === 2.5);
         if (waiting.length > 0) {
             let forceTarget = waiting[0];
             forceTarget.level = forceTarget.level === 3.5 ? 3.9 : 2.9;
             currentMasteryTarget = forceTarget;
             
-            if (masteryModeType === 'comprehensive') showMasteryTyping(currentMasteryTarget, true);
-            else showMasteryMCQ(currentMasteryTarget, true);
+            if (masteryModeType === 'comprehensive') {
+                showMasteryTyping(currentMasteryTarget, true);
+            } else {
+                showMasteryMCQ(currentMasteryTarget, true);
+            }
             return;
         }
     }
@@ -1067,7 +1737,6 @@
         });
     }
     
-    // --- L0 破冰暖身 ---
     function showMasteryL0(word) {
         setDisplayState('mastery-l0-area', true);
         document.getElementById('mastery-l0-en').innerText = word.en;
@@ -1076,20 +1745,21 @@
         if ('speechSynthesis' in window && autoPronounce) {
             window.speechSynthesis.cancel();
             let uEn = new SpeechSynthesisUtterance(word.en);
-            uEn.lang = 'en-US'; uEn.rate = 0.95;
+            uEn.lang = 'en-US'; 
+            uEn.rate = 0.95;
             let uZh = new SpeechSynthesisUtterance(word.zh[0]);
             uZh.lang = 'zh-TW';
             window.speechSynthesis.speak(uEn);
             window.speechSynthesis.speak(uZh);
         }
     }
+
     function masteryL0Next() {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         currentMasteryTarget.level = 1;
         nextMasteryTurn();
     }
 
-    // --- MCQ 視覺辨識 (共用於 L1 或 Connection 的畢業考) ---
     function showMasteryMCQ(word, isDelayed) {
         setDisplayState('mastery-mcq-area', true);
         
@@ -1125,7 +1795,6 @@
         });
     }
 
-    // --- Match 雙向連接 (用於 Connection L2) ---
     let matchEnSelected = null;
     let matchZhSelected = null;
     let matchMistake = false;
@@ -1157,19 +1826,23 @@
     function renderMatchColumns(enList, zhList) {
         const enCol = document.getElementById('match-col-en');
         const zhCol = document.getElementById('match-col-zh');
-        enCol.innerHTML = ''; zhCol.innerHTML = '';
-        matchEnSelected = null; matchZhSelected = null;
+        enCol.innerHTML = ''; 
+        zhCol.innerHTML = '';
+        matchEnSelected = null; 
+        matchZhSelected = null;
         
         enList.forEach((item) => {
             let btn = document.createElement('button');
-            btn.className = 'match-btn'; btn.innerText = item.text;
+            btn.className = 'match-btn'; 
+            btn.innerText = item.text;
             btn.onclick = () => handleMatchClick('en', item, btn);
             enCol.appendChild(btn);
         });
         
         zhList.forEach((item) => {
             let btn = document.createElement('button');
-            btn.className = 'match-btn'; btn.innerText = item.text;
+            btn.className = 'match-btn'; 
+            btn.innerText = item.text;
             btn.onclick = () => handleMatchClick('zh', item, btn);
             zhCol.appendChild(btn);
         });
@@ -1182,9 +1855,12 @@
             if (matchEnSelected) matchEnSelected.btn.classList.remove('selected');
             matchEnSelected = { item, btn: btnElement };
             btnElement.classList.add('selected');
+            
             if ('speechSynthesis' in window && autoPronounce) {
                  window.speechSynthesis.cancel();
-                 let u = new SpeechSynthesisUtterance(item.text); u.lang = 'en-US'; window.speechSynthesis.speak(u);
+                 let u = new SpeechSynthesisUtterance(item.text); 
+                 u.lang = 'en-US'; 
+                 window.speechSynthesis.speak(u);
             }
         } else {
             if (matchZhSelected) matchZhSelected.btn.classList.remove('selected');
@@ -1198,12 +1874,16 @@
     }
     
     function checkMatchPair() {
-        let en = matchEnSelected; let zh = matchZhSelected;
+        let en = matchEnSelected; 
+        let zh = matchZhSelected;
         
         if (en.item.ref.en === zh.item.ref.en) { 
-            en.btn.classList.remove('selected'); zh.btn.classList.remove('selected');
-            en.btn.classList.add('matched'); zh.btn.classList.add('matched');
-            matchEnSelected = null; matchZhSelected = null;
+            en.btn.classList.remove('selected'); 
+            zh.btn.classList.remove('selected');
+            en.btn.classList.add('matched'); 
+            zh.btn.classList.add('matched');
+            matchEnSelected = null; 
+            matchZhSelected = null;
             matchPairsLeft--;
             
             if (matchPairsLeft === 0) {
@@ -1211,16 +1891,18 @@
             }
         } else { 
             matchMistake = true;
-            en.btn.classList.add('wrong'); zh.btn.classList.add('wrong');
+            en.btn.classList.add('wrong'); 
+            zh.btn.classList.add('wrong');
+            
             setTimeout(() => {
                 en.btn.classList.remove('wrong', 'selected');
                 zh.btn.classList.remove('wrong', 'selected');
-                matchEnSelected = null; matchZhSelected = null;
+                matchEnSelected = null; 
+                matchZhSelected = null;
             }, 500);
         }
     }
 
-    // --- Puzzle 結構重組 (用於 Comprehensive L2) ---
     function showMasteryPuzzle(word) {
         setDisplayState('mastery-puzzle-area', true);
         document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / ');
@@ -1228,7 +1910,10 @@
         
         puzzleUserAnswer = [];
         let letters = word.en.toLowerCase().split('');
-        for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
+        for (let i = letters.length - 1; i > 0; i--) { 
+            const j = Math.floor(Math.random() * (i + 1)); 
+            [letters[i], letters[j]] = [letters[j], letters[i]]; 
+        }
         puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false }));
         
         renderMasteryPuzzleBoard();
@@ -1236,25 +1921,49 @@
     
     function showMasteryPuzzleHint() {
         const word = currentMasteryTarget.en;
-        if(word.length <= 2) { document.getElementById('mastery-puzzle-hint-display').innerText = word; return; }
+        if (word.length <= 2) { 
+            document.getElementById('mastery-puzzle-hint-display').innerText = word; 
+            return; 
+        }
         document.getElementById('mastery-puzzle-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
     }
 
     function renderMasteryPuzzleBoard() {
-        const ansArea = document.getElementById('mastery-puzzle-ans'), poolArea = document.getElementById('mastery-puzzle-pool');
-        ansArea.innerHTML = ''; poolArea.innerHTML = '';
+        const ansArea = document.getElementById('mastery-puzzle-ans');
+        const poolArea = document.getElementById('mastery-puzzle-pool');
+        ansArea.innerHTML = ''; 
+        poolArea.innerHTML = '';
+        
         puzzleUserAnswer.forEach((letterObj, idx) => { 
-            const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
-            tile.onclick = () => { puzzleUserAnswer[idx].used = false; puzzleUserAnswer.splice(idx, 1); renderMasteryPuzzleBoard(); }; 
+            const tile = document.createElement('div'); 
+            tile.className = 'letter-tile'; 
+            tile.innerText = letterObj.char; 
+            tile.onclick = () => { 
+                puzzleUserAnswer[idx].used = false; 
+                puzzleUserAnswer.splice(idx, 1); 
+                renderMasteryPuzzleBoard(); 
+            }; 
             ansArea.appendChild(tile); 
         });
-        if(puzzleUserAnswer.length < currentMasteryTarget.en.length) { 
-            const placeholder = document.createElement('div'); placeholder.className = 'letter-tile empty'; placeholder.innerText = '_'; ansArea.appendChild(placeholder); 
+        
+        if (puzzleUserAnswer.length < currentMasteryTarget.en.length) { 
+            const placeholder = document.createElement('div'); 
+            placeholder.className = 'letter-tile empty'; 
+            placeholder.innerText = '_'; 
+            ansArea.appendChild(placeholder); 
         }
+        
         puzzleSourceLetters.forEach(letterObj => { 
-            if(!letterObj.used) { 
-                const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
-                tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); renderMasteryPuzzleBoard(); checkMasteryPuzzle(false); }; 
+            if (!letterObj.used) { 
+                const tile = document.createElement('div'); 
+                tile.className = 'letter-tile'; 
+                tile.innerText = letterObj.char; 
+                tile.onclick = () => { 
+                    letterObj.used = true; 
+                    puzzleUserAnswer.push(letterObj); 
+                    renderMasteryPuzzleBoard(); 
+                    checkMasteryPuzzle(false); 
+                }; 
                 poolArea.appendChild(tile); 
             } 
         });
@@ -1268,15 +1977,20 @@
         }
     }
 
-    // --- Typing 盲打輸出 (用於 Comprehensive L3/L4) ---
     function showMasteryTyping(word, isDelayed) {
         setDisplayState('mastery-typing-area', true);
-        document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 4: 延遲固化 (畢業測驗)" : "Lv 3: 主動輸出";
+        document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業測驗)" : "Lv 3: 主動輸出";
         document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
+        
         const input = document.getElementById('mastery-typing-input');
         input.value = '';
         setTimeout(() => input.focus(), 50); 
-        input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); checkMasteryTyping(); }};
+        input.onkeypress = (e) => { 
+            if(e.key === 'Enter') { 
+                e.preventDefault(); 
+                checkMasteryTyping(); 
+            }
+        };
     }
     
     function checkMasteryTyping() {
@@ -1285,7 +1999,6 @@
         checkMasteryAnswer(val === target);
     }
 
-    // --- Mastery 回饋判定核心 ---
     function checkMasteryAnswer(isCorrect) {
         hideAllMasteryAreas();
         setDisplayState('mastery-feedback-area', true, 'flex');
@@ -1308,29 +2021,59 @@
 
         if (masteryModeType === 'comprehensive') {
             if (isCorrect) {
-                icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
-                status.innerText = '正確!'; status.className = 'result-status status-correct';
-                if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = "答對！前進 Level 2"; }
-                else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = "答對！前進 Level 3"; }
-                else if (lvl === 3) { currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = "進入潛伏期！稍後進行延遲測驗"; }
-                else if (lvl === 3.9) { currentMasteryTarget.level = 5; msg.innerText = "測驗通過，單字已精通！"; }
+                icon.innerText = '✔'; 
+                icon.className = 'big-icon icon-correct'; 
+                status.innerText = '正確!'; 
+                status.className = 'result-status status-correct';
+                
+                if (lvl === 1) { 
+                    currentMasteryTarget.level = 2; 
+                    msg.innerText = "答對！前進 Level 2"; 
+                } else if (lvl === 2) { 
+                    currentMasteryTarget.level = 3; 
+                    msg.innerText = "答對！前進 Level 3"; 
+                } else if (lvl === 3) { 
+                    currentMasteryTarget.level = 3.5; 
+                    currentMasteryTarget.delay = delayWaitTurns; 
+                    msg.innerText = "進入潛伏期！稍後進行延遲測驗"; 
+                } else if (lvl === 3.9) { 
+                    currentMasteryTarget.level = 5; 
+                    msg.innerText = "測驗通過，單字已精通！"; 
+                }
             } else {
-                icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
-                status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
-                currentMasteryTarget.level = 1; msg.innerText = "退回 Level 1 重新記憶";
+                icon.innerText = '✘'; 
+                icon.className = 'big-icon icon-wrong'; 
+                status.innerText = '錯誤!'; 
+                status.className = 'result-status status-wrong';
+                currentMasteryTarget.level = 1; 
+                msg.innerText = "退回 Level 1 重新記憶";
             }
         } else {
             // Connection Mode
             if (isCorrect) {
-                icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
-                status.innerText = '正確!'; status.className = 'result-status status-correct';
-                if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = "答對！前進 Level 2"; }
-                else if (lvl === 2) { currentMasteryTarget.level = 2.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = "進入潛伏期！稍後進行延遲測驗"; }
-                else if (lvl === 2.9) { currentMasteryTarget.level = 4; msg.innerText = "測驗通過，連結力已精通！"; }
+                icon.innerText = '✔'; 
+                icon.className = 'big-icon icon-correct'; 
+                status.innerText = '正確!'; 
+                status.className = 'result-status status-correct';
+                
+                if (lvl === 1) { 
+                    currentMasteryTarget.level = 2; 
+                    msg.innerText = "答對！前進 Level 2"; 
+                } else if (lvl === 2) { 
+                    currentMasteryTarget.level = 2.5; 
+                    currentMasteryTarget.delay = delayWaitTurns; 
+                    msg.innerText = "進入潛伏期！稍後進行延遲測驗"; 
+                } else if (lvl === 2.9) { 
+                    currentMasteryTarget.level = 4; 
+                    msg.innerText = "測驗通過，連結力已精通！"; 
+                }
             } else {
-                icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
-                status.innerText = '錯誤!'; status.className = 'result-status status-wrong';
-                currentMasteryTarget.level = 1; msg.innerText = "退回 Level 1 重新記憶";
+                icon.innerText = '✘'; 
+                icon.className = 'big-icon icon-wrong'; 
+                status.innerText = '錯誤!'; 
+                status.className = 'result-status status-wrong';
+                currentMasteryTarget.level = 1; 
+                msg.innerText = "退回 Level 1 重新記憶";
             }
         }
     }
@@ -1340,7 +2083,7 @@
     }
     
     function replayMasteryAudio() {
-        if(currentMasteryTarget && 'speechSynthesis' in window) {
+        if (currentMasteryTarget && 'speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             let u = new SpeechSynthesisUtterance(currentMasteryTarget.en);
             u.lang = 'en-US';
@@ -1348,6 +2091,567 @@
         }
     }
 
+    // =====================================
+    // 5. 原版 8 大練習模式 (Original 8 Modes)
+    // =====================================
+    
+    // 1. 中翻英 / 英翻中
+    function setupPractice(mode) { 
+        practiceQueue = getPracticeWords(); 
+        if (!practiceQueue.length) return; 
+        
+        if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
+        
+        currentMode = mode; 
+        currentCardIndex = 0; 
+        initialQueueLength = practiceQueue.length; 
+        completedCount = 0; 
+        
+        document.getElementById('mode-display').innerText = mode === 'zh-to-en' ? '中翻英' : '英翻中'; 
+        setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); 
+        setDisplayState('hint-btn', mode === 'zh-to-en', 'inline-block'); 
+        
+        switchView('practice'); 
+        showNextCard(); 
+    }
+
+    function showNextCard() { 
+        if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
+        
+        const w = practiceQueue[currentCardIndex]; 
+        setDisplayState('interaction-area', true, 'block'); 
+        setDisplayState('feedback-area', false); 
+        
+        document.getElementById('answer-input').value = ''; 
+        document.getElementById('hint-display').innerText = ''; 
+        document.getElementById('progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+        document.getElementById('answer-input').focus(); 
+        
+        const q = currentMode === 'zh-to-en' ? w.zh.join(' / ') : w.en; 
+        document.getElementById('question-display').innerText = q; 
+        document.getElementById('feedback-question-copy').innerText = q; 
+    }
+
+    function showHint() { 
+        let w = practiceQueue[currentCardIndex].en; 
+        document.getElementById('hint-display').innerText = w.length <= 2 ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
+    }
+
+    function checkAnswer() { 
+        const v = document.getElementById('answer-input').value.trim();
+        const w = practiceQueue[currentCardIndex]; 
+        let c = false; 
+        
+        if (v !== '') { 
+            if (currentMode === 'zh-to-en') {
+                c = (v.toLowerCase() === w.en.toLowerCase()); 
+            } else {
+                c = w.zh.some(m => m.trim().includes(v) && v.length > 0); 
+            }
+        } 
+        
+        lastAnswerCorrect = c; 
+        if (!c && !isSequentialMode) requeueWord(w); 
+        showFeedback(c, w); 
+    }
+
+    function showFeedback(c, w) { 
+        setDisplayState('interaction-area', false); 
+        setDisplayState('feedback-area', true, 'flex'); 
+        
+        const i = document.getElementById('feedback-icon');
+        const s = document.getElementById('feedback-status'); 
+        document.getElementById('feedback-answer').innerText = currentMode === 'zh-to-en' ? w.en : w.zh.join(', '); 
+        
+        if (c) { 
+            i.innerText = '✔'; 
+            i.className = 'big-icon icon-correct'; 
+            s.innerText = '正確!'; 
+            s.className = 'result-status status-correct'; 
+        } else { 
+            i.innerText = '✘'; 
+            i.className = 'big-icon icon-wrong'; 
+            s.innerText = '錯誤!'; 
+            s.className = 'result-status status-wrong'; 
+        } 
+        speakEnglishWord(w.en); 
+    }
+
+    function handleNextClick() { 
+        if (lastAnswerCorrect) completedCount++; 
+        if (isSequentialMode && !lastAnswerCorrect) { 
+            alert("錯誤！重來！"); 
+            currentCardIndex = 0; 
+            completedCount = 0; 
+        } else {
+            currentCardIndex++; 
+        }
+        showNextCard(); 
+    }
+
+    document.getElementById('answer-input').addEventListener('keypress', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            checkAnswer();
+        }
+    });
+
+    // 2. 選擇題
+    function setupMultipleChoice(mode) { 
+        practiceQueue = getPracticeWords(); 
+        if (!practiceQueue.length) return; 
+        
+        if (new Set(getSelectedWordsPool().map(w => w.en)).size < 4) {
+            return alert("單字過少"); 
+        }
+        
+        if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
+        
+        currentMode = mode; 
+        currentCardIndex = 0; 
+        initialQueueLength = practiceQueue.length; 
+        completedCount = 0; 
+        
+        document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中'; 
+        setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
+        switchView('mcq'); 
+        showMcqNextCard(); 
+    }
+
+    function showMcqNextCard() { 
+        if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
+        
+        const w = practiceQueue[currentCardIndex]; 
+        setDisplayState('mcq-interaction-area', true, 'block'); 
+        setDisplayState('mcq-feedback-area', false); 
+        document.getElementById('mcq-progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+        
+        const q = currentMode === 'zh-to-en' ? w.zh.join(' / ') : w.en; 
+        document.getElementById('mcq-question-display').innerText = q; 
+        document.getElementById('mcq-feedback-question-copy').innerText = q; 
+        
+        let opts = [w];
+        let seen = new Set([w.en]); 
+        let dis = getSelectedWordsPool().filter(x => !seen.has(x.en)).sort(() => Math.random() - 0.5).slice(0, 3); 
+        
+        opts.push(...dis); 
+        opts.sort(() => Math.random() - 0.5); 
+        
+        const a = document.getElementById('mcq-options-area'); 
+        a.innerHTML = ''; 
+        
+        opts.forEach(o => { 
+            let b = document.createElement('button'); 
+            b.className = 'btn-mcq'; 
+            b.innerText = currentMode === 'zh-to-en' ? o.en : o.zh.join(' / '); 
+            b.onclick = () => checkMcqAnswer(o.en === w.en); 
+            a.appendChild(b); 
+        }); 
+    }
+
+    function checkMcqAnswer(c) { 
+        lastAnswerCorrect = c; 
+        const w = practiceQueue[currentCardIndex]; 
+        if (!c && !isSequentialMode) requeueWord(w); 
+        
+        setDisplayState('mcq-interaction-area', false); 
+        setDisplayState('mcq-feedback-area', true, 'flex'); 
+        
+        const i = document.getElementById('mcq-feedback-icon');
+        const s = document.getElementById('mcq-feedback-status'); 
+        document.getElementById('mcq-feedback-answer').innerText = currentMode === 'zh-to-en' ? w.en : w.zh.join(', '); 
+        
+        if (c) { 
+            i.innerText = '✔'; 
+            i.className = 'big-icon icon-correct'; 
+            s.innerText = '正確!'; 
+            s.className = 'result-status status-correct'; 
+        } else { 
+            i.innerText = '✘'; 
+            i.className = 'big-icon icon-wrong'; 
+            s.innerText = '錯誤!'; 
+            s.className = 'result-status status-wrong'; 
+        } 
+        speakEnglishWord(w.en); 
+    }
+
+    function handleMcqNextClick() { 
+        if (lastAnswerCorrect) completedCount++; 
+        if (isSequentialMode && !lastAnswerCorrect) { 
+            alert("錯誤！重來！"); 
+            currentCardIndex = 0; 
+            completedCount = 0; 
+        } else {
+            currentCardIndex++; 
+        }
+        showMcqNextCard(); 
+    }
+
+    // 3. 口說挑戰
+    function setupSpeakingMode() { 
+        if (!recognition) return alert("不支援語音辨識"); 
+        
+        practiceQueue = getPracticeWords(); 
+        if (!practiceQueue.length) return; 
+        
+        if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
+        
+        currentCardIndex = 0; 
+        initialQueueLength = practiceQueue.length; 
+        completedCount = 0; 
+        
+        switchView('speaking'); 
+        showNextSpeakingCard(); 
+    }
+
+    function showNextSpeakingCard() { 
+        if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
+        
+        const w = practiceQueue[currentCardIndex]; 
+        setDisplayState('speaking-interaction-area', true, 'block'); 
+        setDisplayState('speaking-feedback-area', false); 
+        
+        document.getElementById('speaking-word-display').innerText = w.en; 
+        document.getElementById('speaking-zh-display').innerText = w.zh.join(' / '); 
+        document.getElementById('speaking-status').innerText = '點擊麥克風'; 
+        document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
+        
+        speakEnglishWord(w.en); 
+    }
+
+    function startSpeechRecognition() { 
+        const b = document.getElementById('mic-btn');
+        const s = document.getElementById('speaking-status'); 
+        try { 
+            recognition.start(); 
+            b.classList.add('listening'); 
+            s.innerText = '聆聽中...'; 
+        } catch(e) {} 
+        
+        recognition.onresult = (e) => { 
+            const h = e.results[0][0].transcript.toLowerCase().replace(/[.,?!]/g, "").trim();
+            const c = e.results[0][0].confidence;
+            const t = practiceQueue[currentCardIndex].en.toLowerCase().trim(); 
+            
+            b.classList.remove('listening'); 
+            setDisplayState('speaking-interaction-area', false); 
+            setDisplayState('speaking-feedback-area', true, 'flex'); 
+            
+            const sd = document.getElementById('speaking-score');
+            const md = document.getElementById('speaking-feedback-msg');
+            const hd = document.getElementById('speaking-heard-text'); 
+            
+            if (h === t || h.includes(t) || t.includes(h)) { 
+                lastAnswerCorrect = true; 
+                let fs = Math.round(c * 100); 
+                if (fs < 50) fs = 80; 
+                sd.innerText = `${fs} 分`; 
+                sd.style.color = 'var(--success)'; 
+                md.innerText = '標準！'; 
+                hd.innerText = `聽到: "${h}"`; 
+            } else { 
+                lastAnswerCorrect = false; 
+                sd.innerText = `0 分`; 
+                sd.style.color = 'var(--error)'; 
+                md.innerText = '不對喔'; 
+                hd.innerText = `聽到: "${h}"`; 
+                if (!isSequentialMode) requeueWord(practiceQueue[currentCardIndex]); 
+            } 
+        }; 
+        
+        recognition.onerror = () => { 
+            b.classList.remove('listening'); 
+            s.innerText = '辨識失敗重試'; 
+        }; 
+        
+        recognition.onspeechend = () => { 
+            recognition.stop(); 
+            b.classList.remove('listening'); 
+        }; 
+    }
+
+    function handleSpeakingNextClick() { 
+        if (lastAnswerCorrect) completedCount++; 
+        if (isSequentialMode && !lastAnswerCorrect) { 
+            alert('重來！'); 
+            currentCardIndex = 0; 
+            completedCount = 0; 
+        } else {
+            currentCardIndex++; 
+        }
+        showNextSpeakingCard(); 
+    }
+
+    // 4. 獨立拼圖模式
+    function setupPuzzleMode() { 
+        practiceQueue = getPracticeWords(); 
+        if (!practiceQueue.length) return; 
+        
+        if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
+        
+        currentCardIndex = 0; 
+        setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
+        switchView('puzzle'); 
+        loadPuzzleLevel(); 
+    }
+
+    function loadPuzzleLevel() { 
+        if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
+        
+        puzzleCurrentWord = practiceQueue[currentCardIndex]; 
+        puzzleUserAnswer = []; 
+        let ls = puzzleCurrentWord.en.toLowerCase().split(''); 
+        for (let i = ls.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [ls[i], ls[j]] = [ls[j], ls[i]];
+        } 
+        
+        puzzleSourceLetters = ls.map((l, i) => ({ id: i, char: l, used: false })); 
+        document.getElementById('puzzle-hint-display').innerText = ''; 
+        document.getElementById('puzzle-question').innerText = puzzleCurrentWord.zh.join(' / '); 
+        document.getElementById('puzzle-message').innerText = ''; 
+        document.getElementById('puzzle-progress').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${currentCardIndex+1}/${practiceQueue.length}`; 
+        
+        renderPuzzleBoard(); 
+    }
+
+    function showPuzzleHint() { 
+        let w = puzzleCurrentWord.en; 
+        document.getElementById('puzzle-hint-display').innerText = w.length <= 2 ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
+    }
+
+    function renderPuzzleBoard() { 
+        const a = document.getElementById('puzzle-answer-area');
+        const p = document.getElementById('puzzle-pool-area'); 
+        a.innerHTML = ''; 
+        p.innerHTML = ''; 
+        
+        puzzleUserAnswer.forEach((o, i) => { 
+            let t = document.createElement('div'); 
+            t.className = 'letter-tile'; 
+            t.innerText = o.char; 
+            t.onclick = () => { 
+                puzzleUserAnswer[i].used = false; 
+                puzzleUserAnswer.splice(i, 1); 
+                renderPuzzleBoard(); 
+            }; 
+            a.appendChild(t); 
+        }); 
+        
+        if (puzzleUserAnswer.length < puzzleCurrentWord.en.length) { 
+            let ph = document.createElement('div'); 
+            ph.className = 'letter-tile empty'; 
+            ph.innerText = '_'; 
+            a.appendChild(ph); 
+        } 
+        
+        puzzleSourceLetters.forEach(o => { 
+            if (!o.used) {
+                let t = document.createElement('div'); 
+                t.className = 'letter-tile'; 
+                t.innerText = o.char; 
+                t.onclick = () => { 
+                    o.used = true; 
+                    puzzleUserAnswer.push(o); 
+                    renderPuzzleBoard(); 
+                    checkPuzzleState(false); 
+                }; 
+                p.appendChild(t); 
+            } 
+        }); 
+    }
+
+    function checkPuzzleState(f = false) { 
+        let cs = puzzleUserAnswer.map(o => o.char).join('');
+        let ts = puzzleCurrentWord.en.toLowerCase();
+        let m = document.getElementById('puzzle-message'); 
+        
+        if (cs.length === ts.length || f) { 
+            if (cs === ts) { 
+                m.className = 'result-msg result-correct'; 
+                m.innerText = '正確！'; 
+                speakEnglishWord(ts); 
+                setTimeout(() => {
+                    currentCardIndex++; 
+                    loadPuzzleLevel();
+                }, 800); 
+            } else { 
+                if (isSequentialMode) { 
+                    m.className = 'result-msg result-wrong'; 
+                    m.innerText = `錯誤！答案 ${ts}。重來！`; 
+                    speakEnglishWord(ts); 
+                    setTimeout(() => {
+                        currentCardIndex = 0; 
+                        loadPuzzleLevel();
+                    }, 2000); 
+                } else { 
+                    if (f) { 
+                        m.className = 'result-msg result-wrong'; 
+                        m.innerText = `錯誤！答案 ${ts}`; 
+                        speakEnglishWord(ts); 
+                        requeueWord(puzzleCurrentWord); 
+                        setTimeout(() => {
+                            currentCardIndex++; 
+                            loadPuzzleLevel();
+                        }, 2000); 
+                    } else { 
+                        m.className = 'result-msg result-wrong'; 
+                        m.innerText = '錯誤'; 
+                    } 
+                } 
+            } 
+        } 
+    }
+
+    // 5. 翻卡配對
+    function setupMemoryMode() { 
+        let p = getPracticeWords(); 
+        if (p.length < 2) return alert("單字過少"); 
+        
+        p.sort(() => Math.random() - 0.5); 
+        let sw = p.slice(0, 8); 
+        memoryCards = []; 
+        
+        sw.forEach(w => { 
+            memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); 
+            memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); 
+        }); 
+        
+        memoryCards.sort(() => Math.random() - 0.5); 
+        memoryFlipped = []; 
+        memoryLocked = false; 
+        memoryMatchedCount = 0; 
+        
+        switchView('memory'); 
+        renderMemoryBoard(); 
+        document.getElementById('memory-message').innerText = '點擊翻卡'; 
+    }
+
+    function setupMemoryModeGuest() { 
+        let p = [...practiceQueue]; 
+        if (p.length < 2) return alert("單字過少"); 
+        
+        p.sort(() => Math.random() - 0.5); 
+        let sw = p.slice(0, 8); 
+        memoryCards = []; 
+        
+        sw.forEach(w => { 
+            memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); 
+            memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); 
+        }); 
+        
+        memoryCards.sort(() => Math.random() - 0.5); 
+        memoryFlipped = []; 
+        memoryLocked = false; 
+        memoryMatchedCount = 0; 
+        
+        switchView('memory'); 
+        renderMemoryBoard(); 
+        document.getElementById('memory-message').innerText = '點擊翻卡'; 
+    }
+
+    function renderMemoryBoard() { 
+        const b = document.getElementById('memory-board'); 
+        b.innerHTML = ''; 
+        
+        memoryCards.forEach((c, i) => { 
+            let d = document.createElement('div'); 
+            d.className = `memory-card ${c.matched ? 'matched' : ''}`; 
+            d.innerHTML = `<div class="memory-inner"><div class="memory-front">${c.content}</div><div class="memory-back">?</div></div>`; 
+            d.onclick = () => flipCard(i); 
+            b.appendChild(d); 
+        }); 
+    }
+
+    function flipCard(i) { 
+        if (memoryLocked || memoryCards[i].matched || memoryFlipped.includes(i)) return; 
+        document.getElementById('memory-board').children[i].classList.add('flipped'); 
+        memoryFlipped.push(i); 
+        if (memoryFlipped.length === 2) checkMemoryMatch(); 
+    }
+
+    function checkMemoryMatch() { 
+        memoryLocked = true; 
+        let [i1, i2] = memoryFlipped;
+        let c1 = memoryCards[i1];
+        let c2 = memoryCards[i2];
+        let m = document.getElementById('memory-message'); 
+        
+        if (c1.id === c2.id) { 
+            c1.matched = c2.matched = true; 
+            memoryMatchedCount += 2; 
+            document.getElementById('memory-board').children[i1].classList.add('matched'); 
+            document.getElementById('memory-board').children[i2].classList.add('matched'); 
+            m.innerText = '配對成功！'; 
+            m.className = 'result-msg result-correct'; 
+            speakEnglishWord(c1.id); 
+            memoryFlipped = []; 
+            memoryLocked = false; 
+            
+            if (memoryMatchedCount === memoryCards.length) {
+                setTimeout(() => endQuiz(), 500); 
+            }
+        } else { 
+            m.innerText = '不匹配...'; 
+            m.className = 'result-msg result-wrong'; 
+            setTimeout(() => { 
+                document.getElementById('memory-board').children[i1].classList.remove('flipped'); 
+                document.getElementById('memory-board').children[i2].classList.remove('flipped'); 
+                memoryFlipped = []; 
+                memoryLocked = false; 
+                m.innerText = ''; 
+            }, 1000); 
+        } 
+    }
+
+    // 6. YouGlish
+    function setupYouglishMode() { 
+        practiceQueue = getPracticeWords(); 
+        if (!practiceQueue.length) return; 
+        
+        practiceQueue.sort(() => Math.random() - 0.5); 
+        currentCardIndex = 0; 
+        switchView('youglish'); 
+        loadYouglishCard(); 
+    }
+
+    function loadYouglishCard() { 
+        if (!practiceQueue[currentCardIndex]) return; 
+        const w = practiceQueue[currentCardIndex]; 
+        
+        document.getElementById('yg-word').innerText = w.en; 
+        document.getElementById('yg-zh').innerText = w.zh.join(' / '); 
+        document.getElementById('yg-progress').innerText = `${currentCardIndex+1}/${practiceQueue.length}`; 
+        document.getElementById('yg-link-word').innerText = w.en; 
+        document.getElementById('yg-link').href = `https://youglish.com/pronounce/${encodeURIComponent(w.en)}/english`; 
+    }
+
+    function nextYouglishCard() { 
+        if (currentCardIndex < practiceQueue.length - 1) { 
+            currentCardIndex++; 
+            loadYouglishCard(); 
+        } else {
+            endQuiz(); 
+        }
+    }
+
+    function prevYouglishCard() { 
+        if (currentCardIndex > 0) { 
+            currentCardIndex--; 
+            loadYouglishCard(); 
+        } else {
+            alert("已經是第一字！"); 
+        }
+    }
+
+    // --- 初始化檢查 ---
+    window.onload = () => { 
+        setTimeout(() => { 
+            if (!checkShareUrl()) {
+                goHome(); 
+            }
+        }, 150); 
+    };
 </script>
 
 </body>
