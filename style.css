@@ -681,3 +681,40 @@ input[type="checkbox"] { accent-color: #ffffff; transform: scale(1.1); }
 }
 #silen-settings-overlay.show { opacity: 1; pointer-events: auto; }
 #silen-settings-overlay.show .silen-modal-box { transform: translateY(0) scale(1); }
+
+/* 隱藏原生的醜醜 checkbox */
+.checkbox-wrapper input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0; 
+}
+
+
+.checkbox-wrapper input[type="checkbox"]:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+
+.checkbox-wrapper input[type="checkbox"]:checked::after {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000; /* 勾勾顏色 */
+    font-size: 14px;
+    font-weight: bold;
+}
+
+
+.checkbox-wrapper:hover input[type="checkbox"] {
+    border-color: var(--accent);
+}
