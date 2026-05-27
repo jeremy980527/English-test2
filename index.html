@@ -7,6 +7,7 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0a0a">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SilenVocab">
@@ -29,8 +30,18 @@
 <div class="container">
     
     <header id="main-header" class="hidden" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-        <h1 style="margin: 0; cursor: pointer;" onclick="goHome()">SilenVocab</h1>
-        <div id="auth-container"></div>
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+            <h1 style="margin: 0; cursor: pointer;" onclick="goHome()">SilenVocab</h1>
+            <div id="online-presence-badge" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                <span class="breathing-dot"></span>
+                <span style="font-size: 0.75rem; color: var(--text-sub); letter-spacing: 0.5px;"><span id="online-count">1</span> 人正在學習</span>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="auth-container"></div>
+            <button class="btn-icon" onclick="window.SilenSettings.open()" style="border: none; font-size: 1.2rem; padding: 4px;">⚙️</button>
+        </div>
     </header>
 
     <div id="view-landing" class="hidden">
@@ -70,7 +81,7 @@
         <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
             <h2 style="letter-spacing: 1px; color: var(--text-sub); font-size: 1.1rem; font-weight: 500; margin-bottom: 20px;">開始練習</h2>
             
-            <div class="flex-row" style="margin-bottom: 15px;">
+            <div class="flex-row" style="margin-bottom: 20px;">
                 <button class="btn mastery-btn-comp" style="flex: 1; padding: 16px; font-size: 0.95rem; margin-top: 0; letter-spacing: 1px;" onclick="setupMasteryMode('comprehensive')">
                     綜合精通模式<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(含結構重組與盲打)</span>
                 </button>
@@ -79,13 +90,6 @@
                 </button>
             </div>
             
-            <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="toggleSequential()">
-                <input type="checkbox" id="sequential-toggle" style="pointer-events: none;">
-                <label for="sequential-toggle" style="flex:1; cursor:pointer; font-size: 0.95rem; letter-spacing: 0.5px;">
-                    開啟「循序漸進」模式 <span style="font-size:0.8rem; color:var(--text-sub); margin-left: 5px;">(觸發錯誤即重來)</span>
-                </label>
-            </div>
-
             <div class="flex-row">
                 <button class="btn" onclick="setupPractice('zh-to-en')">中翻英</button>
                 <button class="btn" onclick="setupPractice('en-to-zh')">英翻中</button>
@@ -101,14 +105,6 @@
             <div class="flex-row" style="margin-top: 10px;">
                 <button class="btn btn-outline btn-yg" onclick="setupYouglishMode()">YouGlish 沉浸</button>
                 <button class="btn btn-outline" style="border-color:#4caf50; color:#4caf50;" onclick="setupSpeakingMode()">口說挑戰</button>
-            </div>
-        </div>
-
-        <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 20px;">
-            <h2 style="letter-spacing: 1px; color: var(--text-sub); font-size: 1.1rem; font-weight: 500; margin-bottom: 15px;">網站設定</h2>
-            <div class="card checkbox-wrapper" onclick="togglePronunciation()">
-                <input type="checkbox" id="auto-pronounce-toggle" style="pointer-events: none;">
-                <label for="auto-pronounce-toggle" style="flex:1; font-size: 0.95rem; letter-spacing: 0.5px;">自動朗讀英文單字 (建議開啟)</label>
             </div>
         </div>
     </div>
@@ -420,13 +416,45 @@
     </div>
 </div>
 
+<div id="silen-settings-overlay" class="hidden">
+    <div class="silen-modal-box" style="max-width: 320px;">
+        <h3 style="margin-top: 0; color: var(--accent); letter-spacing: 1px; margin-bottom: 25px; font-weight: 500;">偏好設定</h3>
+        
+        <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')">
+            <input type="checkbox" id="set-pronounce" style="pointer-events: none;">
+            <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">自動朗讀英文單字</label>
+        </div>
+        
+        <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')">
+            <input type="checkbox" id="set-sequential" style="pointer-events: none;">
+            <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">「循序漸進」模式 <br><span style="font-size:0.75rem; color:var(--text-sub);">(錯誤即退回第一關)</span></label>
+        </div>
+
+        <div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')">
+            <input type="checkbox" id="set-presence" style="pointer-events: none;">
+            <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">顯示即時學習人數 <br><span style="font-size:0.75rem; color:var(--text-sub);">(左上角動態提示)</span></label>
+        </div>
+
+        <div class="silen-modal-actions" style="flex-direction: column; gap: 10px;">
+            <button class="btn btn-small" style="margin-top:0; width: 100%; padding: 12px;" onclick="window.SilenSettings.close()">完成設定</button>
+            <button class="btn btn-outline btn-small" style="margin-top:0; width: 100%; padding: 12px; color: var(--error); border-color: #333;" onclick="window.SilenSettings.close(); logout();">登出帳號</button>
+        </div>
+    </div>
+</div>
+
 <script src="app.js"></script>
 <script type="module" src="auth.js"></script>
 
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').catch((error) => console.error('PWA Error:', error));
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    console.log('✅ PWA Service Worker 註冊成功，範圍:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('❌ PWA Service Worker 註冊失敗:', error);
+                });
         });
     }
 </script>
