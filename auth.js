@@ -24,12 +24,18 @@ window.loginWithGoogle = () => {
 };
 
 window.logout = () => {
-    if (confirm("確定要登出嗎？登出後將切換回本機模式。")) {
+    if (confirm("確定要登出嗎？登出後本機的單字紀錄將會清空（雲端資料不受影響）。")) {
         signOut(auth).then(() => {
+            // 🧹 登出的瞬間，把殘留在瀏覽器的前一個使用者的單字清空！
+            localStorage.removeItem('sv_books');
+            window.books = []; // 同時清空記憶體
+            
+            // 重新整理網頁，回到最乾淨的初始狀態
             window.location.reload(); 
         });
     }
 };
+
 
 async function syncFromCloud(uid) {
     try {
