@@ -910,6 +910,8 @@ function showMasteryL0(word) {
     setDisplayState('mastery-l0-area', true); 
     document.getElementById('mastery-l0-en').innerText = word.en; 
     document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
+
+    speakEnglishWord(word.en);
     
     if ('speechSynthesis' in window && autoPronounce) {
         window.speechSynthesis.cancel(); 
