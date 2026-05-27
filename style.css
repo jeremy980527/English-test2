@@ -632,3 +632,28 @@ input[type="checkbox"] { accent-color: #ffffff; transform: scale(1.1); }
 .mastery-btn-comp:hover { background-color: #6a1b9a; }
 .mastery-btn-conn { background-color: #004d40; color: white; transition: background 0.2s; border: none; }
 .mastery-btn-conn:hover { background-color: #00695c; }
+
+/* ======= Custom Modal Styles (全新彈窗引擎) ======= */
+#silen-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999; opacity: 0; transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+#silen-modal-overlay.show { opacity: 1; pointer-events: auto; }
+.silen-modal-box {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 25px; width: 90%; max-width: 380px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    transform: translateY(20px) scale(0.95); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#silen-modal-overlay.show .silen-modal-box { transform: translateY(0) scale(1); }
+.silen-modal-msg { font-size: 1.05rem; color: var(--text-main); margin-bottom: 20px; line-height: 1.6; white-space: pre-wrap; letter-spacing: 0.5px; font-weight: 400;}
+.silen-modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+#silen-modal-input, #silen-modal-textarea {
+    width: 100%; background: #0a0a0a; border: 1px solid var(--border);
+    color: var(--text-main); padding: 12px; border-radius: 8px; margin-bottom: 20px;
+    font-family: var(--font-family); font-size: 0.95rem; letter-spacing: 0.5px;
+}
+#silen-modal-textarea { resize: vertical; min-height: 100px; }
