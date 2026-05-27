@@ -304,6 +304,18 @@ textarea {
 .status-correct { color: var(--success); }
 .status-wrong { color: var(--error); }
 
+/* 🔧 補齊原本 JS 有呼叫但 CSS 漏掉的提示字樣式 (拼圖與翻卡模式) */
+.result-msg {
+    margin-top: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    min-height: 30px;
+    transition: color 0.2s;
+}
+.result-correct { color: var(--success); }
+.result-wrong { color: var(--error); }
+
 .answer-reveal {
     font-size: 1.5rem;
     margin-bottom: 10px;
