@@ -224,14 +224,27 @@ window.quitPractice = function() {
 };
 
 function speakEnglishWord(word) {
-    if (!autoPronounce && !window.forceSpeak) return; 
-    if ('speechSynthesis' in window) {
+    if (!autoPronounce && !window.forceSpeak) return;
+
+    // 🌟 改進：使用更穩健的判斷方式
+    const isApp = typeof AndroidBridge !== 'undefined';
+    
+    if (isApp) {
+        try {
+            // 直接呼叫原生接口
+            window.AndroidBridge.speak(word);
+        } catch (e) {
+            console.error("AndroidBridge 呼叫錯誤:", e);
+        }
+    } else if ('speechSynthesis' in window) {
+        // 網頁版維持使用瀏覽器 TTS
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'en-US'; 
-        utterance.rate = 0.95; 
+        utterance.lang = 'en-US';
+        utterance.rate = 0.95;
         window.speechSynthesis.speak(utterance);
     }
+    
     window.forceSpeak = false;
 }
 
