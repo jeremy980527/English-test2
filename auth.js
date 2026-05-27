@@ -24,18 +24,15 @@ window.loginWithGoogle = () => {
 };
 
 window.logout = () => {
-    if (confirm("確定要登出嗎？登出後本機的單字紀錄將會清空（雲端資料不受影響）。")) {
+    if (confirm("確定要登出嗎？登出後將切換回介紹頁面，本地快取將安全抹除。")) {
         signOut(auth).then(() => {
-            // 🧹 登出的瞬間，把殘留在瀏覽器的前一個使用者的單字清空！
+            // 🔒 物理清空，確保切換帳號不交叉繼承
             localStorage.removeItem('sv_books');
-            window.books = []; // 同時清空記憶體
-            
-            // 重新整理網頁，回到最乾淨的初始狀態
+            window.books = [];
             window.location.reload(); 
         });
     }
 };
-
 
 async function syncFromCloud(uid) {
     try {
@@ -49,16 +46,16 @@ async function syncFromCloud(uid) {
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-                console.log("☁️ 成功從雲端同步最新的單字簿！");
+                console.log("☁️ 雲端資料同步完成。");
             }
         } else {
-            console.log("🆕 偵測為新用戶，準備建立雲端檔案。");
+            console.log("🆕 新帳戶檔案初始化。");
             if (window.books && window.books.length > 0) {
                 syncToCloud(uid, window.books);
             }
         }
     } catch (error) {
-        console.error("從雲端讀取資料失敗:", error);
+        console.error("雲端同步連線中斷:", error);
     }
 }
 
@@ -69,9 +66,9 @@ async function syncToCloud(uid, booksData) {
             books: booksData,
             lastUpdated: new Date().toISOString()
         });
-        console.log("💾 資料已安全加密並同步至 Firebase 雲端！");
+        console.log("💾 變更已安全加密備份至雲端。");
     } catch (error) {
-        console.error("雲端備份失敗:", error);
+        console.error("備份傳輸錯誤:", error);
     }
 }
 
@@ -85,24 +82,40 @@ window.addEventListener('load', () => {
 
 onAuthStateChanged(auth, (user) => {
     const authContainer = document.getElementById('auth-container');
-    if (!authContainer) return;
+    const mainHeader = document.getElementById('main-header');
+    if (!authContainer || !mainHeader) return;
+
+    // 取得是否有分享代碼，若有則判定為特殊訪客對戰模式，不阻擋
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasShareLink = urlParams.get('lz') || urlParams.get('s') || urlParams.get('share');
 
     if (user) {
         currentUser = user;
+        mainHeader.classList.remove('hidden');
         authContainer.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="${user.photoURL}" alt="avatar" style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border);">
-                <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">${user.displayName}</span>
-                <button class="btn-icon btn-delete btn-small" style="padding: 2px 8px; font-size: 0.75rem;" onclick="logout()">登出</button>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="${user.photoURL}" alt="avatar" style="width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border);">
+                <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500; letter-spacing: 0.5px;">${user.displayName}</span>
+                <button class="btn-icon btn-delete btn-small" style="padding: 3px 10px; font-size: 0.75rem;" onclick="logout()">登出</button>
             </div>
         `;
         syncFromCloud(user.uid);
+        
+        // 若非處於分享連結狀態，則自動進入主頁
+        if (!window.isGuestMode && !hasShareLink) {
+            window.goHome();
+        }
     } else {
         currentUser = null;
-        authContainer.innerHTML = `
-            <button class="btn btn-small" style="background-color: #ffffff; color: #000000; border: none; padding: 6px 12px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 5px; font-size: 0.8rem;" onclick="loginWithGoogle()">
-                G 登入 / 備份
-            </button>
-        `;
+        authContainer.innerHTML = ``;
+        
+        if (hasShareLink) {
+            // 允許執行訪客分享測驗，不進入登入攔截頁
+            mainHeader.classList.remove('hidden');
+        } else {
+            // 強制切換至落地介紹頁面並隱藏頂部導覽列
+            mainHeader.classList.add('hidden');
+            window.switchView('landing');
+        }
     }
 });
