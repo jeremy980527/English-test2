@@ -13,7 +13,6 @@
         };
     </script>
     <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
-    
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
@@ -21,8 +20,9 @@
 <body>
 
 <div class="container">
-    <header>
-        <h1>SilenVocab</h1>
+    <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+        <h1 style="margin: 0;">SilenVocab</h1>
+        <div id="auth-container"></div>
     </header>
 
     <div id="view-home">
@@ -41,7 +41,7 @@
                     🚀 綜合精通模式<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">(含拼圖與盲打)</span>
                 </button>
                 <button class="btn mastery-btn-conn" style="flex: 1; padding: 15px; font-size: 1rem; margin-top: 0;" onclick="setupMasteryMode('connection')">
-                    🔗 連結力訓練<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">(純認字配對)</span>
+                    🔗 連結力訓練<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.8;">(純認字配配對)</span>
                 </button>
             </div>
             
@@ -85,9 +85,7 @@
             <h2>單字簿庫</h2>
             <div style="width: 60px;"></div>
         </div>
-        
         <div id="book-list"></div>
-        
         <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
             <h3 style="margin-top: 0;">新增單字簿</h3>
             <div class="flex-row">
@@ -121,7 +119,6 @@
                 <button class="btn-icon btn-delete" onclick="deleteCurrentBook()">🗑️ 刪除</button>
             </div>
         </div>
-        
         <div class="card" style="border-color: #444;">
             <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px;">修改基本資訊</div>
             <div class="flex-row">
@@ -130,7 +127,6 @@
             </div>
             <button class="btn btn-outline" onclick="saveBookInfo()" style="margin-top:0;">儲存變更</button>
         </div>
-
         <div style="margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">新增單字</div>
         <div class="card">
             <input type="text" id="input-en" placeholder="English Word (e.g., Apple)">
@@ -147,14 +143,12 @@
                 <span id="mastery-header-title" style="font-weight:bold;">精通模式</span>
             </div>
         </div>
-        
         <div style="width: 100%; background: #333; height: 8px; border-radius: 4px; margin-bottom: 20px; overflow: hidden;">
             <div id="mastery-progress-bar" style="width: 0%; height: 100%; background: #9c27b0; transition: width 0.4s ease;"></div>
         </div>
         <div id="mastery-status-text" style="text-align: center; color: var(--text-sub); font-size: 0.85rem; margin-bottom: 20px;">
             精通進度: 0 / 10
         </div>
-
         <div id="mastery-l0-area" class="hidden practice-area" style="margin-top: 0;">
             <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 0: 暖身準備</div>
             <div class="card" id="mastery-l0-card" style="padding: 40px 20px; margin-bottom: 30px;">
@@ -163,13 +157,11 @@
             </div>
             <button class="btn" id="mastery-btn-l0" style="padding: 15px;" onclick="masteryL0Next()">下一步</button>
         </div>
-
         <div id="mastery-mcq-area" class="hidden practice-area" style="margin-top:0;">
             <div class="mode-badge" id="mastery-mcq-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 1: 視覺辨識</div>
             <div class="question-text" id="mastery-mcq-q"></div>
             <div class="mcq-grid" id="mastery-mcq-options"></div>
         </div>
-
         <div id="mastery-match-area" class="hidden practice-area" style="margin-top:0;">
             <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 雙向連接</div>
             <div style="color:var(--text-sub); margin-bottom:15px; font-size: 0.9rem;">請將左側英文與右側中文正確配對</div>
@@ -178,7 +170,6 @@
                 <div id="match-col-zh" class="match-col"></div>
             </div>
         </div>
-
         <div id="mastery-puzzle-area" class="hidden practice-area" style="margin-top:0;">
             <div class="mode-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 2: 結構重組</div>
             <div class="hint-text" id="mastery-puzzle-hint-display"></div>
@@ -186,20 +177,17 @@
             <div id="mastery-puzzle-ans" class="puzzle-container"></div>
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="mastery-puzzle-pool" class="puzzle-container"></div>
-            
             <div class="flex-row" style="justify-content: center; margin-top: 20px;">
                 <button class="btn btn-outline" onclick="showMasteryPuzzleHint()">提示</button>
                 <button class="btn" id="mastery-btn-puzzle" onclick="checkMasteryPuzzle(true)">送出</button>
             </div>
         </div>
-
         <div id="mastery-typing-area" class="hidden practice-area" style="margin-top:0;">
             <div class="mode-badge" id="mastery-typing-badge" style="background:#444; color:#fff; margin-bottom:10px; display:inline-block;">Lv 3: 主動輸出</div>
             <div class="question-text" id="mastery-typing-q"></div>
             <input type="text" id="mastery-typing-input" placeholder="輸入英文單字..." autocomplete="off">
             <button class="btn" id="mastery-btn-typing" onclick="checkMasteryTyping()">送出解答</button>
         </div>
-
         <div id="mastery-feedback-area" class="hidden practice-area" style="margin-top:0;">
             <div id="mastery-fb-icon" class="big-icon"></div>
             <div id="mastery-fb-status" class="result-status"></div>
@@ -210,7 +198,6 @@
             <div id="mastery-fb-msg" style="color:var(--text-main); margin-bottom: 20px; font-size: 1rem;"></div>
             <button class="btn btn-next-big" id="mastery-btn-next" onclick="masteryFeedbackNext()">繼續挑戰</button>
         </div>
-        
         <div id="mastery-success-area" class="hidden" style="text-align: center; padding: 40px 0;">
             <div style="font-size: 4rem; margin-bottom: 20px;">🏆</div>
             <h2 id="mastery-success-title" style="color: var(--accent);">測驗完成！</h2>
@@ -218,7 +205,6 @@
             <button class="btn" id="mastery-btn-finish" style="width: auto; padding: 10px 30px; margin-top: 20px;" onclick="quitPractice()">完成並返回</button>
         </div>
     </div>
-
 
     <div id="view-practice" class="hidden">
         <div class="nav-bar">
@@ -296,7 +282,6 @@
                 <button class="mic-btn" id="mic-btn" onclick="startSpeechRecognition()">🎤</button>
                 <div class="speaking-status" id="speaking-status">點擊麥克風，念出上方的單字</div>
             </div>
-
             <div id="speaking-feedback-area" class="hidden">
                 <div id="speaking-score" class="score-circle">--</div>
                 <div id="speaking-feedback-msg" class="result-status"></div>
@@ -322,12 +307,10 @@
             <div id="puzzle-answer-area" class="puzzle-container"></div>
             <div style="margin: 20px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="puzzle-pool-area" class="puzzle-container"></div>
-            
             <div class="flex-row" style="justify-content: center; margin-top: 20px;">
                 <button class="btn btn-outline" onclick="showPuzzleHint()">提示</button>
                 <button class="btn" onclick="checkPuzzleState(true)">送出</button>
             </div>
-            
             <div class="result-msg" id="puzzle-message" style="margin-top:10px; height: 30px;"></div>
             <div class="progress-text" id="puzzle-progress"></div>
         </div>
@@ -357,14 +340,11 @@
         <div class="practice-area" style="margin-top: 10px;">
             <div class="yg-word-display" id="yg-word">word</div>
             <div class="yg-zh-display" id="yg-zh">中文意思</div>
-
             <p class="yg-tip">點擊下方按鈕，在瀏覽器中開啟 YouGlish，<br>聽母語者在真實情境中使用這個單字。</p>
-
             <a id="yg-link" href="#" target="_blank" class="yg-open-btn">
                 📺 在 YouGlish 上聆聽「<span id="yg-link-word"></span>」
                 <div class="yg-btn-label">開啟新分頁 → youglish.com</div>
             </a>
-            
             <div class="flex-row" style="margin-top: 20px;">
                 <button class="btn btn-outline" onclick="prevYouglishCard()">上一個</button>
                 <button class="btn" onclick="nextYouglishCard()">下一個單字</button>
@@ -372,10 +352,11 @@
             <div class="progress-text" id="yg-progress"></div>
         </div>
     </div>
-
 </div>
 
 <script src="app.js"></script>
+<script type="module" src="auth.js"></script>
 
 </body>
 </html>
+
