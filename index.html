@@ -7,7 +7,6 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0a0a">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SilenVocab">
@@ -327,9 +326,7 @@
             <div id="speaking-interaction-area">
                 <div class="question-text" id="speaking-word-display" style="font-size:2.5rem; font-weight: 600;">Word</div>
                 <div class="yg-zh-display" id="speaking-zh-display" style="margin-bottom: 40px;">中文意思</div>
-                <button class="mic-btn" id="mic-btn" onclick="startSpeechRecognition()" style="font-size: 1rem; font-weight: 600; letter-spacing: 1px;">
-                    REC
-                </button>
+                <button class="mic-btn" id="mic-btn" onclick="startSpeechRecognition()" style="font-size: 1rem; font-weight: 600; letter-spacing: 1px;">REC</button>
                 <div class="speaking-status" id="speaking-status" style="margin-top: 20px;">點擊上方按鈕，念出正確單字</div>
             </div>
 
@@ -411,19 +408,25 @@
 
 </div>
 
+<div id="silen-modal-overlay" class="hidden">
+    <div class="silen-modal-box">
+        <div id="silen-modal-msg" class="silen-modal-msg"></div>
+        <input type="text" id="silen-modal-input" class="hidden" autocomplete="off">
+        <textarea id="silen-modal-textarea" class="hidden"></textarea>
+        <div class="silen-modal-actions">
+            <button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden" style="margin-top:0;">取消</button>
+            <button id="silen-modal-btn-confirm" class="btn btn-small" style="margin-top:0; width: auto; padding: 8px 24px;">確認</button>
+        </div>
+    </div>
+</div>
+
 <script src="app.js"></script>
 <script type="module" src="auth.js"></script>
 
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then((registration) => {
-                    console.log('✅ PWA Service Worker 註冊成功，範圍:', registration.scope);
-                })
-                .catch((error) => {
-                    console.error('❌ PWA Service Worker 註冊失敗:', error);
-                });
+            navigator.serviceWorker.register('./sw.js').catch((error) => console.error('PWA Error:', error));
         });
     }
 </script>
