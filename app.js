@@ -32,7 +32,8 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
+// 納入全新的 landing 視圖
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -79,9 +80,11 @@ window.quitPractice = function() {
     }
     if (isGuestMode) {
         isGuestMode = false;
-        document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '✕ 結束');
+        document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '結束');
         document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
         window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload(); // 訪客對戰退出後徹底重組認證狀態
+        return;
     }
     goHome(); 
 };
@@ -138,16 +141,16 @@ function requeueWord(word) {
 
 function endQuiz() {
     if (isGuestMode) {
-        if (confirm("測驗結束！🎉\n\n你要將這份「朋友分享的單字庫」儲存到你的 SilenVocab 嗎？")) {
-            const newName = prompt("請為這份單字簿取個名字：", "分享的單字包");
+        if (confirm("測驗結束。\n\n您要將這份分享的單字庫儲存到您的雲端帳戶中嗎？")) {
+            const newName = prompt("請為這份單字簿命名：", "分享引入的單字簿");
             if (newName) {
-                window.books.push({ id: Date.now(), name: newName, tag: "來自分享", words: guestWords });
+                window.books.push({ id: Date.now(), name: newName, tag: "外部分享", words: guestWords });
                 saveData();
-                alert("✅ 儲存成功！已加入你的單字庫中。");
+                alert("已成功匯入單字庫中。");
             }
         }
     } else {
-        alert("測驗結束！做得好！");
+        alert("測驗結束，做得好。");
     }
     quitPractice();
 }
@@ -157,13 +160,13 @@ function endQuiz() {
 // =====================================
 window.shareCurrentQuiz = function() {
     if (typeof LZString === 'undefined') { 
-        alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); 
+        alert("系統壓縮模組載入中，請稍候重試。"); 
         return; 
     }
     
     let wordsToShare = practiceQueue;
     if (practiceQueue.length > 50) {
-        alert("提醒：為了確保網址能正常在 Instagram / LINE 分享，系統將只截取前 50 個單字作為測驗包！");
+        alert("提醒：為了最優化傳輸，系統將截取前 50 個單字作為測驗分享包。");
         wordsToShare = practiceQueue.slice(0, 50);
     }
     
@@ -184,12 +187,12 @@ window.shareCurrentQuiz = function() {
         
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("✅ 測驗連結已複製到剪貼簿！網址已高度壓縮，發 IG 限動絕對沒問題！");
-            }).catch(err => { 
-                prompt("請手動複製以下連結分享給朋友：", shareUrl); 
+                alert("測驗連結已成功複製到剪貼簿。");
+            }).catch(() => {
+                prompt("請手動複製以下連結：", shareUrl);
             });
         } else {
-            prompt("請手動複製以下連結分享給朋友：", shareUrl);
+            prompt("請手動複製以下連結：", shareUrl);
         }
     } catch(e) { 
         console.error(e); 
@@ -217,11 +220,12 @@ function checkShareUrl() {
                 s: decoded[2] === 1, 
                 w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
             };
+            window.isGuestMode = true; // 設定為全域變數阻擋登入攔截
             startGuestMode(finalData); 
             return true;
         } catch(e) { 
             console.error(e); 
-            alert("❌ 無效或過期的分享連結！"); 
+            alert("無效的分享連結。"); 
             return false; 
         }
     }
@@ -247,11 +251,12 @@ function checkShareUrl() {
             } else { 
                 finalData = decoded; 
             }
+            window.isGuestMode = true;
             startGuestMode(finalData); 
             return true;
         } catch(e) { 
             console.error(e); 
-            alert("❌ 無效或過期的舊版分享連結！"); 
+            alert("過期的分享連結。"); 
             return false; 
         }
     }
@@ -270,10 +275,10 @@ function startGuestMode(data) {
     currentCardIndex = 0;
 
     document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
-    document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '🏠 離開');
+    document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '離開');
 
     if (data.v === 'mcq') {
-        document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (訪客對戰)';
+        document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (分享對戰)';
         setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
         switchView('mcq'); 
         showMcqNextCard();
@@ -290,7 +295,7 @@ function startGuestMode(data) {
         switchView('youglish'); 
         loadYouglishCard();
     } else {
-        document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (訪客對戰)';
+        document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (分享對戰)';
         setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); 
         setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
         switchView('practice'); 
@@ -314,9 +319,9 @@ window.updateHomeSummary = function() {
     });
     
     if (selectedCount === 0) {
-        summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未選擇單字簿，請先進入管理區選擇喔！</span>';
+        summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未勾選範圍。請進入控制區選取單字簿。</span>';
     } else {
-        summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
+        summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本單字簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 字`;
     }
 };
 
@@ -325,7 +330,7 @@ window.renderBookList = function() {
     list.innerHTML = '';
     
     if (window.books.length === 0) { 
-        list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">目前沒有單字簿，請在下方新增</div>'; 
+        list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">資料庫無單字簿，請在下方建立。</div>'; 
         updateHomeSummary(); 
         return; 
     }
@@ -346,7 +351,7 @@ window.renderBookList = function() {
     keys.forEach(k => {
         const header = document.createElement('div'); 
         header.className = 'group-title'; 
-        header.innerText = `🏷️ ${k}`; 
+        header.innerText = k; 
         list.appendChild(header);
         
         groups[k].forEach(book => {
@@ -372,7 +377,7 @@ window.renderBookList = function() {
             
             const editBtn = document.createElement('button'); 
             editBtn.className = 'btn-icon'; 
-            editBtn.innerHTML = '✎'; 
+            editBtn.innerHTML = '編輯'; 
             editBtn.onclick = (e) => { 
                 e.stopPropagation(); 
                 openEditBook(book.id); 
@@ -437,7 +442,7 @@ window.addBookWithImport = function() {
     const rawText = document.getElementById('import-content').value.trim();
     
     if (!name) return alert("請輸入單字簿名稱"); 
-    if (!rawText) return alert("請貼上單字列表");
+    if (!rawText) return alert("請輸入轉換內容");
     
     const lines = rawText.split('\n');
     const newWords = [];
@@ -457,7 +462,7 @@ window.addBookWithImport = function() {
     });
     
     if (newWords.length === 0) {
-        return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
+        return alert("格式解析失敗，請採用「英文 - 中文」結構");
     }
     
     window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
@@ -468,7 +473,7 @@ window.addBookWithImport = function() {
     document.getElementById('import-content').value = ''; 
     toggleImportArea(); 
     renderBookList(); 
-    alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
+    alert(`成功匯入 ${newWords.length} 個單字。`);
 };
 
 window.toggleExportMenu = function() {
@@ -479,7 +484,7 @@ window.toggleExportMenu = function() {
 window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
     if (!book || book.words.length === 0) {
-        alert("這個單字簿是空的！無法匯出。");
+        alert("無可用數據匯出。");
         toggleExportMenu();
         return;
     }
@@ -489,19 +494,19 @@ window.exportBook = function(type) {
     if (type === 'copy') {
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(content).then(() => {
-                alert("✅ 單字已成功複製到剪貼簿！\n(格式: 英文 - 中文)");
+                alert("已複製到剪貼簿。");
             }).catch(() => {
-                prompt("請手動複製以下內容：", content);
+                prompt("請複製以下內容：", content);
             });
         } else {
-            prompt("請手動複製以下內容：", content);
+            prompt("請複製以下內容：", content);
         }
     } else if (type === 'download') {
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${book.name || 'SilenVocab_Export'}.txt`;
+        a.download = `${book.name || 'Export'}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -520,7 +525,7 @@ document.addEventListener('click', function(event) {
 });
 
 window.deleteCurrentBook = function() {
-    if(confirm('確定要刪除整個單字簿嗎？')) { 
+    if(confirm('確定要永久刪除此單字簿嗎？')) { 
         window.books = window.books.filter(b => b.id !== currentBookId); 
         selectedBookIds.delete(currentBookId); 
         saveData(); 
@@ -545,12 +550,12 @@ window.saveBookInfo = function() {
     const newName = document.getElementById('edit-book-name-input').value.trim();
     const newTag = document.getElementById('edit-book-tag-input').value.trim();
     
-    if(!newName) return alert('單字簿名稱不能為空！');
+    if(!newName) return alert('單字簿名稱不能為空。');
     
     book.name = newName; 
     book.tag = newTag; 
     saveData(); 
-    alert('已儲存基本資訊變更！');
+    alert('資訊已更新。');
 };
 
 function renderWordList() {
@@ -566,7 +571,7 @@ function renderWordList() {
                 <div class="word-en">${word.en}</div>
                 <div class="word-zh">${word.zh.join(', ')}</div>
             </div>
-            <button class="btn-icon btn-delete" onclick="deleteWord(${book.words.length - 1 - index})">✕</button>
+            <button class="btn-icon btn-delete" style="border:none;" onclick="deleteWord(${book.words.length - 1 - index})">✕</button>
         `;
         list.appendChild(div);
     });
@@ -576,7 +581,7 @@ window.addWord = function() {
     const en = document.getElementById('input-en').value.trim();
     const zhStr = document.getElementById('input-zh').value.trim();
     
-    if(!en || !zhStr) return alert("請輸入完整");
+    if(!en || !zhStr) return alert("欄位不完整");
     
     const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
     window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
@@ -596,7 +601,7 @@ window.deleteWord = function(index) {
 
 function getPracticeWords() {
     if (selectedBookIds.size === 0) { 
-        alert("請先進入「選擇與管理單字簿」勾選你要練習的範圍喔！"); 
+        alert("請先選取單字簿範圍。"); 
         return []; 
     }
     let queue = []; 
@@ -606,7 +611,7 @@ function getPracticeWords() {
         }
     });
     if (queue.length === 0) { 
-        alert("選定的單字簿裡面沒有任何單字！"); 
+        alert("範圍內不含單字。"); 
         return []; 
     } 
     return queue;
@@ -680,7 +685,7 @@ function updateMasteryProgress() {
     let pct = (mastered / total) * 100;
     
     document.getElementById('mastery-progress-bar').style.width = pct + '%';
-    document.getElementById('mastery-status-text').innerText = `進度: ${mastered} / ${total}`;
+    document.getElementById('mastery-status-text').innerText = `精通進度: ${mastered} / ${total}`;
     return mastered === total;
 }
 
@@ -790,7 +795,7 @@ function showMasteryMCQ(word, isDelayed) {
     
     let badge = document.getElementById('mastery-mcq-badge');
     if (isDelayed) {
-        badge.innerText = "Lv 3: 延遲固化 (畢業測驗)";
+        badge.innerText = "Lv 3: 延遲固化 (畢業評測)";
     } else {
         badge.innerText = "Lv 1: 視覺辨識";
     }
@@ -987,7 +992,7 @@ function renderMasteryPuzzleBoard() {
                 letterObj.used = true; 
                 puzzleUserAnswer.push(letterObj); 
                 renderMasteryPuzzleBoard(); 
-                checkMasteryPuzzle(false); 
+                window.checkMasteryPuzzle(false); 
             }; 
             poolArea.appendChild(tile); 
         } 
@@ -1004,7 +1009,7 @@ window.checkMasteryPuzzle = function(forced = false) {
 
 function showMasteryTyping(word, isDelayed) {
     setDisplayState('mastery-typing-area', true);
-    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業測驗)" : "Lv 3: 主動輸出";
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 3: 主動輸出";
     document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
     
     const input = document.getElementById('mastery-typing-input');
@@ -1041,63 +1046,62 @@ function checkMasteryAnswer(isCorrect) {
     }
     
     tickMasteryDelays();
-
     let lvl = currentMasteryTarget.level;
 
     if (masteryModeType === 'comprehensive') {
         if (isCorrect) {
             icon.innerText = '✔'; 
             icon.className = 'big-icon icon-correct'; 
-            status.innerText = '正確!'; 
+            status.innerText = '正確'; 
             status.className = 'result-status status-correct';
             
             if (lvl === 1) { 
                 currentMasteryTarget.level = 2; 
-                msg.innerText = "答對！前進 Level 2"; 
+                msg.innerText = "升級至 Level 2 結構重組。"; 
             } else if (lvl === 2) { 
                 currentMasteryTarget.level = 3; 
-                msg.innerText = "答對！前進 Level 3"; 
+                msg.innerText = "升級至 Level 3 主動輸出。"; 
             } else if (lvl === 3) { 
                 currentMasteryTarget.level = 3.5; 
                 currentMasteryTarget.delay = delayWaitTurns; 
-                msg.innerText = "進入潛伏期！稍後進行延遲測驗"; 
+                msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; 
             } else if (lvl === 3.9) { 
                 currentMasteryTarget.level = 5; 
-                msg.innerText = "測驗通過，單字已精通！"; 
+                msg.innerText = "通過延遲評測，該單字已完全精通。"; 
             }
         } else {
             icon.innerText = '✘'; 
             icon.className = 'big-icon icon-wrong'; 
-            status.innerText = '錯誤!'; 
+            status.innerText = '錯誤'; 
             status.className = 'result-status status-wrong';
             currentMasteryTarget.level = 1; 
-            msg.innerText = "退回 Level 1 重新記憶";
+            msg.innerText = "降級重回 Level 1 視覺辨識。";
         }
     } else {
         if (isCorrect) {
             icon.innerText = '✔'; 
             icon.className = 'big-icon icon-correct'; 
-            status.innerText = '正確!'; 
+            status.innerText = '正確'; 
             status.className = 'result-status status-correct';
             
             if (lvl === 1) { 
                 currentMasteryTarget.level = 2; 
-                msg.innerText = "答對！前進 Level 2"; 
+                msg.innerText = "升級至 Level 2 雙向連接。"; 
             } else if (lvl === 2) { 
                 currentMasteryTarget.level = 2.5; 
                 currentMasteryTarget.delay = delayWaitTurns; 
-                msg.innerText = "進入潛伏期！稍後進行延遲測驗"; 
+                msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; 
             } else if (lvl === 2.9) { 
                 currentMasteryTarget.level = 4; 
-                msg.innerText = "測驗通過，連結力已精通！"; 
+                msg.innerText = "通過延遲評測，單字連接力建立完成。"; 
             }
         } else {
             icon.innerText = '✘'; 
             icon.className = 'big-icon icon-wrong'; 
-            status.innerText = '錯誤!'; 
+            status.innerText = '錯誤'; 
             status.className = 'result-status status-wrong';
             currentMasteryTarget.level = 1; 
-            msg.innerText = "退回 Level 1 重新記憶";
+            msg.innerText = "降級重回 Level 1 視覺辨識。";
         }
     }
 }
@@ -1188,12 +1192,12 @@ function showFeedback(c, w) {
     if (c) { 
         i.innerText = '✔'; 
         i.className = 'big-icon icon-correct'; 
-        s.innerText = '正確!'; 
+        s.innerText = '正確'; 
         s.className = 'result-status status-correct'; 
     } else { 
         i.innerText = '✘'; 
         i.className = 'big-icon icon-wrong'; 
-        s.innerText = '錯誤!'; 
+        s.innerText = '錯誤'; 
         s.className = 'result-status status-wrong'; 
     } 
     speakEnglishWord(w.en); 
@@ -1202,7 +1206,7 @@ function showFeedback(c, w) {
 window.handleNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
-        alert("錯誤！重來！"); 
+        alert("評測錯誤，重頭開始。"); 
         currentCardIndex = 0; 
         completedCount = 0; 
     } else {
@@ -1223,7 +1227,7 @@ window.setupMultipleChoice = function(mode) {
     if (!practiceQueue.length) return; 
     
     if (new Set(getSelectedWordsPool().map(w => w.en)).size < 4) {
-        return alert("單字過少"); 
+        return alert("單字簿數量不足以生成干擾項選項。"); 
     }
     
     if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
@@ -1285,12 +1289,12 @@ window.checkMcqAnswer = function(c) {
     if (c) { 
         i.innerText = '✔'; 
         i.className = 'big-icon icon-correct'; 
-        s.innerText = '正確!'; 
+        s.innerText = '正確'; 
         s.className = 'result-status status-correct'; 
     } else { 
         i.innerText = '✘'; 
         i.className = 'big-icon icon-wrong'; 
-        s.innerText = '錯誤!'; 
+        s.innerText = '錯誤'; 
         s.className = 'result-status status-wrong'; 
     } 
     speakEnglishWord(w.en); 
@@ -1299,7 +1303,7 @@ window.checkMcqAnswer = function(c) {
 window.handleMcqNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
-        alert("錯誤！重來！"); 
+        alert("評測錯誤，重頭開始。"); 
         currentCardIndex = 0; 
         completedCount = 0; 
     } else {
@@ -1309,7 +1313,7 @@ window.handleMcqNextClick = function() {
 };
 
 window.setupSpeakingMode = function() { 
-    if (!recognition) return alert("不支援語音辨識"); 
+    if (!recognition) return alert("當前核心環境不支援 SpeechRecognition 語音介面。"); 
     
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
@@ -1333,7 +1337,7 @@ function showNextSpeakingCard() {
     
     document.getElementById('speaking-word-display').innerText = w.en; 
     document.getElementById('speaking-zh-display').innerText = w.zh.join(' / '); 
-    document.getElementById('speaking-status').innerText = '點擊麥克風'; 
+    document.getElementById('speaking-status').innerText = '準備就緒'; 
     document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
     
     speakEnglishWord(w.en); 
@@ -1345,7 +1349,7 @@ window.startSpeechRecognition = function() {
     try { 
         recognition.start(); 
         b.classList.add('listening'); 
-        s.innerText = '聆聽中...'; 
+        s.innerText = '正在語音錄製與分析...'; 
     } catch(e) {} 
     
     recognition.onresult = (e) => { 
@@ -1367,21 +1371,21 @@ window.startSpeechRecognition = function() {
             if (fs < 50) fs = 80; 
             sd.innerText = `${fs} 分`; 
             sd.style.color = 'var(--success)'; 
-            md.innerText = '標準！'; 
-            hd.innerText = `聽到: "${h}"`; 
+            md.innerText = '發音標準'; 
+            hd.innerText = `捕獲音訊: "${h}"`; 
         } else { 
             lastAnswerCorrect = false; 
             sd.innerText = `0 分`; 
             sd.style.color = 'var(--error)'; 
-            md.innerText = '不對喔'; 
-            hd.innerText = `聽到: "${h}"`; 
+            md.innerText = '識別不匹配'; 
+            hd.innerText = `捕獲音訊: "${h}"`; 
             if (!isSequentialMode) requeueWord(practiceQueue[currentCardIndex]); 
         } 
     }; 
     
     recognition.onerror = () => { 
         b.classList.remove('listening'); 
-        s.innerText = '辨識失敗重試'; 
+        s.innerText = '音訊解碼失敗，請重新觸發。'; 
     }; 
     
     recognition.onspeechend = () => { 
@@ -1393,7 +1397,7 @@ window.startSpeechRecognition = function() {
 window.handleSpeakingNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
-        alert('重來！'); 
+        alert('重頭開始。'); 
         currentCardIndex = 0; 
         completedCount = 0; 
     } else {
@@ -1488,7 +1492,7 @@ window.checkPuzzleState = function(f = false) {
     if (cs.length === ts.length || f) { 
         if (cs === ts) { 
             m.className = 'result-msg result-correct'; 
-            m.innerText = '正確！'; 
+            m.innerText = '正確'; 
             speakEnglishWord(ts); 
             setTimeout(() => {
                 currentCardIndex++; 
@@ -1497,7 +1501,7 @@ window.checkPuzzleState = function(f = false) {
         } else { 
             if (isSequentialMode) { 
                 m.className = 'result-msg result-wrong'; 
-                m.innerText = `錯誤！答案 ${ts}。重來！`; 
+                m.innerText = `錯誤，答案為 ${ts}。重頭開始。`; 
                 speakEnglishWord(ts); 
                 setTimeout(() => {
                     currentCardIndex = 0; 
@@ -1506,7 +1510,7 @@ window.checkPuzzleState = function(f = false) {
             } else { 
                 if (f) { 
                     m.className = 'result-msg result-wrong'; 
-                    m.innerText = `錯誤！答案 ${ts}`; 
+                    m.innerText = `錯誤，答案為 ${ts}`; 
                     speakEnglishWord(ts); 
                     requeueWord(puzzleCurrentWord); 
                     setTimeout(() => {
@@ -1515,7 +1519,7 @@ window.checkPuzzleState = function(f = false) {
                     }, 2000); 
                 } else { 
                     m.className = 'result-msg result-wrong'; 
-                    m.innerText = '錯誤'; 
+                    m.innerText = '比對不符'; 
                 } 
             } 
         } 
@@ -1524,7 +1528,7 @@ window.checkPuzzleState = function(f = false) {
 
 window.setupMemoryMode = function() { 
     let p = getPracticeWords(); 
-    if (p.length < 2) return alert("單字過少"); 
+    if (p.length < 2) return alert("生成記憶矩陣單字數量不足。"); 
     
     p.sort(() => Math.random() - 0.5); 
     let sw = p.slice(0, 8); 
@@ -1542,12 +1546,12 @@ window.setupMemoryMode = function() {
     
     switchView('memory'); 
     renderMemoryBoard(); 
-    document.getElementById('memory-message').innerText = '點擊翻卡'; 
+    document.getElementById('memory-message').innerText = '請選取卡片'; 
 };
 
 function setupMemoryModeGuest() { 
     let p = [...practiceQueue]; 
-    if (p.length < 2) return alert("單字過少"); 
+    if (p.length < 2) return alert("生成記憶矩陣單字數量不足。"); 
     
     p.sort(() => Math.random() - 0.5); 
     let sw = p.slice(0, 8); 
@@ -1565,7 +1569,7 @@ function setupMemoryModeGuest() {
     
     switchView('memory'); 
     renderMemoryBoard(); 
-    document.getElementById('memory-message').innerText = '點擊翻卡'; 
+    document.getElementById('memory-message').innerText = '請選取卡片'; 
 }
 
 function renderMemoryBoard() { 
@@ -1600,7 +1604,7 @@ function checkMemoryMatch() {
         memoryMatchedCount += 2; 
         document.getElementById('memory-board').children[i1].classList.add('matched'); 
         document.getElementById('memory-board').children[i2].classList.add('matched'); 
-        m.innerText = '配對成功！'; 
+        m.innerText = '矩陣配對成功'; 
         m.className = 'result-msg result-correct'; 
         speakEnglishWord(c1.id); 
         memoryFlipped = []; 
@@ -1610,7 +1614,7 @@ function checkMemoryMatch() {
             setTimeout(() => endQuiz(), 500); 
         }
     } else { 
-        m.innerText = '不匹配...'; 
+        m.innerText = '不匹配'; 
         m.className = 'result-msg result-wrong'; 
         setTimeout(() => { 
             document.getElementById('memory-board').children[i1].classList.remove('flipped'); 
@@ -1657,14 +1661,16 @@ window.prevYouglishCard = function() {
         currentCardIndex--; 
         loadYouglishCard(); 
     } else {
-        alert("已經是第一字！"); 
+        alert("已達佇列首端。"); 
     }
 };
 
+// =====================================
+// 6. 啟動與分享攔截初始化
+// =====================================
 window.addEventListener('load', () => {
     setTimeout(() => { 
         if (!checkShareUrl()) {
-            goHome(); 
         }
     }, 150); 
 });
