@@ -1,7 +1,7 @@
 // =====================================
 // 1. 全局變數與初始化 (Global Setup)
 // =====================================
-let books = JSON.parse(localStorage.getItem('sv_books')) || [];
+window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
 let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
 let isSequentialMode = false;
 
@@ -28,13 +28,13 @@ try {
     console.error("語音 API 初始化失敗", e); 
 }
 
-function saveData() { 
-    localStorage.setItem('sv_books', JSON.stringify(books)); 
-}
+window.saveData = function() { 
+    localStorage.setItem('sv_books', JSON.stringify(window.books)); 
+};
 
 const views = ['home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery'];
 
-function switchView(viewName) {
+window.switchView = function(viewName) {
     views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         if (el) {
@@ -47,7 +47,7 @@ function switchView(viewName) {
             }
         }
     });
-}
+};
 
 function setDisplayState(id, isDisplay, displayType = 'block') {
     const el = document.getElementById(id);
@@ -62,18 +62,18 @@ function setDisplayState(id, isDisplay, displayType = 'block') {
     }
 }
 
-function goHome() { 
+window.goHome = function() { 
     updateHomeSummary(); 
     renderSettings(); 
     switchView('home'); 
-}
+};
 
-function openBookSelect() { 
+window.openBookSelect = function() { 
     renderBookList(); 
     switchView('book-select'); 
-}
+};
 
-function quitPractice() { 
+window.quitPractice = function() { 
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel(); 
     }
@@ -84,7 +84,7 @@ function quitPractice() {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     goHome(); 
-}
+};
 
 function renderSettings() {
     const pToggle = document.getElementById('auto-pronounce-toggle'); 
@@ -93,16 +93,16 @@ function renderSettings() {
     if (sToggle) sToggle.checked = isSequentialMode;
 }
 
-function togglePronunciation() { 
+window.togglePronunciation = function() { 
     autoPronounce = !autoPronounce; 
     localStorage.setItem('sv_autoPronounce', autoPronounce); 
     renderSettings(); 
-}
+};
 
-function toggleSequential() { 
+window.toggleSequential = function() { 
     isSequentialMode = !isSequentialMode; 
     renderSettings(); 
-}
+};
 
 function speakEnglishWord(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
@@ -116,12 +116,12 @@ function speakEnglishWord(word) {
     window.forceSpeak = false;
 }
 
-function replayAudio() { 
+window.replayAudio = function() { 
     window.forceSpeak = true; 
     if (practiceQueue[currentCardIndex]) {
         speakEnglishWord(practiceQueue[currentCardIndex].en); 
     }
-}
+};
 
 function requeueWord(word) {
     let remaining = practiceQueue.length - 1 - currentCardIndex;
@@ -141,7 +141,7 @@ function endQuiz() {
         if (confirm("測驗結束！🎉\n\n你要將這份「朋友分享的單字庫」儲存到你的 SilenVocab 嗎？")) {
             const newName = prompt("請為這份單字簿取個名字：", "分享的單字包");
             if (newName) {
-                books.push({ id: Date.now(), name: newName, tag: "來自分享", words: guestWords });
+                window.books.push({ id: Date.now(), name: newName, tag: "來自分享", words: guestWords });
                 saveData();
                 alert("✅ 儲存成功！已加入你的單字庫中。");
             }
@@ -155,7 +155,7 @@ function endQuiz() {
 // =====================================
 // 2. 分享與連網功能 (Share & LZ-String)
 // =====================================
-function shareCurrentQuiz() {
+window.shareCurrentQuiz = function() {
     if (typeof LZString === 'undefined') { 
         alert("系統正在載入壓縮模組，請稍等幾秒後再試一次！"); 
         return; 
@@ -195,7 +195,7 @@ function shareCurrentQuiz() {
         console.error(e); 
         alert("產生分享連結失敗"); 
     }
-}
+};
 
 function checkShareUrl() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -301,12 +301,12 @@ function startGuestMode(data) {
 // =====================================
 // 3. 單字簿管理 (Book Management)
 // =====================================
-function updateHomeSummary() {
+window.updateHomeSummary = function() {
     const summaryEl = document.getElementById('home-book-summary');
     if (!summaryEl) return;
     
     let selectedCount = 0, wordCount = 0;
-    books.forEach(b => { 
+    window.books.forEach(b => { 
         if (selectedBookIds.has(b.id)) { 
             selectedCount++; 
             wordCount += b.words.length; 
@@ -318,20 +318,20 @@ function updateHomeSummary() {
     } else {
         summaryEl.innerHTML = `已準備好 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${selectedCount}</span> 本單字簿，共 <span style="color:var(--accent); font-weight:bold; font-size:1.3rem;">${wordCount}</span> 字`;
     }
-}
+};
 
-function renderBookList() {
+window.renderBookList = function() {
     const list = document.getElementById('book-list'); 
     list.innerHTML = '';
     
-    if (books.length === 0) { 
+    if (window.books.length === 0) { 
         list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">目前沒有單字簿，請在下方新增</div>'; 
         updateHomeSummary(); 
         return; 
     }
 
     const groups = {};
-    books.forEach(book => {
+    window.books.forEach(book => {
         const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
         if (!groups[t]) groups[t] = [];
         groups[t].push(book);
@@ -393,9 +393,9 @@ function renderBookList() {
         });
     });
     updateHomeSummary(); 
-}
+};
 
-function handleFileUpload(event) {
+window.handleFileUpload = function(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -405,9 +405,9 @@ function handleFileUpload(event) {
         event.target.value = '';
     };
     reader.readAsText(file);
-}
+};
 
-function toggleImportArea() {
+window.toggleImportArea = function() {
     const area = document.getElementById('import-area');
     if (area.classList.contains('hidden')) { 
         setDisplayState('import-area', true); 
@@ -416,22 +416,22 @@ function toggleImportArea() {
         setDisplayState('import-area', false); 
         setDisplayState('btn-create-simple', true); 
     }
-}
+};
 
-function addBookSimple() {
+window.addBookSimple = function() {
     const name = document.getElementById('new-book-name').value.trim();
     const tag = document.getElementById('new-book-tag').value.trim();
     if (!name) return alert("請輸入單字簿名稱");
     
-    books.push({ id: Date.now(), name: name, tag: tag, words: [] }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [] }); 
     saveData(); 
     
     document.getElementById('new-book-name').value = ''; 
     document.getElementById('new-book-tag').value = ''; 
     renderBookList();
-}
+};
 
-function addBookWithImport() {
+window.addBookWithImport = function() {
     const name = document.getElementById('new-book-name').value.trim();
     const tag = document.getElementById('new-book-tag').value.trim();
     const rawText = document.getElementById('import-content').value.trim();
@@ -460,7 +460,7 @@ function addBookWithImport() {
         return alert("無法識別任何單字，請檢查格式是否為「英文 - 中文」");
     }
     
-    books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
     saveData();
     
     document.getElementById('new-book-name').value = ''; 
@@ -469,15 +469,15 @@ function addBookWithImport() {
     toggleImportArea(); 
     renderBookList(); 
     alert(`成功建立單字簿「${name}」，並匯入 ${newWords.length} 個單字！`);
-}
+};
 
-function toggleExportMenu() {
+window.toggleExportMenu = function() {
     const menu = document.getElementById('export-menu');
     menu.classList.toggle('active');
-}
+};
 
-function exportBook(type) {
-    const book = books.find(b => b.id === currentBookId);
+window.exportBook = function(type) {
+    const book = window.books.find(b => b.id === currentBookId);
     if (!book || book.words.length === 0) {
         alert("這個單字簿是空的！無法匯出。");
         toggleExportMenu();
@@ -509,7 +509,7 @@ function exportBook(type) {
     }
     
     toggleExportMenu();
-}
+};
 
 document.addEventListener('click', function(event) {
     const menu = document.getElementById('export-menu');
@@ -519,27 +519,27 @@ document.addEventListener('click', function(event) {
     }
 });
 
-function deleteCurrentBook() {
+window.deleteCurrentBook = function() {
     if(confirm('確定要刪除整個單字簿嗎？')) { 
-        books = books.filter(b => b.id !== currentBookId); 
+        window.books = window.books.filter(b => b.id !== currentBookId); 
         selectedBookIds.delete(currentBookId); 
         saveData(); 
         openBookSelect(); 
     }
-}
+};
 
-function openEditBook(id) { 
+window.openEditBook = function(id) { 
     currentBookId = id; 
-    const book = books.find(b => b.id === id);
+    const book = window.books.find(b => b.id === id);
     document.getElementById('edit-book-name-input').value = book.name; 
     document.getElementById('edit-book-tag-input').value = book.tag || '';
     document.getElementById('export-menu').classList.remove('active');
     renderWordList(); 
     switchView('edit'); 
-}
+};
 
-function saveBookInfo() {
-    const book = books.find(b => b.id === currentBookId); 
+window.saveBookInfo = function() {
+    const book = window.books.find(b => b.id === currentBookId); 
     if(!book) return;
     
     const newName = document.getElementById('edit-book-name-input').value.trim();
@@ -551,10 +551,10 @@ function saveBookInfo() {
     book.tag = newTag; 
     saveData(); 
     alert('已儲存基本資訊變更！');
-}
+};
 
 function renderWordList() {
-    const book = books.find(b => b.id === currentBookId); 
+    const book = window.books.find(b => b.id === currentBookId); 
     const list = document.getElementById('word-list'); 
     list.innerHTML = '';
     
@@ -572,27 +572,27 @@ function renderWordList() {
     });
 }
 
-function addWord() {
+window.addWord = function() {
     const en = document.getElementById('input-en').value.trim();
     const zhStr = document.getElementById('input-zh').value.trim();
     
     if(!en || !zhStr) return alert("請輸入完整");
     
     const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
-    books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
+    window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
     saveData();
     
     document.getElementById('input-en').value = ''; 
     document.getElementById('input-zh').value = ''; 
     document.getElementById('input-en').focus(); 
     renderWordList();
-}
+};
 
-function deleteWord(index) { 
-    books.find(b => b.id === currentBookId).words.splice(index, 1); 
+window.deleteWord = function(index) { 
+    window.books.find(b => b.id === currentBookId).words.splice(index, 1); 
     saveData(); 
     renderWordList(); 
-}
+};
 
 function getPracticeWords() {
     if (selectedBookIds.size === 0) { 
@@ -600,7 +600,7 @@ function getPracticeWords() {
         return []; 
     }
     let queue = []; 
-    books.forEach(book => { 
+    window.books.forEach(book => { 
         if (selectedBookIds.has(book.id)) {
             queue.push(...book.words); 
         }
@@ -615,7 +615,7 @@ function getPracticeWords() {
 function getSelectedWordsPool() {
     if (isGuestMode) return guestWords;
     let pool = []; 
-    books.forEach(book => { 
+    window.books.forEach(book => { 
         if (selectedBookIds.has(book.id)) {
             pool.push(...book.words); 
         }
@@ -631,7 +631,7 @@ let currentMasteryTarget = null;
 let masteryModeType = 'comprehensive'; 
 let delayWaitTurns = 4;
 
-function setupMasteryMode(type) {
+window.setupMasteryMode = function(type) {
     let words = getPracticeWords();
     if(words.length === 0) return;
     
@@ -671,7 +671,7 @@ function setupMasteryMode(type) {
     switchView('mastery');
     updateMasteryProgress();
     nextMasteryTurn();
-}
+};
 
 function updateMasteryProgress() {
     let targetLevel = (masteryModeType === 'comprehensive') ? 5 : 4;
@@ -779,11 +779,11 @@ function showMasteryL0(word) {
     }
 }
 
-function masteryL0Next() {
+window.masteryL0Next = function() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     currentMasteryTarget.level = 1;
     nextMasteryTurn();
-}
+};
 
 function showMasteryMCQ(word, isDelayed) {
     setDisplayState('mastery-mcq-area', true);
@@ -944,14 +944,14 @@ function showMasteryPuzzle(word) {
     renderMasteryPuzzleBoard();
 }
 
-function showMasteryPuzzleHint() {
+window.showMasteryPuzzleHint = function() {
     const word = currentMasteryTarget.en;
     if (word.length <= 2) { 
         document.getElementById('mastery-puzzle-hint-display').innerText = word; 
         return; 
     }
     document.getElementById('mastery-puzzle-hint-display').innerText = `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
-}
+};
 
 function renderMasteryPuzzleBoard() {
     const ansArea = document.getElementById('mastery-puzzle-ans');
@@ -994,13 +994,13 @@ function renderMasteryPuzzleBoard() {
     });
 }
 
-function checkMasteryPuzzle(forced = false) {
+window.checkMasteryPuzzle = function(forced = false) {
     const currentString = puzzleUserAnswer.map(o => o.char).join('');
     const targetString = currentMasteryTarget.en.toLowerCase();
     if (puzzleUserAnswer.length === targetString.length || forced) {
         checkMasteryAnswer(currentString === targetString);
     }
-}
+};
 
 function showMasteryTyping(word, isDelayed) {
     setDisplayState('mastery-typing-area', true);
@@ -1018,11 +1018,11 @@ function showMasteryTyping(word, isDelayed) {
     };
 }
 
-function checkMasteryTyping() {
+window.checkMasteryTyping = function() {
     const val = document.getElementById('mastery-typing-input').value.trim().toLowerCase();
     const target = currentMasteryTarget.en.toLowerCase();
     checkMasteryAnswer(val === target);
-}
+};
 
 function checkMasteryAnswer(isCorrect) {
     hideAllMasteryAreas();
@@ -1074,7 +1074,6 @@ function checkMasteryAnswer(isCorrect) {
             msg.innerText = "退回 Level 1 重新記憶";
         }
     } else {
-        // Connection Mode
         if (isCorrect) {
             icon.innerText = '✔'; 
             icon.className = 'big-icon icon-correct'; 
@@ -1103,25 +1102,23 @@ function checkMasteryAnswer(isCorrect) {
     }
 }
 
-function masteryFeedbackNext() {
+window.masteryFeedbackNext = function() {
     nextMasteryTurn();
-}
+};
 
-function replayMasteryAudio() {
+window.replayMasteryAudio = function() {
     if (currentMasteryTarget && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         let u = new SpeechSynthesisUtterance(currentMasteryTarget.en);
         u.lang = 'en-US';
         window.speechSynthesis.speak(u);
     }
-}
+};
 
 // =====================================
 // 5. 原版 8 大練習模式 (Original 8 Modes)
 // =====================================
-
-// 1. 中翻英 / 英翻中
-function setupPractice(mode) { 
+window.setupPractice = function(mode) { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
     
@@ -1138,7 +1135,7 @@ function setupPractice(mode) {
     
     switchView('practice'); 
     showNextCard(); 
-}
+};
 
 function showNextCard() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
@@ -1157,12 +1154,12 @@ function showNextCard() {
     document.getElementById('feedback-question-copy').innerText = q; 
 }
 
-function showHint() { 
+window.showHint = function() { 
     let w = practiceQueue[currentCardIndex].en; 
     document.getElementById('hint-display').innerText = w.length <= 2 ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
-}
+};
 
-function checkAnswer() { 
+window.checkAnswer = function() { 
     const v = document.getElementById('answer-input').value.trim();
     const w = practiceQueue[currentCardIndex]; 
     let c = false; 
@@ -1178,7 +1175,7 @@ function checkAnswer() {
     lastAnswerCorrect = c; 
     if (!c && !isSequentialMode) requeueWord(w); 
     showFeedback(c, w); 
-}
+};
 
 function showFeedback(c, w) { 
     setDisplayState('interaction-area', false); 
@@ -1202,7 +1199,7 @@ function showFeedback(c, w) {
     speakEnglishWord(w.en); 
 }
 
-function handleNextClick() { 
+window.handleNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
         alert("錯誤！重來！"); 
@@ -1212,17 +1209,16 @@ function handleNextClick() {
         currentCardIndex++; 
     }
     showNextCard(); 
-}
+};
 
 document.getElementById('answer-input').addEventListener('keypress', e => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        checkAnswer();
+        window.checkAnswer();
     }
 });
 
-// 2. 選擇題
-function setupMultipleChoice(mode) { 
+window.setupMultipleChoice = function(mode) { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
     
@@ -1241,7 +1237,7 @@ function setupMultipleChoice(mode) {
     setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
     switchView('mcq'); 
     showMcqNextCard(); 
-}
+};
 
 function showMcqNextCard() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
@@ -1269,12 +1265,12 @@ function showMcqNextCard() {
         let b = document.createElement('button'); 
         b.className = 'btn-mcq'; 
         b.innerText = currentMode === 'zh-to-en' ? o.en : o.zh.join(' / '); 
-        b.onclick = () => checkMcqAnswer(o.en === w.en); 
+        b.onclick = () => window.checkMcqAnswer(o.en === w.en); 
         a.appendChild(b); 
     }); 
 }
 
-function checkMcqAnswer(c) { 
+window.checkMcqAnswer = function(c) { 
     lastAnswerCorrect = c; 
     const w = practiceQueue[currentCardIndex]; 
     if (!c && !isSequentialMode) requeueWord(w); 
@@ -1298,9 +1294,9 @@ function checkMcqAnswer(c) {
         s.className = 'result-status status-wrong'; 
     } 
     speakEnglishWord(w.en); 
-}
+};
 
-function handleMcqNextClick() { 
+window.handleMcqNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
         alert("錯誤！重來！"); 
@@ -1310,10 +1306,9 @@ function handleMcqNextClick() {
         currentCardIndex++; 
     }
     showMcqNextCard(); 
-}
+};
 
-// 3. 口說挑戰
-function setupSpeakingMode() { 
+window.setupSpeakingMode = function() { 
     if (!recognition) return alert("不支援語音辨識"); 
     
     practiceQueue = getPracticeWords(); 
@@ -1327,7 +1322,7 @@ function setupSpeakingMode() {
     
     switchView('speaking'); 
     showNextSpeakingCard(); 
-}
+};
 
 function showNextSpeakingCard() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
@@ -1344,7 +1339,7 @@ function showNextSpeakingCard() {
     speakEnglishWord(w.en); 
 }
 
-function startSpeechRecognition() { 
+window.startSpeechRecognition = function() { 
     const b = document.getElementById('mic-btn');
     const s = document.getElementById('speaking-status'); 
     try { 
@@ -1393,9 +1388,9 @@ function startSpeechRecognition() {
         recognition.stop(); 
         b.classList.remove('listening'); 
     }; 
-}
+};
 
-function handleSpeakingNextClick() { 
+window.handleSpeakingNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
     if (isSequentialMode && !lastAnswerCorrect) { 
         alert('重來！'); 
@@ -1405,10 +1400,9 @@ function handleSpeakingNextClick() {
         currentCardIndex++; 
     }
     showNextSpeakingCard(); 
-}
+};
 
-// 4. 獨立拼圖模式
-function setupPuzzleMode() { 
+window.setupPuzzleMode = function() { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
     
@@ -1418,7 +1412,7 @@ function setupPuzzleMode() {
     setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
     switchView('puzzle'); 
     loadPuzzleLevel(); 
-}
+};
 
 function loadPuzzleLevel() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
@@ -1440,10 +1434,10 @@ function loadPuzzleLevel() {
     renderPuzzleBoard(); 
 }
 
-function showPuzzleHint() { 
+window.showPuzzleHint = function() { 
     let w = puzzleCurrentWord.en; 
     document.getElementById('puzzle-hint-display').innerText = w.length <= 2 ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
-}
+};
 
 function renderPuzzleBoard() { 
     const a = document.getElementById('puzzle-answer-area');
@@ -1479,14 +1473,14 @@ function renderPuzzleBoard() {
                 o.used = true; 
                 puzzleUserAnswer.push(o); 
                 renderPuzzleBoard(); 
-                checkPuzzleState(false); 
+                window.checkPuzzleState(false); 
             }; 
             p.appendChild(t); 
         } 
     }); 
 }
 
-function checkPuzzleState(f = false) { 
+window.checkPuzzleState = function(f = false) { 
     let cs = puzzleUserAnswer.map(o => o.char).join('');
     let ts = puzzleCurrentWord.en.toLowerCase();
     let m = document.getElementById('puzzle-message'); 
@@ -1526,10 +1520,9 @@ function checkPuzzleState(f = false) {
             } 
         } 
     } 
-}
+};
 
-// 5. 翻卡配對
-function setupMemoryMode() { 
+window.setupMemoryMode = function() { 
     let p = getPracticeWords(); 
     if (p.length < 2) return alert("單字過少"); 
     
@@ -1550,7 +1543,7 @@ function setupMemoryMode() {
     switchView('memory'); 
     renderMemoryBoard(); 
     document.getElementById('memory-message').innerText = '點擊翻卡'; 
-}
+};
 
 function setupMemoryModeGuest() { 
     let p = [...practiceQueue]; 
@@ -1629,8 +1622,7 @@ function checkMemoryMatch() {
     } 
 }
 
-// 6. YouGlish
-function setupYouglishMode() { 
+window.setupYouglishMode = function() { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
     
@@ -1638,7 +1630,7 @@ function setupYouglishMode() {
     currentCardIndex = 0; 
     switchView('youglish'); 
     loadYouglishCard(); 
-}
+};
 
 function loadYouglishCard() { 
     if (!practiceQueue[currentCardIndex]) return; 
@@ -1651,29 +1643,28 @@ function loadYouglishCard() {
     document.getElementById('yg-link').href = `https://youglish.com/pronounce/${encodeURIComponent(w.en)}/english`; 
 }
 
-function nextYouglishCard() { 
+window.nextYouglishCard = function() { 
     if (currentCardIndex < practiceQueue.length - 1) { 
         currentCardIndex++; 
         loadYouglishCard(); 
     } else {
         endQuiz(); 
     }
-}
+};
 
-function prevYouglishCard() { 
+window.prevYouglishCard = function() { 
     if (currentCardIndex > 0) { 
         currentCardIndex--; 
         loadYouglishCard(); 
     } else {
         alert("已經是第一字！"); 
     }
-}
+};
 
-// --- 初始化檢查 ---
-window.onload = () => { 
+window.addEventListener('load', () => {
     setTimeout(() => { 
         if (!checkShareUrl()) {
             goHome(); 
         }
     }, 150); 
-};
+});
