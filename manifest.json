@@ -1,0 +1,22 @@
+{
+  "name": "SilenVocab",
+  "short_name": "SilenVocab",
+  "description": "極簡英文單字高效練習系統",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "SILENVOCAB.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "SILENVOCAB.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+
