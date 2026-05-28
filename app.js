@@ -1944,52 +1944,47 @@ window.claimGSATWords = function() {
     const bookName = document.getElementById('gsat-claim-name').value.trim() || `學測衝刺 (抽取)`;
     const bookTag = document.getElementById('gsat-claim-tag').value.trim();
 
-    // 🕵️‍♂️ 步驟 A：建立黑名單 (蒐集使用者已經擁有的學測單字)
+    // 步驟 A：建立黑名單 (蒐集已經擁有的學測單字)
     let existingWords = new Set();
     window.books.forEach(book => {
-        // 我們利用 tag 包含 '學測' 或是帶有 isGSAT 標記來判定
         if (book.tag.includes('學測') || book.isGSAT) {
             book.words.forEach(w => existingWords.add(w.en.toLowerCase()));
         }
     });
 
-    // ✂️ 步驟 B：過濾掉已經背過的單字
+    // 步驟 B：過濾掉已經背過的單字
     let availableWords = gsatVocabLv1.filter(w => !existingWords.has(w.en.toLowerCase()));
 
-    // 🛑 步驟 C：數量與狀態判定
+    // 步驟 C：數量與狀態判定
     if (availableWords.length === 0) {
-        window.SilenModal.alert("🏆 太厲害了！學測 Lv1 的單字已經被你全部抽完囉！");
+        window.SilenModal.alert("太厲害了！學測 Lv1 的單字已經被你全部抽完囉！");
         return;
     }
 
     let finalAmount = amount;
     if (availableWords.length < amount) {
-        window.SilenModal.alert(`⚠️ 單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`);
+        window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`);
         finalAmount = availableWords.length;
     }
 
-    // 🎲 步驟 D：打亂陣列 (隨機洗牌)
+    // 步驟 D：打亂陣列 (隨機洗牌)
     availableWords.sort(() => Math.random() - 0.5);
 
-    // 🎁 步驟 E：截取數量並打包成新單字簿
+    // 步驟 E：截取數量並打包成新單字簿
     let selectedWords = availableWords.slice(0, finalAmount);
 
     window.books.push({
         id: Date.now(),
         name: bookName,
         tag: bookTag,
-        isGSAT: true, // 埋入專屬標記，方便未來擴充辨識
+        isGSAT: true, 
         words: selectedWords
     });
 
-    // 💾 存檔並同步至雲端
     if (typeof window.saveData === 'function') window.saveData();
     
-    // 🎉 完成後切換回普通視窗並刷新列表
-    window.SilenModal.alert(`🎉 成功抽取 ${selectedWords.length} 個全新學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
-        // 重置選單並切換畫面
-        document.getElementById('book-lib-selector').value = 'normal';
-        window.toggleBookLibMode();
+    // 成功後只重新渲染列表，不切換畫面
+    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
         if (typeof window.renderBookList === 'function') window.renderBookList();
     });
 };
