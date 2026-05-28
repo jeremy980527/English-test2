@@ -222,7 +222,7 @@ window.quitPractice = function() {
 };
 
 // =====================================
-// 🌟 3. 發聲核心 (絕對防禦版)
+// 🌟 3. 發聲核心
 // =====================================
 function speakEnglishWord(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
@@ -286,7 +286,7 @@ function endQuiz() {
 }
 
 // =====================================
-// 🌟 4. 分享與連網功能 (短網址 & 原生分享)
+// 🌟 4. 分享與連網功能
 // =====================================
 window.shareCurrentQuiz = async function() {
     if (typeof window.uploadShareData !== 'function') {
@@ -478,7 +478,7 @@ function startGuestMode(data) {
 }
 
 // =====================================
-// 🌟 5. 單字簿管理 (含雙軌渲染機制修復)
+// 🌟 5. 單字簿管理 (雙軌獨立渲染機制)
 // =====================================
 window.updateHomeSummary = function() {
     const summaryEl = document.getElementById('home-book-summary');
@@ -1861,12 +1861,32 @@ window.prevYouglishCard = function() {
 };
 
 // ==========================================================================
-// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法)
+// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法，含多級別快取)
 // ==========================================================================
+let gsatVocabCache = {
+    lv1: [],
+    lv2: []
+};
 
-let gsatVocabLv1 = []; // 暫存從 JSON 抓下來的單字庫
+// 處理下拉選單變更，更新唯讀標籤，並預先載入對應的單字庫
+window.updateGSATLevelUI = function() {
+    const level = document.getElementById('gsat-claim-level').value;
+    const tagInput = document.getElementById('gsat-claim-tag');
+    const nameInput = document.getElementById('gsat-claim-name');
 
-// 1. 切換 普通單字庫 / 學測單字庫 視窗
+    if (level === 'lv1') {
+        tagInput.value = '學測 Lv1';
+        if (nameInput.value === '學測進階 (抽取)') nameInput.value = '學測衝刺 (抽取)';
+    } else if (level === 'lv2') {
+        tagInput.value = '學測 Lv2';
+        if (nameInput.value === '學測衝刺 (抽取)') nameInput.value = '學測進階 (抽取)';
+    }
+    
+    if (gsatVocabCache[level].length === 0) {
+        fetchGSATVocab(level);
+    }
+};
+
 window.toggleBookLibMode = function() {
     const mode = document.getElementById('book-lib-selector').value;
     
@@ -1877,15 +1897,14 @@ window.toggleBookLibMode = function() {
         setDisplayState('normal-book-area', false);
         setDisplayState('gsat-book-area', true);
         
-        // 如果還沒載入過 JSON，就去抓取
-        if (gsatVocabLv1.length === 0) {
-            fetchGSATVocab();
+        const currentLevel = document.getElementById('gsat-claim-level') ? document.getElementById('gsat-claim-level').value : 'lv1';
+        if (gsatVocabCache[currentLevel].length === 0) {
+            fetchGSATVocab(currentLevel);
         }
     }
 };
 
-// 2. 異步抓取 vocabularylv1.json
-async function fetchGSATVocab() {
+async function fetchGSATVocab(level) {
     const btn = document.getElementById('btn-claim-gsat');
     if (btn) {
         btn.innerText = "資料庫載入中...";
@@ -1893,14 +1912,13 @@ async function fetchGSATVocab() {
     }
     
     try {
-        // 從 GitHub 根目錄抓取檔案
-        const response = await fetch('vocabularylv1.json');
+        const fileName = `vocabulary${level}.json`;
+        const response = await fetch(fileName);
         if (!response.ok) throw new Error("網路請求失敗");
         
         const rawData = await response.json();
         
-        // 格式轉換：把 {"word": "a", "chinese": "一"} 轉成系統看得懂的 {en: "a", zh: ["一"]}
-        gsatVocabLv1 = rawData.map(item => ({
+        gsatVocabCache[level] = rawData.map(item => ({
             en: item.word.trim(),
             zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s)
         }));
@@ -1909,10 +1927,10 @@ async function fetchGSATVocab() {
             btn.innerText = "開始抽取";
             btn.disabled = false;
         }
-        console.log(`學測 Lv1 載入成功，共 ${gsatVocabLv1.length} 字`);
+        console.log(`學測 ${level} 載入成功，共 ${gsatVocabCache[level].length} 字`);
     } catch (error) {
-        console.error("載入學測單字失敗:", error);
-        if (window.SilenModal) window.SilenModal.alert("載入學測單字庫失敗，請確認 vocabularylv1.json 是否存在。");
+        console.error(`載入 ${level} 失敗:`, error);
+        if (window.SilenModal) window.SilenModal.alert(`載入失敗，請確認 vocabulary${level}.json 是否存在。`);
         if (btn) {
             btn.innerText = "載入失敗";
             btn.disabled = false;
@@ -1920,31 +1938,33 @@ async function fetchGSATVocab() {
     }
 }
 
-// 3. 核心：防重複抽出演算法
-window.claimGSATWords = function() {
-    if (gsatVocabLv1.length === 0) {
-        window.SilenModal.alert("單字庫尚未載入完成，請稍候幾秒再試。");
-        return;
+window.claimGSATWords = async function() {
+    const level = document.getElementById('gsat-claim-level').value;
+    
+    if (gsatVocabCache[level].length === 0) {
+        await fetchGSATVocab(level);
+        if (gsatVocabCache[level].length === 0) return; 
     }
 
     const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
-    const bookName = document.getElementById('gsat-claim-name').value.trim() || "學測衝刺 (抽取)";
+    let defaultName = level === 'lv2' ? '學測進階 (抽取)' : '學測衝刺 (抽取)';
+    
+    const nameInput = document.getElementById('gsat-claim-name').value.trim();
+    const bookName = nameInput === '' ? defaultName : nameInput; 
     const bookTag = document.getElementById('gsat-claim-tag').value.trim();
 
-    // 步驟 A：建立黑名單 (蒐集已經擁有的學測單字)
     let existingWords = new Set();
     window.books.forEach(book => {
+        // 嚴謹地過濾所有包含「學測」標籤或是標記為 isGSAT 的單字，防止跨層級重複抽到
         if (book.tag.includes('學測') || book.isGSAT) {
             book.words.forEach(w => existingWords.add(w.en.toLowerCase()));
         }
     });
 
-    // 步驟 B：過濾掉已經背過的單字
-    let availableWords = gsatVocabLv1.filter(w => !existingWords.has(w.en.toLowerCase()));
+    let availableWords = gsatVocabCache[level].filter(w => !existingWords.has(w.en.toLowerCase()));
 
-    // 步驟 C：數量與狀態判定
     if (availableWords.length === 0) {
-        window.SilenModal.alert("太厲害了！學測 Lv1 的單字已經被你全部抽完囉！");
+        window.SilenModal.alert(`太厲害了！學測 ${level.toUpperCase()} 的單字已經被你全部抽完囉！`);
         return;
     }
 
@@ -1954,10 +1974,7 @@ window.claimGSATWords = function() {
         finalAmount = availableWords.length;
     }
 
-    // 步驟 D：打亂陣列 (隨機洗牌)
     availableWords.sort(() => Math.random() - 0.5);
-
-    // 步驟 E：截取數量並打包成新單字簿
     let selectedWords = availableWords.slice(0, finalAmount);
 
     window.books.push({
@@ -1968,10 +1985,8 @@ window.claimGSATWords = function() {
         words: selectedWords
     });
 
-    // 存檔並同步至雲端
     if (typeof window.saveData === 'function') window.saveData();
     
-    // 成功後只重新渲染列表，不切換畫面 (維持在學測抽卡區，不再跳回普通單字區)
     window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
         if (typeof window.renderBookList === 'function') window.renderBookList();
     });
