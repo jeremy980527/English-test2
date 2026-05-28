@@ -1872,12 +1872,12 @@ window.addEventListener('load', () => {
 
 
 // ==========================================================================
-// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法)
+// 8. 學測單字庫抽卡系統 (智慧防重複演算法)
 // ==========================================================================
 
 let gsatVocabLv1 = []; // 暫存從 JSON 抓下來的單字庫
 
-// 1. 切換 單字簿庫 / 學測單字庫 視窗
+// 1. 切換 普通單字庫 / 學測單字庫 視窗
 window.toggleBookLibMode = function() {
     const mode = document.getElementById('book-lib-selector').value;
     
@@ -1888,13 +1888,12 @@ window.toggleBookLibMode = function() {
         setDisplayState('normal-book-area', false);
         setDisplayState('gsat-book-area', true);
         
-        // 確保剛切換過去時，有載入學測題庫
-        if (typeof gsatVocabLv1 !== 'undefined' && gsatVocabLv1.length === 0) {
+        // 如果還沒載入過 JSON，就去抓取
+        if (gsatVocabLv1.length === 0) {
             fetchGSATVocab();
         }
     }
 };
-
 
 // 2. 異步抓取 vocabularylv1.json
 async function fetchGSATVocab() {
@@ -1905,24 +1904,23 @@ async function fetchGSATVocab() {
     }
     
     try {
-        // 從 GitHub 根目錄抓取你剛上傳的檔案
+        // 從 GitHub 根目錄抓取檔案
         const response = await fetch('vocabularylv1.json');
         if (!response.ok) throw new Error("網路請求失敗");
         
         const rawData = await response.json();
         
-        // 🔄 格式轉換：把 {"word": "a", "chinese": "一"} 轉成系統看得懂的 {en: "a", zh: ["一"]}
+        // 格式轉換：把 {"word": "a", "chinese": "一"} 轉成系統看得懂的 {en: "a", zh: ["一"]}
         gsatVocabLv1 = rawData.map(item => ({
             en: item.word.trim(),
-            // 處理多個中文解釋，將其分割成陣列
             zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s)
         }));
         
         if (btn) {
-            btn.innerText = `開始抽取 (剩餘可抽: 待計算)`;
+            btn.innerText = "開始抽取";
             btn.disabled = false;
         }
-        console.log(`✅ 學測 Lv1 載入成功，共 ${gsatVocabLv1.length} 字`);
+        console.log(`學測 Lv1 載入成功，共 ${gsatVocabLv1.length} 字`);
     } catch (error) {
         console.error("載入學測單字失敗:", error);
         if (window.SilenModal) window.SilenModal.alert("載入學測單字庫失敗，請確認 vocabularylv1.json 是否存在。");
@@ -1941,7 +1939,7 @@ window.claimGSATWords = function() {
     }
 
     const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
-    const bookName = document.getElementById('gsat-claim-name').value.trim() || `學測衝刺 (抽取)`;
+    const bookName = document.getElementById('gsat-claim-name').value.trim() || "學測衝刺 (抽取)";
     const bookTag = document.getElementById('gsat-claim-tag').value.trim();
 
     // 步驟 A：建立黑名單 (蒐集已經擁有的學測單字)
@@ -1981,9 +1979,10 @@ window.claimGSATWords = function() {
         words: selectedWords
     });
 
+    // 存檔並同步至雲端
     if (typeof window.saveData === 'function') window.saveData();
     
-    // 成功後只重新渲染列表，不切換畫面
+    // 成功後只重新渲染列表，不切換畫面 (維持在學測抽卡區，不再跳回普通單字區)
     window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
         if (typeof window.renderBookList === 'function') window.renderBookList();
     });
