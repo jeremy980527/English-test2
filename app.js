@@ -293,15 +293,19 @@ function endQuiz() {
 // =====================================
 // 3. 分享與連網功能 (Share & Guest Mode)
 // =====================================
-window.shareCurrentQuiz = function() {
-    if (typeof LZString === 'undefined') { 
-        window.SilenModal.alert("系統壓縮模組載入中，請稍候重試。"); 
-        return; 
+// =====================================
+// 🔗 雲端短網址打包與解包機制 (Web Share API 整合)
+// =====================================
+
+window.shareCurrentQuiz = async function() {
+    if (typeof window.uploadShareData !== 'function') {
+        window.SilenModal.alert("系統雲端模組載入中，請稍候 1 秒再試。");
+        return;
     }
-    
+
     let wordsToShare = practiceQueue;
     if (practiceQueue.length > 50) {
-        window.SilenModal.alert("提醒：為了最優化傳輸，系統將截取前 50 個單字作為測驗分享包。");
+        window.SilenModal.alert("提醒：為了最優化體驗，系統將自動截取前 50 個單字作為對戰測驗。");
         wordsToShare = practiceQueue.slice(0, 50);
     }
     
@@ -315,30 +319,85 @@ window.shareCurrentQuiz = function() {
     const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh]);
     const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
 
-    try {
-        const jsonStr = JSON.stringify(shareData);
-        const compressedUrlSafe = LZString.compressToEncodedURIComponent(jsonStr);
-        const shareUrl = window.location.origin + window.location.pathname + '?lz=' + compressedUrlSafe;
-        
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                window.SilenModal.alert("測驗連結已成功複製到剪貼簿。");
-            }).catch(() => {
-                window.SilenModal.prompt("請手動複製以下連結：", shareUrl);
-            });
-        } else {
-            window.SilenModal.prompt("請手動複製以下連結：", shareUrl);
-        }
-    } catch(e) { 
-        console.error(e);
-        window.SilenModal.alert("產生分享連結失敗"); 
+    // 介面防重複點擊處理
+    const btn = document.querySelector('.export-quiz-btn');
+    let oldText = "分享測驗";
+    if (btn) {
+        oldText = btn.innerText;
+        btn.innerText = "產生中...";
+        btn.disabled = true;
+    }
+
+    // 將資料上傳到 Firebase 取得短代碼 ID
+    const shareId = await window.uploadShareData(shareData);
+    
+    if (btn) {
+        btn.innerText = oldText;
+        btn.disabled = false;
+    }
+
+    if (!shareId) {
+        window.SilenModal.alert("產生失敗，請檢查您的網路連線。");
+        return;
+    }
+
+    // 建立極簡短網址
+    const shareUrl = window.location.origin + window.location.pathname + '?q=' + shareId;
+
+    // 🌟 呼叫原生手機分享選單
+    if (navigator.share) {
+        navigator.share({
+            title: 'SilenVocab 英文挑戰',
+            text: '我建立了一個專屬單字測驗，快來接受我的對戰挑戰吧！',
+            url: shareUrl
+        }).catch((e) => console.log("使用者取消分享", e));
+    } else if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            window.SilenModal.alert("短網址已成功複製到剪貼簿！可以去 LINE 或社群貼上囉！\n\n" + shareUrl);
+        }).catch(() => {
+            window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
+        });
+    } else {
+        window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
     }
 };
 
 function checkShareUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    const lzCode = urlParams.get('lz');
     
+    // 🌟 優先攔截並解析新的 Firebase 短網址參數 (?q=)
+    const qId = urlParams.get('q');
+    if (qId) {
+        const tryDownload = () => {
+            if (typeof window.downloadShareData === 'function') {
+                window.downloadShareData(qId).then(decoded => {
+                    if (decoded) {
+                        const finalData = { 
+                            v: decoded[0], 
+                            m: decoded[1], 
+                            s: decoded[2] === 1, 
+                            w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
+                        };
+                        window.isGuestMode = true; 
+                        startGuestMode(finalData);
+                    } else {
+                        window.SilenModal.alert("這份分享測驗連結已過期或不存在。").then(() => {
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            window.location.reload();
+                        });
+                    }
+                });
+            } else {
+                // 若 Firebase 核心載入較慢，每 100 毫秒循環等待
+                setTimeout(tryDownload, 100); 
+            }
+        };
+        tryDownload();
+        return true; 
+    }
+    
+    // 保留舊版 LZString 解開功能，確保以前發出的舊長網址不會失效
+    const lzCode = urlParams.get('lz');
     if (lzCode) {
         try {
             if (typeof LZString === 'undefined') { 
@@ -346,23 +405,20 @@ function checkShareUrl() {
                 return true; 
             }
             const jsonStr = LZString.decompressFromEncodedURIComponent(lzCode);
-            if (!jsonStr) throw new Error("解壓縮失敗");
-            
+            if (!jsonStr) throw new Error("解鎖失敗");
             const decoded = JSON.parse(jsonStr);
-            const finalData = { 
-                v: decoded[0], 
-                m: decoded[1], 
-                s: decoded[2] === 1, 
-                w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
-            };
+            const finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) };
             window.isGuestMode = true; 
             startGuestMode(finalData); 
             return true;
         } catch(e) { 
-            window.SilenModal.alert("無效的分享連結。"); 
+            window.SilenModal.alert("此舊版網址解析失敗。"); 
             return false; 
         }
     }
+    return false;
+}
+
     
     let shareCode = urlParams.get('s') || urlParams.get('share');
     if (shareCode) {
