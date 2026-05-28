@@ -195,13 +195,13 @@ function setDisplayState(id, isDisplay, displayType = 'block') {
 }
 
 window.goHome = function() { 
-    updateHomeSummary(); 
-    window.SilenSettings.render(); 
+    if (typeof updateHomeSummary === 'function') updateHomeSummary(); 
+    if (window.SilenSettings && typeof window.SilenSettings.render === 'function') window.SilenSettings.render(); 
     switchView('home'); 
 };
 
 window.openBookSelect = function() { 
-    renderBookList(); 
+    if (typeof renderBookList === 'function') renderBookList(); 
     switchView('book-select'); 
 };
 
@@ -221,11 +221,13 @@ window.quitPractice = function() {
     goHome(); 
 };
 
-// 🌟 修復 1：整合 AndroidBridge 的全局發聲核心
+// =====================================
+// 🌟 發聲核心 (絕對防禦版：加上 window. 防止未定義報錯)
+// =====================================
 function speakEnglishWord(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
     
-    if (typeof AndroidBridge !== 'undefined') {
+    if (window.AndroidBridge && typeof window.AndroidBridge.speak === 'function') {
         try {
             window.AndroidBridge.speak(word);
         } catch (e) {
@@ -284,7 +286,7 @@ function endQuiz() {
 }
 
 // =====================================
-// 🌟 修復 2：分享與連網功能 (短網址 & 原生分享)
+// 🌟 分享與連網功能 (短網址 & 原生分享)
 // =====================================
 window.shareCurrentQuiz = async function() {
     if (typeof window.uploadShareData !== 'function') {
@@ -1046,7 +1048,7 @@ function handleMatchClick(type, item, btnElement) {
         matchEnSelected = { item, btn: btnElement }; 
         btnElement.classList.add('selected');
         
-        // 🌟 改用全局的語音函數
+        window.forceSpeak = true;
         speakEnglishWord(item.text); 
     } else {
         if (matchZhSelected) matchZhSelected.btn.classList.remove('selected');
@@ -1196,7 +1198,6 @@ function checkMasteryAnswer(isCorrect) {
     const msg = document.getElementById('mastery-fb-msg');
     document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
     
-    // 🌟 確保 AndroidTTS 也會跟著唸出正解
     window.forceSpeak = true;
     speakEnglishWord(currentMasteryTarget.en); 
     
@@ -1353,6 +1354,7 @@ function showFeedback(c, w) {
         s.innerText = '錯誤'; 
         s.className = 'result-status status-wrong'; 
     } 
+    window.forceSpeak = true;
     speakEnglishWord(w.en); 
 }
 
@@ -1454,6 +1456,7 @@ window.checkMcqAnswer = function(c) {
         s.innerText = '錯誤'; 
         s.className = 'result-status status-wrong'; 
     } 
+    window.forceSpeak = true;
     speakEnglishWord(w.en); 
 };
 
@@ -1502,6 +1505,7 @@ function showNextSpeakingCard() {
     document.getElementById('speaking-status').innerText = '準備就緒'; 
     document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
     
+    window.forceSpeak = true;
     speakEnglishWord(w.en); 
 }
 
@@ -1662,6 +1666,7 @@ window.checkPuzzleState = function(f = false) {
         if (cs === ts) { 
             m.className = 'result-msg result-correct'; 
             m.innerText = '正確'; 
+            window.forceSpeak = true;
             speakEnglishWord(ts); 
             setTimeout(() => { 
                 currentCardIndex++; 
@@ -1671,6 +1676,7 @@ window.checkPuzzleState = function(f = false) {
             if (isSequentialMode) { 
                 m.className = 'result-msg result-wrong'; 
                 m.innerText = `錯誤，答案為 ${ts}。`; 
+                window.forceSpeak = true;
                 speakEnglishWord(ts); 
                 setTimeout(() => { 
                     currentCardIndex = 0; 
@@ -1680,6 +1686,7 @@ window.checkPuzzleState = function(f = false) {
                 if (f) { 
                     m.className = 'result-msg result-wrong'; 
                     m.innerText = `錯誤，答案為 ${ts}`; 
+                    window.forceSpeak = true;
                     speakEnglishWord(ts); 
                     requeueWord(puzzleCurrentWord); 
                     setTimeout(() => { 
@@ -1785,6 +1792,7 @@ function checkMemoryMatch() {
         
         m.innerText = '矩陣配對成功'; 
         m.className = 'result-msg result-correct'; 
+        window.forceSpeak = true;
         speakEnglishWord(c1.id); 
         
         memoryFlipped = []; 
