@@ -861,7 +861,12 @@ window.deleteWord = function(index) {
 function getPracticeWords() {
     if (selectedBookIds.size === 0) { window.SilenModal.alert("請先選取單字簿範圍。"); return []; }
     let queue = []; 
-    window.books.forEach(book => { if (selectedBookIds.has(book.id)) queue.push(...book.words); });
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            // 🌟 將 isGSAT 標記綁定，供排行榜系統防洗分辨識
+            book.words.forEach(w => queue.push({ ...w, isGSAT: book.isGSAT, scored: false }));
+        }
+    });
     if (queue.length === 0) { window.SilenModal.alert("範圍內不含單字。"); return []; } 
     return queue;
 }
@@ -869,12 +874,16 @@ function getPracticeWords() {
 function getSelectedWordsPool() {
     if (isGuestMode) return guestWords;
     let pool = []; 
-    window.books.forEach(book => { if (selectedBookIds.has(book.id)) pool.push(...book.words); }); 
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            book.words.forEach(w => pool.push({ ...w, isGSAT: book.isGSAT }));
+        }
+    }); 
     return pool;
 }
 
 // =====================================
-// 🚀 6. 雙軌精通模式 (Mastery Mode)
+// 🚀 6. 雙軌精通模式 (Mastery Mode) + 排位賽計分引擎
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
@@ -886,7 +895,8 @@ window.setupMasteryMode = function(type) {
     if(words.length === 0) return;
     
     masteryModeType = type; 
-    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0 })); 
+    // 🌟 確保 isGSAT 屬性傳遞給抽卡池
+    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT })); 
     masteryPool.sort(() => Math.random() - 0.5);
     
     const headerTitle = document.getElementById('mastery-header-title'); 
@@ -1017,6 +1027,10 @@ function showMasteryL0(word) {
 window.masteryL0Next = function() { 
     if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
     currentMasteryTarget.level = 1; 
+    
+    // 🌟 Lv0 升級 Lv1 獎勵
+    if (window.addScore) window.addScore(10, currentMasteryTarget.isGSAT === true);
+    
     nextMasteryTurn(); 
 };
 
@@ -1243,6 +1257,7 @@ window.checkMasteryTyping = function() {
     checkMasteryAnswer(val === target);
 };
 
+// 🌟 精通模式核心判斷與給分邏輯
 function checkMasteryAnswer(isCorrect) {
     hideAllMasteryAreas(); 
     setDisplayState('mastery-feedback-area', true, 'flex');
@@ -1257,61 +1272,50 @@ function checkMasteryAnswer(isCorrect) {
     
     tickMasteryDelays(); 
     let lvl = currentMasteryTarget.level;
+    let isGsat = currentMasteryTarget.isGSAT === true; // 防洗分判定
 
     if (masteryModeType === 'comprehensive') {
         if (isCorrect) {
-            icon.innerText = '✔'; 
-            icon.className = 'big-icon icon-correct'; 
-            status.innerText = '正確'; 
-            status.className = 'result-status status-correct';
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
+            status.innerText = '正確'; status.className = 'result-status status-correct';
             
             if (lvl === 1) { 
-                currentMasteryTarget.level = 2; 
-                msg.innerText = "升級至 Level 2 結構重組。"; 
+                currentMasteryTarget.level = 2; msg.innerText = "升級至 Level 2 結構重組。 (積分 +20)"; 
+                if (window.addScore) window.addScore(20, isGsat);
             } else if (lvl === 2) { 
-                currentMasteryTarget.level = 3; 
-                msg.innerText = "升級至 Level 3 主動輸出。"; 
+                currentMasteryTarget.level = 3; msg.innerText = "升級至 Level 3 主動輸出。 (積分 +30)"; 
+                if (window.addScore) window.addScore(30, isGsat);
             } else if (lvl === 3) { 
-                currentMasteryTarget.level = 3.5; 
-                currentMasteryTarget.delay = delayWaitTurns; 
+                currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; 
                 msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; 
             } else if (lvl === 3.9) { 
-                currentMasteryTarget.level = 5; 
-                msg.innerText = "通過延遲評測，該單字已完全精通。"; 
+                currentMasteryTarget.level = 5; msg.innerText = "通過延遲評測，該單字已完全精通！ (🏆 積分 +100)"; 
+                if (window.addScore) window.addScore(100, isGsat);
             }
         } else {
-            icon.innerText = '✘'; 
-            icon.className = 'big-icon icon-wrong'; 
-            status.innerText = '錯誤'; 
-            status.className = 'result-status status-wrong';
-            currentMasteryTarget.level = 1; 
-            msg.innerText = "降級重回 Level 1 視覺辨識。";
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
+            status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+            currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 視覺辨識。";
         }
     } else {
         if (isCorrect) {
-            icon.innerText = '✔'; 
-            icon.className = 'big-icon icon-correct'; 
-            status.innerText = '正確'; 
-            status.className = 'result-status status-correct';
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; 
+            status.innerText = '正確'; status.className = 'result-status status-correct';
             
             if (lvl === 1) { 
-                currentMasteryTarget.level = 2; 
-                msg.innerText = "升級至 Level 2 雙向連接。"; 
+                currentMasteryTarget.level = 2; msg.innerText = "升級至 Level 2 雙向連接。 (積分 +20)"; 
+                if (window.addScore) window.addScore(20, isGsat);
             } else if (lvl === 2) { 
-                currentMasteryTarget.level = 2.5; 
-                currentMasteryTarget.delay = delayWaitTurns; 
+                currentMasteryTarget.level = 2.5; currentMasteryTarget.delay = delayWaitTurns; 
                 msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; 
             } else if (lvl === 2.9) { 
-                currentMasteryTarget.level = 4; 
-                msg.innerText = "通過延遲評測，單字連接力建立完成。"; 
+                currentMasteryTarget.level = 4; msg.innerText = "通過延遲評測，單字連接力建立完成！ (🏆 積分 +100)"; 
+                if (window.addScore) window.addScore(100, isGsat);
             }
         } else {
-            icon.innerText = '✘'; 
-            icon.className = 'big-icon icon-wrong'; 
-            status.innerText = '錯誤'; 
-            status.className = 'result-status status-wrong';
-            currentMasteryTarget.level = 1; 
-            msg.innerText = "降級重回 Level 1 視覺辨識。";
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
+            status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+            currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 視覺辨識。";
         }
     }
 }
@@ -1328,12 +1332,11 @@ window.replayMasteryAudio = function() {
 };
 
 // =====================================
-// 7. 原版 8 大練習模式 (Original 8 Modes)
+// 7. 原版 8 大練習模式 (Original 8 Modes) + 生涯計分
 // =====================================
 window.setupPractice = function(mode) { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
-    
     if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
     
     currentMode = mode; 
@@ -1385,6 +1388,12 @@ window.checkAnswer = function() {
     } 
     
     lastAnswerCorrect = c; 
+    // 🌟 答對且尚未計分過，給予 10 分生涯積分
+    if (c && !w.scored) { 
+        w.scored = true; 
+        if (window.addScore) window.addScore(10, false); 
+    }
+    
     if (!c && !isSequentialMode) requeueWord(w); 
     showFeedback(c, w); 
 };
@@ -1400,7 +1409,7 @@ function showFeedback(c, w) {
     if (c) { 
         i.innerText = '✔'; 
         i.className = 'big-icon icon-correct'; 
-        s.innerText = '正確'; 
+        s.innerText = '正確 (+10 分)'; 
         s.className = 'result-status status-correct'; 
     } else { 
         i.innerText = '✘'; 
@@ -1414,46 +1423,33 @@ function showFeedback(c, w) {
 
 window.handleNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
-    
     if (isSequentialMode && !lastAnswerCorrect) { 
         window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { 
-            currentCardIndex = 0; 
-            completedCount = 0; 
-            showNextCard(); 
+            currentCardIndex = 0; completedCount = 0; showNextCard(); 
         });
     } else {
-        currentCardIndex++; 
-        showNextCard(); 
+        currentCardIndex++; showNextCard(); 
     }
 };
 
 document.getElementById('answer-input').addEventListener('keypress', e => { 
-    if (e.key === 'Enter') { 
-        e.preventDefault(); 
-        window.checkAnswer(); 
-    } 
+    if (e.key === 'Enter') { e.preventDefault(); window.checkAnswer(); } 
 });
 
 window.setupMultipleChoice = function(mode) { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
-    
     if (new Set(getSelectedWordsPool().map(w => w.en)).size < 4) { 
-        window.SilenModal.alert("單字簿數量不足以生成干擾項選項。"); 
-        return; 
+        window.SilenModal.alert("單字簿數量不足以生成干擾項選項。"); return; 
     }
-    
     if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
     
-    currentMode = mode; 
-    currentCardIndex = 0; 
-    initialQueueLength = practiceQueue.length; 
-    completedCount = 0; 
+    currentMode = mode; currentCardIndex = 0; 
+    initialQueueLength = practiceQueue.length; completedCount = 0; 
     
     document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中'; 
     setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
-    window.switchView('mcq'); 
-    showMcqNextCard(); 
+    window.switchView('mcq'); showMcqNextCard(); 
 };
 
 function showMcqNextCard() { 
@@ -1472,12 +1468,10 @@ function showMcqNextCard() {
     let seen = new Set([w.en]); 
     let dis = getSelectedWordsPool().filter(x => !seen.has(x.en)).sort(() => Math.random() - 0.5).slice(0, 3); 
     
-    opts.push(...dis); 
-    opts.sort(() => Math.random() - 0.5); 
+    opts.push(...dis); opts.sort(() => Math.random() - 0.5); 
     
     const a = document.getElementById('mcq-options-area'); 
     a.innerHTML = ''; 
-    
     opts.forEach(o => { 
         let b = document.createElement('button'); 
         b.className = 'btn-mcq'; 
@@ -1490,8 +1484,14 @@ function showMcqNextCard() {
 window.checkMcqAnswer = function(c) { 
     lastAnswerCorrect = c; 
     const w = practiceQueue[currentCardIndex]; 
-    if (!c && !isSequentialMode) requeueWord(w); 
     
+    // 🌟 答對給予 10 分生涯積分
+    if (c && !w.scored) { 
+        w.scored = true; 
+        if (window.addScore) window.addScore(10, false); 
+    }
+    
+    if (!c && !isSequentialMode) requeueWord(w); 
     setDisplayState('mcq-interaction-area', false); 
     setDisplayState('mcq-feedback-area', true, 'flex'); 
     
@@ -1500,78 +1500,52 @@ window.checkMcqAnswer = function(c) {
     document.getElementById('mcq-feedback-answer').innerText = currentMode === 'zh-to-en' ? w.en : w.zh.join(', '); 
     
     if (c) { 
-        i.innerText = '✔'; 
-        i.className = 'big-icon icon-correct'; 
-        s.innerText = '正確'; 
-        s.className = 'result-status status-correct'; 
+        i.innerText = '✔'; i.className = 'big-icon icon-correct'; 
+        s.innerText = '正確 (+10 分)'; s.className = 'result-status status-correct'; 
     } else { 
-        i.innerText = '✘'; 
-        i.className = 'big-icon icon-wrong'; 
-        s.innerText = '錯誤'; 
-        s.className = 'result-status status-wrong'; 
+        i.innerText = '✘'; i.className = 'big-icon icon-wrong'; 
+        s.innerText = '錯誤'; s.className = 'result-status status-wrong'; 
     } 
-    window.forceSpeak = true;
-    speakEnglishWord(w.en); 
+    window.forceSpeak = true; speakEnglishWord(w.en); 
 };
 
 window.handleMcqNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
-    
     if (isSequentialMode && !lastAnswerCorrect) { 
         window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { 
-            currentCardIndex = 0; 
-            completedCount = 0; 
-            showMcqNextCard(); 
+            currentCardIndex = 0; completedCount = 0; showMcqNextCard(); 
         }); 
     } else { 
-        currentCardIndex++; 
-        showMcqNextCard(); 
+        currentCardIndex++; showMcqNextCard(); 
     }
 };
 
 window.setupSpeakingMode = function() { 
-    if (!recognition) { 
-        window.SilenModal.alert("當前核心環境不支援 SpeechRecognition 語音介面。"); 
-        return; 
-    }
+    if (!recognition) { window.SilenModal.alert("當前核心環境不支援語音介面。"); return; }
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
-    
     if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
     
-    currentCardIndex = 0; 
-    initialQueueLength = practiceQueue.length; 
-    completedCount = 0; 
-    
-    window.switchView('speaking'); 
-    showNextSpeakingCard(); 
+    currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; 
+    window.switchView('speaking'); showNextSpeakingCard(); 
 };
 
 function showNextSpeakingCard() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
-    
     const w = practiceQueue[currentCardIndex]; 
     setDisplayState('speaking-interaction-area', true, 'block'); 
     setDisplayState('speaking-feedback-area', false); 
-    
     document.getElementById('speaking-word-display').innerText = w.en; 
     document.getElementById('speaking-zh-display').innerText = w.zh.join(' / '); 
     document.getElementById('speaking-status').innerText = '準備就緒'; 
     document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
-    
-    window.forceSpeak = true;
-    speakEnglishWord(w.en); 
+    window.forceSpeak = true; speakEnglishWord(w.en); 
 }
 
 window.startSpeechRecognition = function() { 
     const b = document.getElementById('mic-btn'); 
     const s = document.getElementById('speaking-status'); 
-    
-    try { 
-        recognition.start(); 
-        b.classList.add('listening'); 
-        s.innerText = '正在語音錄製與分析...'; 
-    } catch(e) {} 
+    try { recognition.start(); b.classList.add('listening'); s.innerText = '正在語音錄製與分析...'; } catch(e) {} 
     
     recognition.onresult = (e) => { 
         const h = e.results[0][0].transcript.toLowerCase().replace(/[.,?!]/g, "").trim(); 
@@ -1591,77 +1565,55 @@ window.startSpeechRecognition = function() {
             let fs = Math.round(c * 100); 
             if (fs < 50) fs = 80; 
             
-            sd.innerText = `${fs} 分`; 
-            sd.style.color = 'var(--success)'; 
-            md.innerText = '發音標準'; 
-            hd.innerText = `捕獲音訊: "${h}"`; 
+            // 🌟 語音辨識依準確度給分
+            if (!practiceQueue[currentCardIndex].scored) {
+                practiceQueue[currentCardIndex].scored = true;
+                if (window.addScore) window.addScore(fs, false);
+            }
+            
+            sd.innerText = `${fs} 分`; sd.style.color = 'var(--success)'; 
+            md.innerText = `發音標準 (+${fs} 分)`; hd.innerText = `捕獲音訊: "${h}"`; 
         } else { 
             lastAnswerCorrect = false; 
-            sd.innerText = `0 分`; 
-            sd.style.color = 'var(--error)'; 
-            md.innerText = '識別不匹配'; 
-            hd.innerText = `捕獲音訊: "${h}"`; 
-            
+            sd.innerText = `0 分`; sd.style.color = 'var(--error)'; 
+            md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
             if (!isSequentialMode) requeueWord(practiceQueue[currentCardIndex]); 
         } 
     }; 
-    
-    recognition.onerror = () => { 
-        b.classList.remove('listening'); 
-        s.innerText = '音訊解碼失敗，請重新觸發。'; 
-    }; 
-    
-    recognition.onspeechend = () => { 
-        recognition.stop(); 
-        b.classList.remove('listening'); 
-    }; 
+    recognition.onerror = () => { b.classList.remove('listening'); s.innerText = '音訊解碼失敗。'; }; 
+    recognition.onspeechend = () => { recognition.stop(); b.classList.remove('listening'); }; 
 };
 
 window.handleSpeakingNextClick = function() { 
     if (lastAnswerCorrect) completedCount++; 
-    
     if (isSequentialMode && !lastAnswerCorrect) { 
-        window.SilenModal.alert('重頭開始。').then(() => { 
-            currentCardIndex = 0; 
-            completedCount = 0; 
-            showNextSpeakingCard(); 
-        }); 
-    } else { 
-        currentCardIndex++; 
-        showNextSpeakingCard(); 
-    }
+        window.SilenModal.alert('重頭開始。').then(() => { currentCardIndex = 0; completedCount = 0; showNextSpeakingCard(); }); 
+    } else { currentCardIndex++; showNextSpeakingCard(); }
 };
 
 window.setupPuzzleMode = function() { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
-    
     if (!isSequentialMode) practiceQueue.sort(() => Math.random() - 0.5); 
-    
     currentCardIndex = 0; 
     setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
-    window.switchView('puzzle'); 
-    loadPuzzleLevel(); 
+    window.switchView('puzzle'); loadPuzzleLevel(); 
 };
 
 function loadPuzzleLevel() { 
     if (currentCardIndex >= practiceQueue.length) return endQuiz(); 
-    
     puzzleCurrentWord = practiceQueue[currentCardIndex]; 
     puzzleUserAnswer = []; 
     let ls = puzzleCurrentWord.en.toLowerCase().split(''); 
-    
     for (let i = ls.length - 1; i > 0; i--) { 
         let j = Math.floor(Math.random() * (i + 1)); 
         [ls[i], ls[j]] = [ls[j], ls[i]]; 
     } 
-    
     puzzleSourceLetters = ls.map((l, i) => ({ id: i, char: l, used: false })); 
     document.getElementById('puzzle-hint-display').innerText = ''; 
     document.getElementById('puzzle-question').innerText = puzzleCurrentWord.zh.join(' / '); 
     document.getElementById('puzzle-message').innerText = ''; 
     document.getElementById('puzzle-progress').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${currentCardIndex+1}/${practiceQueue.length}`; 
-    
     renderPuzzleBoard(); 
 }
 
@@ -1671,41 +1623,21 @@ window.showPuzzleHint = function() {
 };
 
 function renderPuzzleBoard() { 
-    const a = document.getElementById('puzzle-answer-area'); 
-    const p = document.getElementById('puzzle-pool-area'); 
-    a.innerHTML = ''; 
-    p.innerHTML = ''; 
+    const a = document.getElementById('puzzle-answer-area'); const p = document.getElementById('puzzle-pool-area'); 
+    a.innerHTML = ''; p.innerHTML = ''; 
     
     puzzleUserAnswer.forEach((o, i) => { 
-        let t = document.createElement('div'); 
-        t.className = 'letter-tile'; 
-        t.innerText = o.char; 
-        t.onclick = () => { 
-            puzzleUserAnswer[i].used = false; 
-            puzzleUserAnswer.splice(i, 1); 
-            renderPuzzleBoard(); 
-        }; 
+        let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+        t.onclick = () => { puzzleUserAnswer[i].used = false; puzzleUserAnswer.splice(i, 1); renderPuzzleBoard(); }; 
         a.appendChild(t); 
     }); 
-    
     if (puzzleUserAnswer.length < puzzleCurrentWord.en.length) { 
-        let ph = document.createElement('div'); 
-        ph.className = 'letter-tile empty'; 
-        ph.innerText = '_'; 
-        a.appendChild(ph); 
+        let ph = document.createElement('div'); ph.className = 'letter-tile empty'; ph.innerText = '_'; a.appendChild(ph); 
     } 
-    
     puzzleSourceLetters.forEach(o => { 
         if (!o.used) { 
-            let t = document.createElement('div'); 
-            t.className = 'letter-tile'; 
-            t.innerText = o.char; 
-            t.onclick = () => { 
-                o.used = true; 
-                puzzleUserAnswer.push(o); 
-                renderPuzzleBoard(); 
-                window.checkPuzzleState(false); 
-            }; 
+            let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+            t.onclick = () => { o.used = true; puzzleUserAnswer.push(o); renderPuzzleBoard(); window.checkPuzzleState(false); }; 
             p.appendChild(t); 
         } 
     }); 
@@ -1718,39 +1650,27 @@ window.checkPuzzleState = function(f = false) {
     
     if (cs.length === ts.length || f) { 
         if (cs === ts) { 
-            m.className = 'result-msg result-correct'; 
-            m.innerText = '正確'; 
-            window.forceSpeak = true;
-            speakEnglishWord(ts); 
-            setTimeout(() => { 
-                currentCardIndex++; 
-                loadPuzzleLevel(); 
-            }, 800); 
+            m.className = 'result-msg result-correct'; m.innerText = '正確 (+10 分)'; 
+            
+            // 🌟 拼圖正確給 10 分
+            if (!puzzleCurrentWord.scored) {
+                puzzleCurrentWord.scored = true;
+                if (window.addScore) window.addScore(10, false);
+            }
+            
+            window.forceSpeak = true; speakEnglishWord(ts); 
+            setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 800); 
         } else { 
             if (isSequentialMode) { 
-                m.className = 'result-msg result-wrong'; 
-                m.innerText = `錯誤，答案為 ${ts}。`; 
-                window.forceSpeak = true;
-                speakEnglishWord(ts); 
-                setTimeout(() => { 
-                    currentCardIndex = 0; 
-                    loadPuzzleLevel(); 
-                }, 2000); 
+                m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}。`; 
+                window.forceSpeak = true; speakEnglishWord(ts); 
+                setTimeout(() => { currentCardIndex = 0; loadPuzzleLevel(); }, 2000); 
             } else { 
                 if (f) { 
-                    m.className = 'result-msg result-wrong'; 
-                    m.innerText = `錯誤，答案為 ${ts}`; 
-                    window.forceSpeak = true;
-                    speakEnglishWord(ts); 
-                    requeueWord(puzzleCurrentWord); 
-                    setTimeout(() => { 
-                        currentCardIndex++; 
-                        loadPuzzleLevel(); 
-                    }, 2000); 
-                } else { 
-                    m.className = 'result-msg result-wrong'; 
-                    m.innerText = '比對不符'; 
-                } 
+                    m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}`; 
+                    window.forceSpeak = true; speakEnglishWord(ts); requeueWord(puzzleCurrentWord); 
+                    setTimeout(() => { currentCardIndex++; loadPuzzleLevel(); }, 2000); 
+                } else { m.className = 'result-msg result-wrong'; m.innerText = '比對不符'; } 
             } 
         } 
     } 
@@ -1758,111 +1678,67 @@ window.checkPuzzleState = function(f = false) {
 
 window.setupMemoryMode = function() { 
     let p = getPracticeWords(); 
-    if (p.length < 2) { 
-        window.SilenModal.alert("生成記憶矩陣單字數量不足。"); 
-        return; 
-    } 
-    
-    p.sort(() => Math.random() - 0.5); 
-    let sw = p.slice(0, 8); 
+    if (p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); 
     memoryCards = []; 
-    
     sw.forEach(w => { 
         memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); 
         memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); 
     }); 
-    
-    memoryCards.sort(() => Math.random() - 0.5); 
-    memoryFlipped = []; 
-    memoryLocked = false; 
-    memoryMatchedCount = 0; 
-    
-    window.switchView('memory'); 
-    renderMemoryBoard(); 
-    document.getElementById('memory-message').innerText = '請選取卡片'; 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
 };
 
 function setupMemoryModeGuest() { 
     let p = [...practiceQueue]; 
-    if (p.length < 2) { 
-        window.SilenModal.alert("生成記憶矩陣單字數量不足。"); 
-        return; 
-    } 
-    
-    p.sort(() => Math.random() - 0.5); 
-    let sw = p.slice(0, 8); 
+    if (p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); 
     memoryCards = []; 
-    
     sw.forEach(w => { 
         memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); 
         memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); 
     }); 
-    
-    memoryCards.sort(() => Math.random() - 0.5); 
-    memoryFlipped = []; 
-    memoryLocked = false; 
-    memoryMatchedCount = 0; 
-    
-    window.switchView('memory'); 
-    renderMemoryBoard(); 
-    document.getElementById('memory-message').innerText = '請選取卡片'; 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
 }
 
 function renderMemoryBoard() { 
-    const b = document.getElementById('memory-board'); 
-    b.innerHTML = ''; 
-    
+    const b = document.getElementById('memory-board'); b.innerHTML = ''; 
     memoryCards.forEach((c, i) => { 
-        let d = document.createElement('div'); 
-        d.className = `memory-card ${c.matched ? 'matched' : ''}`; 
+        let d = document.createElement('div'); d.className = `memory-card ${c.matched ? 'matched' : ''}`; 
         d.innerHTML = `<div class="memory-inner"><div class="memory-front">${c.content}</div><div class="memory-back">?</div></div>`; 
-        d.onclick = () => flipCard(i); 
-        b.appendChild(d); 
+        d.onclick = () => flipCard(i); b.appendChild(d); 
     }); 
 }
 
 function flipCard(i) { 
     if (memoryLocked || memoryCards[i].matched || memoryFlipped.includes(i)) return; 
-    
-    document.getElementById('memory-board').children[i].classList.add('flipped'); 
-    memoryFlipped.push(i); 
-    
+    document.getElementById('memory-board').children[i].classList.add('flipped'); memoryFlipped.push(i); 
     if (memoryFlipped.length === 2) checkMemoryMatch(); 
 }
 
 function checkMemoryMatch() { 
-    memoryLocked = true; 
-    let [i1, i2] = memoryFlipped; 
-    let c1 = memoryCards[i1]; 
-    let c2 = memoryCards[i2]; 
+    memoryLocked = true; let [i1, i2] = memoryFlipped; let c1 = memoryCards[i1]; let c2 = memoryCards[i2]; 
     let m = document.getElementById('memory-message'); 
     
     if (c1.id === c2.id) { 
-        c1.matched = c2.matched = true; 
-        memoryMatchedCount += 2; 
+        c1.matched = c2.matched = true; memoryMatchedCount += 2; 
+        
+        // 🌟 翻卡配對成功給 10 分
+        if (window.addScore) window.addScore(10, false);
         
         document.getElementById('memory-board').children[i1].classList.add('matched'); 
         document.getElementById('memory-board').children[i2].classList.add('matched'); 
-        
-        m.innerText = '矩陣配對成功'; 
-        m.className = 'result-msg result-correct'; 
-        window.forceSpeak = true;
-        speakEnglishWord(c1.id); 
-        
-        memoryFlipped = []; 
-        memoryLocked = false; 
-        
+        m.innerText = '矩陣配對成功 (+10 分)'; m.className = 'result-msg result-correct'; 
+        window.forceSpeak = true; speakEnglishWord(c1.id); 
+        memoryFlipped = []; memoryLocked = false; 
         if (memoryMatchedCount === memoryCards.length) setTimeout(() => endQuiz(), 500); 
     } else { 
-        m.innerText = '不匹配'; 
-        m.className = 'result-msg result-wrong'; 
-        
+        m.innerText = '不匹配'; m.className = 'result-msg result-wrong'; 
         setTimeout(() => { 
             document.getElementById('memory-board').children[i1].classList.remove('flipped'); 
             document.getElementById('memory-board').children[i2].classList.remove('flipped'); 
-            memoryFlipped = []; 
-            memoryLocked = false; 
-            m.innerText = ''; 
+            memoryFlipped = []; memoryLocked = false; m.innerText = ''; 
         }, 1000); 
     } 
 }
@@ -1870,41 +1746,25 @@ function checkMemoryMatch() {
 window.setupYouglishMode = function() { 
     practiceQueue = getPracticeWords(); 
     if (!practiceQueue.length) return; 
-    
-    practiceQueue.sort(() => Math.random() - 0.5); 
-    currentCardIndex = 0; 
-    
-    window.switchView('youglish'); 
-    loadYouglishCard(); 
+    practiceQueue.sort(() => Math.random() - 0.5); currentCardIndex = 0; 
+    window.switchView('youglish'); loadYouglishCard(); 
 };
 
 function loadYouglishCard() { 
     if (!practiceQueue[currentCardIndex]) return; 
-    
     const w = practiceQueue[currentCardIndex]; 
-    document.getElementById('yg-word').innerText = w.en; 
-    document.getElementById('yg-zh').innerText = w.zh.join(' / '); 
+    document.getElementById('yg-word').innerText = w.en; document.getElementById('yg-zh').innerText = w.zh.join(' / '); 
     document.getElementById('yg-progress').innerText = `${currentCardIndex+1}/${practiceQueue.length}`; 
     document.getElementById('yg-link-word').innerText = w.en; 
     document.getElementById('yg-link').href = `https://youglish.com/pronounce/${encodeURIComponent(w.en)}/english`; 
 }
 
 window.nextYouglishCard = function() { 
-    if (currentCardIndex < practiceQueue.length - 1) { 
-        currentCardIndex++; 
-        loadYouglishCard(); 
-    } else { 
-        endQuiz(); 
-    } 
+    if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; loadYouglishCard(); } else { endQuiz(); } 
 };
 
 window.prevYouglishCard = function() { 
-    if (currentCardIndex > 0) { 
-        currentCardIndex--; 
-        loadYouglishCard(); 
-    } else { 
-        window.SilenModal.alert("已達佇列首端。"); 
-    } 
+    if (currentCardIndex > 0) { currentCardIndex--; loadYouglishCard(); } else { window.SilenModal.alert("已達佇列首端。"); } 
 };
 
 // ==========================================================================
