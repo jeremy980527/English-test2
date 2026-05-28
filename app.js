@@ -968,50 +968,57 @@ function calculateReward(word, stepKey) {
     return { points, isSeasonEligible, isMastered };
 }
 
-// 🌟 修改：畢業時先在本地端標記，並塞進暫存，不立刻呼叫 saveData 同步雲端
+// 🌟 修正版：純粹的暫存機制，絕對不提早修改全域資料或畫面
 window.bufferWordAsMastered = function(targetWord) {
     if (targetWord.mastered) return;
-    let found = false;
-    window.books.forEach(book => {
-        if (book.id === targetWord.bookId) {
-            let w = book.words.find(x => x.en === targetWord.en);
-            if (w && !w.mastered) {
-                w.mastered = true;
-                found = true;
-            }
-        }
-    });
-    if (found) {
-        targetWord.mastered = true;
-        // 塞進本次待結算清單
-        pendingMasteredWords.push(targetWord);
-        window.updateProfileStats();
+    
+    // 檢查是否已經在暫存區了，避免重複塞入
+    if (!pendingMasteredWords.some(w => w.en === targetWord.en)) {
+        // 先在暫存區裡給它一個標記，供這輪測驗的 UI 顯示用，但不寫入 window.books
+        let tempWord = { ...targetWord }; 
+        pendingMasteredWords.push(tempWord);
     }
 };
 
-// 🌟 新增：核心結算引擎！當按下結束或通關時，由它把累積的分數一次打包送上雲端
+// 🌟 修正版：核心結算引擎！真正結算時，才一口氣寫入狀態、更新畫面與上傳雲端
 window.finalizeMasterySession = function() {
     if (pendingMasteredWords.length === 0) return;
 
     console.log(`🎬 偵測到精通練習結束，開始大批次結算... 共有 ${pendingMasteredWords.length} 個新精通單字`);
     
-    // 1. 一次性儲存本機 LocalStorage，並觸發 1 次 Firestore 雲端總複寫同步
+    // 1. 結算時，才真正把這些字的 mastered 標記寫入到全域的 window.books 裡面
+    pendingMasteredWords.forEach(targetWord => {
+        window.books.forEach(book => {
+            if (book.id === targetWord.bookId) {
+                let w = book.words.find(x => x.en === targetWord.en);
+                if (w && !w.mastered) {
+                    w.mastered = true;
+                }
+            }
+        });
+    });
+
+    // 2. 更新個人主頁的「已精通單字」UI 數字
+    if (typeof window.updateProfileStats === 'function') {
+        window.updateProfileStats();
+    }
+
+    // 3. 一次性儲存本機 LocalStorage，並觸發 1 次 Firestore 雲端總複寫同步
     if (typeof window.saveData === 'function') {
         window.saveData(); 
     }
 
-    // 2. 自動在背景將每個單字應得的排位賽分數累加，集中傳送一次給排行榜
+    // 4. 計算排位賽分數並上傳
     pendingMasteredWords.forEach(word => {
         let stepKey = (masteryModeType === 'comprehensive') ? 'Comp_Grad' : 'Conn_Grad';
         let rw = calculateReward(word, stepKey);
         
-        // 呼叫 window.addScore 累加總分與上傳排位
         if (window.addScore && rw.points > 0) {
             window.addScore(rw.points, rw.isSeasonEligible);
         }
     });
 
-    // 3. 結算完畢，清空暫存區
+    // 5. 結算完畢，清空暫存區
     pendingMasteredWords = [];
 };
 
