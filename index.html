@@ -109,26 +109,21 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 單字簿庫 (加入學測抽卡下拉切換功能) -->
-    <!-- ========================================================= -->
     <div id="view-book-select" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="goHome()">返回首頁</button>
-            <!-- 替換標題為下拉選單 -->
             <select id="book-lib-selector" onchange="window.toggleBookLibMode()" style="margin: 0; font-size: 1.2rem; font-weight: 400; letter-spacing: 1px; background: transparent; border: none; color: var(--text-main); outline: none; cursor: pointer;">
-                <option value="normal" style="color: black;">📚 普通單字庫</option>
-                <option value="gsat" style="color: black;">🎯 學測單字庫 (Lv1)</option>
+                <option value="normal" style="color: black;">普通單字庫</option>
+                <option value="gsat" style="color: black;">學測單字庫 (Lv1)</option>
             </select>
             <div style="width: 60px;"></div>
         </div>
         
-        <!-- 原始：普通單字簿區塊 -->
         <div id="normal-book-area">
-            <div id="book-list"></div>
+            <div id="normal-book-list"></div>
             
             <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
-                <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 0.5px; color: var(--text-sub);">新增單字簿</h3>
+                <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 0.5px; color: var(--text-main);">新增單字簿</h3>
                 <div class="flex-row">
                     <input type="text" id="new-book-name" placeholder="單字簿名稱..." style="flex: 2;">
                     <input type="text" id="new-book-tag" placeholder="標籤 (選填)" style="flex: 1;">
@@ -147,37 +142,36 @@
             </div>
         </div>
 
-        <!-- 全新：學測抽卡專區 (預設隱藏) -->
-        <div id="gsat-claim-area" class="hidden" style="margin-top: 20px;">
-            <div class="card" style="border-color: #4CAF50;">
-                <h3 style="margin-top: 0; color: #4CAF50; font-weight: 500; letter-spacing: 1px;">🎁 抽取全新學測單字</h3>
+        <div id="gsat-book-area" class="hidden">
+            <div id="gsat-book-list"></div>
+            
+            <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 0.5px; color: var(--text-main);">抽取學測單字</h3>
                 <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 25px; line-height: 1.6; letter-spacing: 0.5px;">
-                    系統會自動掃描您的單字庫，確保抽出的單字 100% 都是您還沒背過的全新生詞。
+                    系統會自動掃描您的單字庫，確保抽出的單字皆為全新生詞。
                 </p>
                 
                 <div style="margin-bottom: 15px;">
                     <label style="font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 5px;">抽取數量 (預設 30)</label>
-                    <input type="number" id="gsat-claim-amount" value="30" min="1" max="100" style="width: 100%;">
+                    <input type="number" id="gsat-claim-amount" value="30" min="1" max="100" style="width: 100%;" class="input-box">
                 </div>
                 
                 <div style="margin-bottom: 15px;">
                     <label style="font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 5px;">單字簿名稱</label>
-                    <input type="text" id="gsat-claim-name" value="學測衝刺 (抽取)" style="width: 100%;">
+                    <input type="text" id="gsat-claim-name" value="學測衝刺 (抽取)" style="width: 100%;" class="input-box">
                 </div>
                 
                 <div style="margin-bottom: 25px;">
                     <label style="font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 5px;">分類標籤 (系統鎖定)</label>
-                    <input type="text" id="gsat-claim-tag" value="學測 Lv1" readonly style="width: 100%; opacity: 0.5; pointer-events: none;">
+                    <input type="text" id="gsat-claim-tag" value="學測 Lv1" readonly style="width: 100%; background: var(--bg-color); opacity: 0.7; pointer-events: none;" class="input-box">
                 </div>
                 
-                <button id="btn-claim-gsat" class="btn" onclick="window.claimGSATWords()" style="width: 100%; background-color: #4CAF50; color: white; border-color: #4CAF50;">
+                <button id="btn-claim-gsat" class="btn btn-primary" onclick="window.claimGSATWords()" style="width: 100%;">
                     開始抽取
                 </button>
             </div>
         </div>
     </div>
-    <!-- ========================================================= -->
-
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="switchView('book-select')">返回</button>
