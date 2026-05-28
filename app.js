@@ -211,6 +211,11 @@ window.quitPractice = function() {
         window.speechSynthesis.cancel(); 
     }
     
+    // 🌟 關鍵核心攔截：退出任何測驗前，先強制呼叫延遲結算引擎，打包上傳雲端
+    if (typeof window.finalizeMasterySession === 'function') {
+        window.finalizeMasterySession();
+    }
+    
     if (isGuestMode) {
         isGuestMode = false;
         document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '結束');
