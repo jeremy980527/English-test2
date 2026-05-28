@@ -195,14 +195,14 @@ function setDisplayState(id, isDisplay, displayType = 'block') {
 }
 
 window.goHome = function() { 
-    if (typeof updateHomeSummary === 'function') updateHomeSummary(); 
+    if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary(); 
     if (window.SilenSettings && typeof window.SilenSettings.render === 'function') window.SilenSettings.render(); 
-    switchView('home'); 
+    window.switchView('home'); 
 };
 
 window.openBookSelect = function() { 
-    if (typeof renderBookList === 'function') renderBookList(); 
-    switchView('book-select'); 
+    if (typeof window.renderBookList === 'function') window.renderBookList(); 
+    window.switchView('book-select'); 
 };
 
 window.quitPractice = function() { 
@@ -218,11 +218,11 @@ window.quitPractice = function() {
         window.location.reload();
         return;
     }
-    goHome(); 
+    window.goHome(); 
 };
 
 // =====================================
-// 🌟 發聲核心 (絕對防禦版：加上 window. 防止未定義報錯)
+// 🌟 3. 發聲核心 (絕對防禦版)
 // =====================================
 function speakEnglishWord(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
@@ -270,23 +270,23 @@ function endQuiz() {
                 window.SilenModal.prompt("請為這份單字簿命名：", "分享引入的單字簿").then((newName) => {
                     if (newName) {
                         window.books.push({ id: Date.now(), name: newName, tag: "外部分享", words: guestWords });
-                        saveData();
-                        window.SilenModal.alert("已成功匯入單字庫中。").then(() => quitPractice());
+                        window.saveData();
+                        window.SilenModal.alert("已成功匯入單字庫中。").then(() => window.quitPractice());
                     } else {
-                        quitPractice();
+                        window.quitPractice();
                     }
                 });
             } else {
-                quitPractice();
+                window.quitPractice();
             }
         });
     } else {
-        window.SilenModal.alert("測驗結束，做得好。").then(() => quitPractice());
+        window.SilenModal.alert("測驗結束，做得好。").then(() => window.quitPractice());
     }
 }
 
 // =====================================
-// 🌟 分享與連網功能 (短網址 & 原生分享)
+// 🌟 4. 分享與連網功能 (短網址 & 原生分享)
 // =====================================
 window.shareCurrentQuiz = async function() {
     if (typeof window.uploadShareData !== 'function') {
@@ -352,7 +352,6 @@ window.shareCurrentQuiz = async function() {
 function checkShareUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // 優先攔截 Firebase 短網址
     const qId = urlParams.get('q');
     if (qId) {
         const tryDownload = () => {
@@ -382,7 +381,6 @@ function checkShareUrl() {
         return true; 
     }
     
-    // 相容舊版 lz 網址
     const lzCode = urlParams.get('lz');
     if (lzCode) {
         try {
@@ -409,7 +407,6 @@ function checkShareUrl() {
         }
     }
     
-    // 相容舊版 share 網址
     let shareCode = urlParams.get('s') || urlParams.get('share');
     if (shareCode) {
         try {
@@ -457,31 +454,31 @@ function startGuestMode(data) {
     if (data.v === 'mcq') {
         document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (分享對戰)';
         setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
-        switchView('mcq'); 
+        window.switchView('mcq'); 
         showMcqNextCard();
     } else if (data.v === 'speaking') { 
-        switchView('speaking'); 
+        window.switchView('speaking'); 
         showNextSpeakingCard();
     } else if (data.v === 'puzzle') { 
         setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
-        switchView('puzzle'); 
+        window.switchView('puzzle'); 
         loadPuzzleLevel();
     } else if (data.v === 'memory') { 
         setupMemoryModeGuest();
     } else if (data.v === 'youglish') { 
-        switchView('youglish'); 
+        window.switchView('youglish'); 
         loadYouglishCard();
     } else {
         document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (分享對戰)';
         setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); 
         setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
-        switchView('practice'); 
+        window.switchView('practice'); 
         showNextCard();
     }
 }
 
 // =====================================
-// 4. 單字簿管理 (Book Management)
+// 🌟 5. 單字簿管理 (含雙軌渲染機制修復)
 // =====================================
 window.updateHomeSummary = function() {
     const summaryEl = document.getElementById('home-book-summary');
@@ -503,78 +500,89 @@ window.updateHomeSummary = function() {
 };
 
 window.renderBookList = function() {
-    const list = document.getElementById('book-list'); 
-    list.innerHTML = '';
+    const normalList = document.getElementById('normal-book-list');
+    const gsatList = document.getElementById('gsat-book-list');
     
-    if (window.books.length === 0) { 
-        list.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">資料庫無單字簿，請在下方建立。</div>'; 
-        updateHomeSummary(); 
-        return; 
-    }
+    if (normalList) normalList.innerHTML = '';
+    if (gsatList) gsatList.innerHTML = '';
 
-    const groups = {};
-    window.books.forEach(book => {
-        const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
-        if (!groups[t]) groups[t] = [];
-        groups[t].push(book);
-    });
-
-    const keys = Object.keys(groups).sort((a, b) => { 
-        if (a === '未分類') return 1; 
-        if (b === '未分類') return -1; 
-        return a.localeCompare(b); 
-    });
-
-    keys.forEach(k => {
-        const header = document.createElement('div'); 
-        header.className = 'group-title'; 
-        header.innerText = k; 
-        list.appendChild(header);
+    const renderGroup = (books, container, emptyMsg) => {
+        if (books.length === 0) {
+            container.innerHTML = `<div style="color:var(--text-sub); text-align:center; padding: 20px;">${emptyMsg}</div>`;
+            return;
+        }
         
-        groups[k].forEach(book => {
-            const div = document.createElement('div'); 
-            div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
-            
-            const wrapper = document.createElement('div'); 
-            wrapper.className = 'checkbox-wrapper'; 
-            wrapper.style.flex = '1';
-            
-            const checkbox = document.createElement('input'); 
-            checkbox.type = 'checkbox'; 
-            checkbox.checked = selectedBookIds.has(book.id); 
-            checkbox.style.pointerEvents = 'none';
-            
-            const info = document.createElement('div'); 
-            info.style.flex = '1'; 
-            info.style.marginLeft = '15px';
-            info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
-            
-            wrapper.appendChild(checkbox); 
-            wrapper.appendChild(info);
-            
-            const editBtn = document.createElement('button'); 
-            editBtn.className = 'btn-icon'; 
-            editBtn.innerHTML = '編輯'; 
-            editBtn.onclick = (e) => { 
-                e.stopPropagation(); 
-                openEditBook(book.id); 
-            };
-            
-            div.appendChild(wrapper); 
-            div.appendChild(editBtn);
-            
-            div.onclick = (e) => { 
-                if (selectedBookIds.has(book.id)) {
-                    selectedBookIds.delete(book.id);
-                } else {
-                    selectedBookIds.add(book.id);
-                }
-                renderBookList(); 
-            };
-            list.appendChild(div);
+        const groups = {};
+        books.forEach(book => {
+            const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
+            if (!groups[t]) groups[t] = [];
+            groups[t].push(book);
         });
-    });
-    updateHomeSummary(); 
+
+        const keys = Object.keys(groups).sort((a, b) => {
+            if (a === '未分類') return 1;
+            if (b === '未分類') return -1;
+            return a.localeCompare(b);
+        });
+
+        keys.forEach(k => {
+            const header = document.createElement('div');
+            header.className = 'group-title';
+            header.innerText = k;
+            container.appendChild(header);
+            
+            groups[k].forEach(book => {
+                const div = document.createElement('div');
+                div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-wrapper';
+                wrapper.style.flex = '1';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedBookIds.has(book.id);
+                checkbox.style.pointerEvents = 'none';
+                
+                const info = document.createElement('div');
+                info.style.flex = '1';
+                info.style.marginLeft = '15px';
+                info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
+                
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(info);
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-icon';
+                editBtn.innerHTML = '編輯'; 
+                editBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    window.openEditBook(book.id);
+                };
+                
+                div.appendChild(wrapper);
+                div.appendChild(editBtn);
+                
+                div.onclick = (e) => {
+                    if (selectedBookIds.has(book.id)) {
+                        selectedBookIds.delete(book.id);
+                    } else {
+                        selectedBookIds.add(book.id);
+                    }
+                    window.renderBookList();
+                };
+                container.appendChild(div);
+            });
+        });
+    };
+
+    const normalBooks = window.books.filter(b => !b.isGSAT);
+    const gsatBooks = window.books.filter(b => b.isGSAT);
+
+    if (normalList) renderGroup(normalBooks, normalList, '資料庫無單字簿，請在下方建立。');
+    if (gsatList) renderGroup(gsatBooks, gsatList, '尚無學測單字簿，請在下方抽取。');
+
+    if(typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
 };
 
 window.handleFileUpload = function(event) {
@@ -609,12 +617,12 @@ window.addBookSimple = function() {
         return; 
     }
     
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: [] }); 
-    saveData(); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false }); 
+    window.saveData(); 
     
     document.getElementById('new-book-name').value = ''; 
     document.getElementById('new-book-tag').value = ''; 
-    renderBookList();
+    window.renderBookList();
 };
 
 window.addBookWithImport = function() {
@@ -647,15 +655,15 @@ window.addBookWithImport = function() {
         return; 
     }
     
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords }); 
-    saveData();
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false }); 
+    window.saveData();
     
     document.getElementById('new-book-name').value = ''; 
     document.getElementById('new-book-tag').value = ''; 
     document.getElementById('import-content').value = ''; 
     
-    toggleImportArea(); 
-    renderBookList(); 
+    window.toggleImportArea(); 
+    window.renderBookList(); 
     window.SilenModal.alert(`成功匯入 ${newWords.length} 個單字。`);
 };
 
@@ -668,7 +676,7 @@ window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
     if (!book || book.words.length === 0) { 
         window.SilenModal.alert("無可用數據匯出。"); 
-        toggleExportMenu(); 
+        window.toggleExportMenu(); 
         return; 
     }
 
@@ -695,7 +703,7 @@ window.exportBook = function(type) {
         document.body.removeChild(a); 
         URL.revokeObjectURL(url);
     }
-    toggleExportMenu();
+    window.toggleExportMenu();
 };
 
 document.addEventListener('click', function(event) {
@@ -711,8 +719,8 @@ window.deleteCurrentBook = function() {
         if(agreed) { 
             window.books = window.books.filter(b => b.id !== currentBookId); 
             selectedBookIds.delete(currentBookId); 
-            saveData(); 
-            openBookSelect(); 
+            window.saveData(); 
+            window.openBookSelect(); 
         }
     });
 };
@@ -724,7 +732,7 @@ window.openEditBook = function(id) {
     document.getElementById('edit-book-tag-input').value = book.tag || '';
     document.getElementById('export-menu').classList.remove('active'); 
     renderWordList(); 
-    switchView('edit'); 
+    window.switchView('edit'); 
 };
 
 window.saveBookInfo = function() {
@@ -741,7 +749,7 @@ window.saveBookInfo = function() {
     
     book.name = newName; 
     book.tag = newTag; 
-    saveData(); 
+    window.saveData(); 
     window.SilenModal.alert('資訊已更新。');
 };
 
@@ -775,7 +783,7 @@ window.addWord = function() {
     
     const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
     window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
-    saveData();
+    window.saveData();
     
     document.getElementById('input-en').value = ''; 
     document.getElementById('input-zh').value = ''; 
@@ -785,7 +793,7 @@ window.addWord = function() {
 
 window.deleteWord = function(index) { 
     window.books.find(b => b.id === currentBookId).words.splice(index, 1); 
-    saveData(); 
+    window.saveData(); 
     renderWordList(); 
 };
 
@@ -819,7 +827,7 @@ function getSelectedWordsPool() {
 }
 
 // =====================================
-// 5. 🚀 雙軌精通模式 (Mastery Mode)
+// 🚀 6. 雙軌精通模式 (Mastery Mode)
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
@@ -862,7 +870,7 @@ window.setupMasteryMode = function(type) {
             }
         });
     }
-    switchView('mastery'); 
+    window.switchView('mastery'); 
     updateMasteryProgress(); 
     nextMasteryTurn();
 };
@@ -950,7 +958,6 @@ function hideAllMasteryAreas() {
     }); 
 }
 
-// 🌟 修復 3：拯救雙軌精通模式發聲
 function showMasteryL0(word) {
     setDisplayState('mastery-l0-area', true); 
     document.getElementById('mastery-l0-en').innerText = word.en; 
@@ -1274,7 +1281,7 @@ window.replayMasteryAudio = function() {
 };
 
 // =====================================
-// 6. 原版 8 大練習模式 (Original 8 Modes)
+// 7. 原版 8 大練習模式 (Original 8 Modes)
 // =====================================
 window.setupPractice = function(mode) { 
     practiceQueue = getPracticeWords(); 
@@ -1291,7 +1298,7 @@ window.setupPractice = function(mode) {
     setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); 
     setDisplayState('hint-btn', mode === 'zh-to-en', 'inline-block'); 
     
-    switchView('practice'); 
+    window.switchView('practice'); 
     showNextCard(); 
 };
 
@@ -1398,7 +1405,7 @@ window.setupMultipleChoice = function(mode) {
     
     document.getElementById('mcq-mode-display').innerText = mode === 'zh-to-en' ? '中選英' : '英選中'; 
     setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); 
-    switchView('mcq'); 
+    window.switchView('mcq'); 
     showMcqNextCard(); 
 };
 
@@ -1489,7 +1496,7 @@ window.setupSpeakingMode = function() {
     initialQueueLength = practiceQueue.length; 
     completedCount = 0; 
     
-    switchView('speaking'); 
+    window.switchView('speaking'); 
     showNextSpeakingCard(); 
 };
 
@@ -1586,7 +1593,7 @@ window.setupPuzzleMode = function() {
     
     currentCardIndex = 0; 
     setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); 
-    switchView('puzzle'); 
+    window.switchView('puzzle'); 
     loadPuzzleLevel(); 
 };
 
@@ -1723,7 +1730,7 @@ window.setupMemoryMode = function() {
     memoryLocked = false; 
     memoryMatchedCount = 0; 
     
-    switchView('memory'); 
+    window.switchView('memory'); 
     renderMemoryBoard(); 
     document.getElementById('memory-message').innerText = '請選取卡片'; 
 };
@@ -1749,7 +1756,7 @@ function setupMemoryModeGuest() {
     memoryLocked = false; 
     memoryMatchedCount = 0; 
     
-    switchView('memory'); 
+    window.switchView('memory'); 
     renderMemoryBoard(); 
     document.getElementById('memory-message').innerText = '請選取卡片'; 
 }
@@ -1820,7 +1827,7 @@ window.setupYouglishMode = function() {
     practiceQueue.sort(() => Math.random() - 0.5); 
     currentCardIndex = 0; 
     
-    switchView('youglish'); 
+    window.switchView('youglish'); 
     loadYouglishCard(); 
 };
 
@@ -1853,26 +1860,8 @@ window.prevYouglishCard = function() {
     } 
 };
 
-// =====================================
-// 7. 啟動與分享攔截初始化
-// =====================================
-window.addEventListener('DOMContentLoaded', () => {
-    window.SilenModal.init();
-    window.SilenSettings.init();
-});
-
-window.addEventListener('load', () => {
-    setTimeout(() => { 
-        if (!checkShareUrl()) {
-            // 若無分享代碼，由 auth.js 負責接管登入或跳轉
-        }
-    }, 150); 
-});
-
-
-
 // ==========================================================================
-// 8. 學測單字庫抽卡系統 (智慧防重複演算法)
+// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法)
 // ==========================================================================
 
 let gsatVocabLv1 = []; // 暫存從 JSON 抓下來的單字庫
@@ -1987,3 +1976,19 @@ window.claimGSATWords = function() {
         if (typeof window.renderBookList === 'function') window.renderBookList();
     });
 };
+
+// =====================================
+// 9. 啟動與分享攔截初始化
+// =====================================
+window.addEventListener('DOMContentLoaded', () => {
+    window.SilenModal.init();
+    window.SilenSettings.init();
+});
+
+window.addEventListener('load', () => {
+    setTimeout(() => { 
+        if (!checkShareUrl()) {
+            // 若無分享代碼，由 auth.js 負責接管登入或跳轉
+        }
+    }, 150); 
+});
