@@ -279,4 +279,201 @@
         <div id="view-mcq" class="hidden">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div><span id="mcq-mode-display" class="badge">選擇題</span> <span id="mcq-seq-badge" class="badge" style="background-color: var(--accent);">循序</span></div>
-                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享測驗</button><button class="btn btn-outline btn-quit" st
+                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享測驗</button><button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">結束</button></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 10px; color: var(--text-sub); font-size: 0.9rem;">進度: <span id="mcq-progress-display">0/0</span></div>
+            <div class="card" id="mcq-interaction-area">
+                <div id="mcq-question-display" class="big-text"></div>
+                <div id="mcq-options-area"></div>
+            </div>
+            <div class="card hidden" id="mcq-feedback-area" style="flex-direction: column; align-items: center; text-align: center;">
+                <div id="mcq-feedback-question-copy" style="font-size: 1.2rem; color: var(--text-sub); margin-bottom: 15px;"></div>
+                <div id="mcq-feedback-icon" class="big-icon"></div>
+                <div id="mcq-feedback-status" class="result-status"></div>
+                <div id="mcq-feedback-answer" style="font-size: 1.5rem; font-weight: bold; margin: 15px 0;"></div>
+                <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="handleMcqNextClick()">下一題</button>
+            </div>
+        </div>
+
+        <div id="view-speaking" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span class="badge" style="background-color:#2196F3;">語音辨識</span>
+                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享</button><button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">結束</button></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 10px; color: var(--text-sub); font-size: 0.9rem;">進度: <span id="speaking-progress">0/0</span></div>
+            <div class="card" id="speaking-interaction-area" style="text-align: center;">
+                <div id="speaking-word-display" class="big-text" style="color: #2196F3; margin-bottom: 5px;"></div>
+                <div id="speaking-zh-display" style="color: var(--text-sub); margin-bottom: 30px;"></div>
+                <button id="mic-btn" onclick="startSpeechRecognition()" style="width: 80px; height: 80px; border-radius: 50%; border: none; background: #2196F3; color: white; font-size: 2rem; box-shadow: 0 4px 10px rgba(33,150,243,0.3); cursor: pointer; transition: 0.2s;">🎤</button>
+                <div id="speaking-status" style="margin-top: 15px; color: var(--text-sub);">準備就緒</div>
+            </div>
+            <div class="card hidden" id="speaking-feedback-area" style="flex-direction: column; align-items: center; text-align: center;">
+                <div id="speaking-score" class="big-text" style="margin:0;"></div>
+                <div id="speaking-feedback-msg" style="font-weight: bold; margin-bottom: 10px;"></div>
+                <div id="speaking-heard-text" style="color: var(--text-sub); font-style: italic; margin-bottom: 20px;"></div>
+                <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="handleSpeakingNextClick()">下一題</button>
+            </div>
+        </div>
+
+        <div id="view-puzzle" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div><span class="badge" style="background-color: var(--accent);">拼圖</span> <span id="puzzle-seq-badge" class="badge">循序</span></div>
+                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享</button><button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">結束</button></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 10px; color: var(--text-sub); font-size: 0.9rem;">進度: <span id="puzzle-progress">0/0</span></div>
+            <div class="card" style="text-align: center;">
+                <div id="puzzle-question" class="big-text" style="font-size: 1.5rem; margin-bottom: 5px;"></div>
+                <button class="btn-icon" onclick="window.forceSpeak=true; speakEnglishWord(puzzleCurrentWord.en)">🔊</button>
+                <div id="puzzle-hint-display" style="color: var(--accent); min-height: 24px; margin-bottom: 10px; font-weight: bold; letter-spacing: 3px;"></div>
+                <div id="puzzle-answer-area" style="min-height: 60px; margin-bottom: 20px; padding: 10px; background: #fafafa; border-radius: 8px;"></div>
+                <div id="puzzle-pool-area" style="min-height: 60px; margin-bottom: 20px;"></div>
+                <div id="puzzle-message" style="font-weight: bold; min-height: 24px;"></div>
+                <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" onclick="showPuzzleHint()">顯示提示</button>
+            </div>
+        </div>
+
+        <div id="view-memory" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span class="badge" style="background-color: var(--accent);">記憶翻牌</span>
+                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享</button><button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">結束</button></div>
+            </div>
+            <div id="memory-message" style="text-align: center; font-weight: bold; min-height: 24px;"></div>
+            <div id="memory-board" class="memory-board"></div>
+        </div>
+
+        <div id="view-youglish" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span class="badge" style="background-color: #E53935;">YouGlish</span>
+                <div><button class="btn btn-outline export-quiz-btn" style="padding: 5px 10px; font-size: 0.8rem; margin-right: 5px;" onclick="shareCurrentQuiz()">分享</button><button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">結束</button></div>
+            </div>
+            <div style="text-align: center; margin-bottom: 10px; color: var(--text-sub); font-size: 0.9rem;">進度: <span id="yg-progress">0/0</span></div>
+            <div class="card" style="text-align: center;">
+                <div id="yg-word" class="big-text" style="color: #E53935; margin-bottom: 5px;"></div>
+                <div id="yg-zh" style="color: var(--text-sub); margin-bottom: 20px;"></div>
+                <a id="yg-link" href="#" target="_blank" style="text-decoration: none;">
+                    <button class="btn" style="background-color: #E53935; color: white; width: 100%; padding: 15px; font-size: 1.1rem; border-radius: 30px;">
+                        ▶ 在 YouGlish 搜尋 "<span id="yg-link-word"></span>" 的真人發音片段
+                    </button>
+                </a>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="prevYouglishCard()">上一字</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="nextYouglishCard()">下一字</button>
+            </div>
+        </div>
+
+        <div id="view-mastery" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="mastery-header-title" style="margin:0;">精通模式</h2>
+                <button class="btn btn-outline btn-quit" style="padding: 5px 10px; font-size: 0.8rem;" onclick="quitPractice()">中斷離開</button>
+            </div>
+            <div style="background: #e0e0e0; border-radius: 10px; height: 8px; margin-bottom: 5px; overflow: hidden;"><div id="mastery-progress-bar" style="height: 100%; width: 0%; transition: width 0.3s;"></div></div>
+            <div id="mastery-status-text" style="text-align: right; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 20px;"></div>
+
+            <div id="mastery-l0-area" class="hidden card" style="text-align: center; border: 2px solid transparent;">
+                <div class="badge" style="background: #757575;">Lv 0: 新字學習</div>
+                <div id="mastery-l0-en" class="big-text" style="font-size: 2.5rem; margin-bottom: 5px;"></div>
+                <button class="btn-icon" onclick="window.forceSpeak=true; speakEnglishWord(document.getElementById('mastery-l0-en').innerText)">🔊</button>
+                <div id="mastery-l0-zh" style="font-size: 1.2rem; color: var(--text-sub); margin-bottom: 30px;"></div>
+                <button id="mastery-btn-l0" class="btn btn-primary" style="width: 100%;" onclick="masteryL0Next()">我記住了，進入評測</button>
+            </div>
+
+            <div id="mastery-mcq-area" class="hidden card">
+                <div id="mastery-mcq-badge" class="badge" style="margin-bottom: 10px;"></div>
+                <div id="mastery-mcq-q" class="big-text" style="font-size: 1.5rem; margin-bottom: 20px;"></div>
+                <div id="mastery-mcq-options"></div>
+            </div>
+
+            <div id="mastery-match-area" class="hidden card">
+                <div class="badge" style="background: #009688; margin-bottom: 10px;">Lv 2: 雙向連接</div>
+                <p style="text-align: center; color: var(--text-sub); margin: 0;">請配對所有正確的英中組合</p>
+                <div class="match-columns">
+                    <div id="match-col-en" class="match-col"></div>
+                    <div id="match-col-zh" class="match-col"></div>
+                </div>
+            </div>
+
+            <div id="mastery-puzzle-area" class="hidden card" style="text-align: center;">
+                <div class="badge" style="background: #FF9800; margin-bottom: 10px;">Lv 2: 結構重組</div>
+                <div id="mastery-puzzle-q" class="big-text" style="font-size: 1.5rem; margin-bottom: 5px;"></div>
+                <div id="mastery-puzzle-hint-display" style="color: var(--accent); min-height: 24px; margin-bottom: 10px; font-weight: bold; letter-spacing: 3px;"></div>
+                <div id="mastery-puzzle-ans" style="min-height: 60px; margin-bottom: 20px; padding: 10px; background: #fafafa; border-radius: 8px;"></div>
+                <div id="mastery-puzzle-pool" style="min-height: 60px; margin-bottom: 20px;"></div>
+                <button id="mastery-btn-puzzle" class="btn btn-outline" style="width: 100%;" onclick="showMasteryPuzzleHint()">顯示提示</button>
+            </div>
+
+            <div id="mastery-typing-area" class="hidden card" style="text-align: center;">
+                <div id="mastery-typing-badge" class="badge" style="background: #F44336; margin-bottom: 10px;"></div>
+                <div id="mastery-typing-q" class="big-text" style="font-size: 1.5rem; margin-bottom: 20px;"></div>
+                <input type="text" id="mastery-typing-input" class="input-box" placeholder="精確輸入英文..." autocomplete="off">
+                <button id="mastery-btn-typing" class="btn btn-primary" style="width: 100%;" onclick="checkMasteryTyping()">確認提交</button>
+            </div>
+
+            <div id="mastery-feedback-area" class="hidden card" style="flex-direction: column; align-items: center; text-align: center;">
+                <div id="mastery-fb-icon" class="big-icon"></div>
+                <div id="mastery-fb-status" class="result-status"></div>
+                <div id="mastery-fb-ans" style="font-size: 1.8rem; font-weight: bold; margin: 10px 0;"></div>
+                <button class="btn-icon" style="margin-bottom: 15px;" onclick="replayMasteryAudio()">🔊</button>
+                <div id="mastery-fb-msg" style="color: var(--text-sub); margin-bottom: 20px;"></div>
+                <button id="mastery-btn-finish" class="btn btn-primary btn-next-big" style="width: 100%; padding: 15px;" onclick="masteryFeedbackNext()">繼續挑戰</button>
+            </div>
+
+            <div id="mastery-success-area" class="hidden card" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 4rem; margin-bottom: 10px;">🏆</div>
+                <h2 id="mastery-success-title">精通達成！</h2>
+                <p style="color: var(--text-sub); margin-bottom: 30px;">您已將選定範圍內的所有單字推升至最高等級的長期記憶！</p>
+                <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="quitPractice()">光榮返回</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="silen-modal-overlay" class="overlay hidden">
+        <div class="modal-box">
+            <p id="silen-modal-msg" style="font-size: 1.1rem; margin-bottom: 20px; white-space: pre-line;"></p>
+            <input type="text" id="silen-modal-input" class="input-box hidden" autocomplete="off">
+            <textarea id="silen-modal-textarea" class="input-box hidden" rows="4"></textarea>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                <button id="silen-modal-btn-cancel" class="btn btn-outline hidden" style="flex: 1;">取消</button>
+                <button id="silen-modal-btn-confirm" class="btn btn-primary" style="flex: 1;">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="silen-settings-overlay" class="overlay hidden">
+        <div class="modal-box" style="text-align: left;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">系統設定</h3>
+            
+            <label style="display: flex; align-items: center; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="set-pronounce" onchange="toggleSetting('pronounce')" style="width: 18px; height: 18px; margin-right: 10px;">
+                <span>開啟自動朗讀 (發聲)</span>
+            </label>
+            
+            <label style="display: flex; align-items: center; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="set-sequential" onchange="toggleSetting('sequential')" style="width: 18px; height: 18px; margin-right: 10px;">
+                <div>
+                    <div>開啟循序漸進模式</div>
+                    <div style="font-size: 0.8rem; color: var(--text-sub);">錯題將直接重頭開始，挑戰極限。</div>
+                </div>
+            </label>
+
+            <label style="display: flex; align-items: center; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="set-presence" onchange="toggleSetting('presence')" style="width: 18px; height: 18px; margin-right: 10px;">
+                <div>
+                    <div>顯示在線人數</div>
+                    <div style="font-size: 0.8rem; color: var(--text-sub);">開啟頂端陪伴系統綠燈。</div>
+                </div>
+            </label>
+            
+            <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" onclick="window.SilenSettings.close()">完成</button>
+            
+            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+                <button class="btn" style="width: 100%; background: #ffebee; color: var(--error);" onclick="logout()">登出帳號</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
