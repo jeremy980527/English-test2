@@ -920,19 +920,21 @@ window.updateHomeSummary = function() {
 window.updateProfileStats();
 
 // =====================================
-// 🚀 6. 雙軌精通模式 (Mastery Mode) + 動態權重計分引擎
+// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算計分引擎
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
 let masteryModeType = 'comprehensive';
 let delayWaitTurns = 4;
 
-// 🏆 核心難度與獎勵計算引擎 (🌟 新規則：只有完全精通才給 50 分)
+// 🌟 新增：用來暫存本次精通模式中「新畢業單字」的緩存陣列，結束才一次上傳
+let pendingMasteredWords = [];
+
 function calculateReward(word, stepKey) {
     let isGsat = word.isGSAT === true;
     let bookTag = word.bookTag || '';
     let bookLength = word.bookLength || 0;
-    let isMastered = word.mastered === true; // 🌟 檢查是否已經精通過
+    let isMastered = word.mastered === true;
     
     let multiplier = 1;
     if (isGsat) {
@@ -948,7 +950,6 @@ function calculateReward(word, stepKey) {
 
     if (stepKey === 'Comp_Grad' || stepKey === 'Conn_Grad') {
         if (isMastered) {
-            // 🌟 已經精通過的單字，防刷分不再給予高額畢業分數
             points = 0;
         } else {
             if (isGsat) {
@@ -962,8 +963,8 @@ function calculateReward(word, stepKey) {
     return { points, isSeasonEligible, isMastered };
 }
 
-// 🌟 標記單字為永久精通並儲存
-window.markWordAsMastered = function(targetWord) {
+// 🌟 修改：畢業時先在本地端標記，並塞進暫存，不立刻呼叫 saveData 同步雲端
+window.bufferWordAsMastered = function(targetWord) {
     if (targetWord.mastered) return;
     let found = false;
     window.books.forEach(book => {
@@ -977,9 +978,36 @@ window.markWordAsMastered = function(targetWord) {
     });
     if (found) {
         targetWord.mastered = true;
-        window.saveData(); // 儲存並觸發 Firebase 同步
-        window.updateProfileStats(); // 更新數字
+        // 塞進本次待結算清單
+        pendingMasteredWords.push(targetWord);
+        window.updateProfileStats();
     }
+};
+
+// 🌟 新增：核心結算引擎！當按下結束或通關時，由它把累積的分數一次打包送上雲端
+window.finalizeMasterySession = function() {
+    if (pendingMasteredWords.length === 0) return;
+
+    console.log(`🎬 偵測到精通練習結束，開始大批次結算... 共有 ${pendingMasteredWords.length} 個新精通單字`);
+    
+    // 1. 一次性儲存本機 LocalStorage，並觸發 1 次 Firestore 雲端總複寫同步
+    if (typeof window.saveData === 'function') {
+        window.saveData(); 
+    }
+
+    // 2. 自動在背景將每個單字應得的排位賽分數累加，集中傳送一次給排行榜
+    pendingMasteredWords.forEach(word => {
+        let stepKey = (masteryModeType === 'comprehensive') ? 'Comp_Grad' : 'Conn_Grad';
+        let rw = calculateReward(word, stepKey);
+        
+        // 呼叫 window.addScore 累加總分與上傳排位
+        if (window.addScore && rw.points > 0) {
+            window.addScore(rw.points, rw.isSeasonEligible);
+        }
+    });
+
+    // 3. 結算完畢，清空暫存區
+    pendingMasteredWords = [];
 };
 
 window.setupMasteryMode = function(type) {
@@ -987,6 +1015,8 @@ window.setupMasteryMode = function(type) {
     if(words.length === 0) return;
     
     masteryModeType = type; 
+    pendingMasteredWords = []; // 初始化本次練習的暫存區
+    
     masteryPool = words.map(w => ({ 
         en: w.en, zh: w.zh, level: 0, delay: 0, 
         isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength,
@@ -1040,6 +1070,9 @@ function nextMasteryTurn() {
         hideAllMasteryAreas(); 
         document.getElementById('mastery-success-title').style.color = (masteryModeType === 'comprehensive') ? "#9c27b0" : "#009688";
         setDisplayState('mastery-success-area', true); 
+        
+        // 🌟 完全通關了，自動觸發大批次結算上傳
+        window.finalizeMasterySession();
         return;
     }
     hideAllMasteryAreas();
@@ -1122,8 +1155,6 @@ function showMasteryL0(word) {
 window.masteryL0Next = function() { 
     if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
     currentMasteryTarget.level = 1; 
-    
-    // 暖身不再給分
     nextMasteryTurn(); 
 };
 
@@ -1350,7 +1381,6 @@ window.checkMasteryTyping = function() {
     checkMasteryAnswer(val === target);
 };
 
-// 🌟 精通模式核心判斷與動態給分邏輯
 function checkMasteryAnswer(isCorrect) {
     hideAllMasteryAreas(); 
     setDisplayState('mastery-feedback-area', true, 'flex');
@@ -1386,14 +1416,14 @@ function checkMasteryAnswer(isCorrect) {
                 
                 let extraMsg = "";
                 if (!rw.isMastered) {
-                    window.markWordAsMastered(currentMasteryTarget);
-                    extraMsg = rw.points > 0 ? ` (🏆 獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+                    // 🌟 丟進暫存區緩存，不立刻同步
+                    window.bufferWordAsMastered(currentMasteryTarget);
+                    extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
                 } else {
                     extraMsg = " (此單字已精通過，不再重複給予分數)";
                 }
                 
                 msg.innerText = `通過延遲評測，該單字已完全精通！${extraMsg}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
             }
         } else {
             icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
@@ -1417,14 +1447,14 @@ function checkMasteryAnswer(isCorrect) {
                 
                 let extraMsg = "";
                 if (!rw.isMastered) {
-                    window.markWordAsMastered(currentMasteryTarget);
-                    extraMsg = rw.points > 0 ? ` (🏆 獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+                    // 🌟 丟進暫存區緩存，不立刻同步
+                    window.bufferWordAsMastered(currentMasteryTarget);
+                    extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
                 } else {
                     extraMsg = " (此單字已精通過，不再重複給予分數)";
                 }
                 
                 msg.innerText = `通過延遲評測，單字連接力建立完成！${extraMsg}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
             }
         } else {
             icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; 
