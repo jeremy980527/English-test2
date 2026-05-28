@@ -1,8 +1,8 @@
 // =====================================
-// 🌐 Firebase 模組引入 (已補上 get, child)
+// 🌐 Firebase 模組引入 (加入 signInWithPopup)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithRedirect, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref, onValue, onDisconnect, set, push, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -20,9 +20,6 @@ const firebaseConfig = {
     databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
-// =====================================
-// 🚀 初始化 Firebase 服務
-// =====================================
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -32,7 +29,7 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // =====================================
-// 🟢 即時在線陪伴系統 (Presence System)
+// 🟢 即時在線陪伴系統
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
@@ -55,29 +52,32 @@ onValue(presenceRef, (snap) => {
 });
 
 // =====================================
-// 🔐 帳號登入與登出邏輯
+// 🔐 帳號登入與登出邏輯 (🌟 雙軌機制實作)
 // =====================================
 window.loginWithGoogle = () => {
-    signInWithRedirect(auth, provider).catch((error) => {
-        if (window.SilenModal) {
-            window.SilenModal.alert("登入跳轉失敗：" + error.message);
-        } else {
-            console.error("登入失敗:", error.message);
-        }
-    });
+    // 判斷是否在 Android App 殼中
+    const isApp = typeof AndroidBridge !== 'undefined';
+
+    if (isApp) {
+        // App 環境：使用跳轉 (避開 WebView 無法彈窗的問題)
+        signInWithRedirect(auth, provider).catch((error) => {
+            if (window.SilenModal) window.SilenModal.alert("App 登入失敗：" + error.message);
+        });
+    } else {
+        // 網頁環境：使用彈出視窗 (完美避開手機瀏覽器跨網域 Cookie 遺失問題)
+        signInWithPopup(auth, provider).catch((error) => {
+            if (window.SilenModal) window.SilenModal.alert("網頁登入失敗：" + error.message);
+        });
+    }
 };
 
 window.logout = () => {
     if (window.SilenModal) {
         window.SilenModal.confirm("確定要登出嗎？\n登出後將切換回介紹頁面，本地快取將安全抹除。").then((agreed) => {
-            if (agreed) {
-                executeSignOut();
-            }
+            if (agreed) executeSignOut();
         });
     } else {
-        if (confirm("確定要登出嗎？")) {
-            executeSignOut();
-        }
+        if (confirm("確定要登出嗎？")) executeSignOut();
     }
 };
 
@@ -92,7 +92,7 @@ function executeSignOut() {
 }
 
 // =====================================
-// ☁️ 雲端與本地端資料備份同步引擎 (Firestore)
+// ☁️ 雲端與本地端資料備份同步引擎
 // =====================================
 async function syncFromCloud(uid) {
     try {
@@ -106,7 +106,7 @@ async function syncFromCloud(uid) {
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-                console.log("☁️ 雲端資料已成功無痛同步至本地端。");
+                console.log("☁️ 雲端資料已成功同步。");
             }
         } else {
             console.log("🆕 偵測到新註冊帳戶，進行雲端檔案初始化...");
@@ -126,9 +126,9 @@ async function syncToCloud(uid, booksData) {
             books: booksData,
             lastUpdated: new Date().toISOString()
         });
-        console.log("💾 進度變更已安全加密備份至 Firebase 雲端。");
+        console.log("💾 進度已備份至雲端。");
     } catch (error) {
-        console.error("雲端備份傳輸錯誤:", error);
+        console.error("雲端備份錯誤:", error);
     }
 }
 
@@ -179,7 +179,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =====================================
-// 🔗 雲端短網址分享機制核心 (新加入功能)
+// 🔗 雲端短網址分享機制核心
 // =====================================
 window.uploadShareData = async (shareData) => {
     try {
