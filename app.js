@@ -28,7 +28,6 @@ window.SilenModal = {
                 this.btnCancel.classList.remove('hidden');
             } else if (type === 'prompt') {
                 this.btnCancel.classList.remove('hidden');
-                // 聰明判斷：如果預設值很長或有換行，自動用多行文字框
                 if (defaultValue.includes('\n') || defaultValue.length > 40) {
                     this.textarea.classList.remove('hidden');
                     this.textarea.value = defaultValue;
@@ -41,7 +40,7 @@ window.SilenModal = {
             }
 
             this.overlay.classList.remove('hidden');
-            void this.overlay.offsetWidth; // 觸發重繪以啟動動畫
+            void this.overlay.offsetWidth; 
             this.overlay.classList.add('show');
         });
     },
@@ -52,15 +51,15 @@ window.SilenModal = {
             this.overlay.classList.add('hidden');
             if (this.resolvePromise) {
                 if (this.btnCancel.classList.contains('hidden')) {
-                    this.resolvePromise(true); // Alert 模式直接回傳 true
+                    this.resolvePromise(true); 
                 } else if (this.input.classList.contains('hidden') && this.textarea.classList.contains('hidden')) {
-                    this.resolvePromise(isConfirm); // Confirm 模式回傳布林值
+                    this.resolvePromise(isConfirm); 
                 } else {
                     if (!isConfirm) {
-                        this.resolvePromise(null); // Prompt 模式取消
+                        this.resolvePromise(null); 
                     } else {
                         let val = !this.textarea.classList.contains('hidden') ? this.textarea.value : this.input.value;
-                        this.resolvePromise(val); // Prompt 模式確定
+                        this.resolvePromise(val); 
                     }
                 }
                 this.resolvePromise = null;
@@ -102,7 +101,6 @@ window.SilenSettings = {
         if (elSequential) elSequential.checked = isSequentialMode;
         if (elPresence) elPresence.checked = showPresence;
         
-        // 更新頂部綠點顯示狀態
         const badge = document.getElementById('online-presence-badge');
         if(badge) {
             badge.style.display = showPresence ? 'flex' : 'none';
@@ -223,9 +221,17 @@ window.quitPractice = function() {
     goHome(); 
 };
 
+// 🌟 修復 1：整合 AndroidBridge 的全局發聲核心
 function speakEnglishWord(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
-    if ('speechSynthesis' in window) {
+    
+    if (typeof AndroidBridge !== 'undefined') {
+        try {
+            window.AndroidBridge.speak(word);
+        } catch (e) {
+            console.error("Bridge Error:", e);
+        }
+    } else if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'en-US'; 
@@ -278,14 +284,14 @@ function endQuiz() {
 }
 
 // =====================================
-// 3. 分享與連網功能 (Share & Guest Mode)
+// 🌟 修復 2：分享與連網功能 (短網址 & 原生分享)
 // =====================================
-window.shareCurrentQuiz = function() {
-    if (typeof LZString === 'undefined') { 
-        window.SilenModal.alert("系統壓縮模組載入中，請稍候重試。"); 
-        return; 
+window.shareCurrentQuiz = async function() {
+    if (typeof window.uploadShareData !== 'function') {
+        window.SilenModal.alert("系統雲端模組載入中，請稍候重試。");
+        return;
     }
-    
+
     let wordsToShare = practiceQueue;
     if (practiceQueue.length > 50) {
         window.SilenModal.alert("提醒：為了最優化傳輸，系統將截取前 50 個單字作為測驗分享包。");
@@ -302,30 +308,80 @@ window.shareCurrentQuiz = function() {
     const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh]);
     const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
 
-    try {
-        const jsonStr = JSON.stringify(shareData);
-        const compressedUrlSafe = LZString.compressToEncodedURIComponent(jsonStr);
-        const shareUrl = window.location.origin + window.location.pathname + '?lz=' + compressedUrlSafe;
-        
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                window.SilenModal.alert("測驗連結已成功複製到剪貼簿。");
-            }).catch(() => {
-                window.SilenModal.prompt("請手動複製以下連結：", shareUrl);
-            });
-        } else {
-            window.SilenModal.prompt("請手動複製以下連結：", shareUrl);
-        }
-    } catch(e) { 
-        console.error(e);
-        window.SilenModal.alert("產生分享連結失敗"); 
+    const btn = document.querySelector('.export-quiz-btn');
+    let oldText = "分享測驗";
+    if (btn) {
+        oldText = btn.innerText;
+        btn.innerText = "產生中...";
+        btn.disabled = true;
+    }
+
+    const shareId = await window.uploadShareData(shareData);
+    
+    if (btn) {
+        btn.innerText = oldText;
+        btn.disabled = false;
+    }
+
+    if (!shareId) {
+        window.SilenModal.alert("產生失敗，請檢查網路連線。");
+        return;
+    }
+
+    const shareUrl = window.location.origin + window.location.pathname + '?q=' + shareId;
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'SilenVocab 英文挑戰',
+            text: '我建立了一個專屬單字測驗，快來挑戰看看吧！',
+            url: shareUrl
+        }).catch((e) => console.log("分享選單關閉", e));
+    } else if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            window.SilenModal.alert("短網址已成功複製到剪貼簿！\n\n" + shareUrl);
+        }).catch(() => {
+            window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
+        });
+    } else {
+        window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
     }
 };
 
 function checkShareUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    const lzCode = urlParams.get('lz');
     
+    // 優先攔截 Firebase 短網址
+    const qId = urlParams.get('q');
+    if (qId) {
+        const tryDownload = () => {
+            if (typeof window.downloadShareData === 'function') {
+                window.downloadShareData(qId).then(decoded => {
+                    if (decoded) {
+                        const finalData = { 
+                            v: decoded[0], 
+                            m: decoded[1], 
+                            s: decoded[2] === 1, 
+                            w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1) })) 
+                        };
+                        window.isGuestMode = true; 
+                        startGuestMode(finalData);
+                    } else {
+                        window.SilenModal.alert("這份分享測驗已失效或不存在。").then(() => {
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            window.location.reload();
+                        });
+                    }
+                });
+            } else {
+                setTimeout(tryDownload, 100); 
+            }
+        };
+        tryDownload();
+        return true; 
+    }
+    
+    // 相容舊版 lz 網址
+    const lzCode = urlParams.get('lz');
     if (lzCode) {
         try {
             if (typeof LZString === 'undefined') { 
@@ -351,13 +407,12 @@ function checkShareUrl() {
         }
     }
     
+    // 相容舊版 share 網址
     let shareCode = urlParams.get('s') || urlParams.get('share');
     if (shareCode) {
         try {
             shareCode = shareCode.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
-            while (shareCode.length % 4) { 
-                shareCode += '='; 
-            }
+            while (shareCode.length % 4) { shareCode += '='; }
             const jsonStr = decodeURIComponent(escape(atob(shareCode)));
             const decoded = JSON.parse(jsonStr);
             
@@ -893,21 +948,14 @@ function hideAllMasteryAreas() {
     }); 
 }
 
+// 🌟 修復 3：拯救雙軌精通模式發聲
 function showMasteryL0(word) {
     setDisplayState('mastery-l0-area', true); 
     document.getElementById('mastery-l0-en').innerText = word.en; 
     document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
     
-    if ('speechSynthesis' in window && autoPronounce) {
-        window.speechSynthesis.cancel(); 
-        let uEn = new SpeechSynthesisUtterance(word.en); 
-        uEn.lang = 'en-US'; 
-        uEn.rate = 0.95;
-        let uZh = new SpeechSynthesisUtterance(word.zh[0]); 
-        uZh.lang = 'zh-TW'; 
-        window.speechSynthesis.speak(uEn); 
-        window.speechSynthesis.speak(uZh);
-    }
+    window.forceSpeak = true;
+    speakEnglishWord(word.en); 
 }
 
 window.masteryL0Next = function() { 
@@ -998,12 +1046,8 @@ function handleMatchClick(type, item, btnElement) {
         matchEnSelected = { item, btn: btnElement }; 
         btnElement.classList.add('selected');
         
-        if ('speechSynthesis' in window && autoPronounce) { 
-            window.speechSynthesis.cancel(); 
-            let u = new SpeechSynthesisUtterance(item.text); 
-            u.lang = 'en-US'; 
-            window.speechSynthesis.speak(u); 
-        }
+        // 🌟 改用全局的語音函數
+        speakEnglishWord(item.text); 
     } else {
         if (matchZhSelected) matchZhSelected.btn.classList.remove('selected');
         matchZhSelected = { item, btn: btnElement }; 
@@ -1152,12 +1196,9 @@ function checkMasteryAnswer(isCorrect) {
     const msg = document.getElementById('mastery-fb-msg');
     document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
     
-    if ('speechSynthesis' in window) { 
-        window.speechSynthesis.cancel(); 
-        let u = new SpeechSynthesisUtterance(currentMasteryTarget.en); 
-        u.lang = 'en-US'; 
-        window.speechSynthesis.speak(u); 
-    }
+    // 🌟 確保 AndroidTTS 也會跟著唸出正解
+    window.forceSpeak = true;
+    speakEnglishWord(currentMasteryTarget.en); 
     
     tickMasteryDelays(); 
     let lvl = currentMasteryTarget.level;
@@ -1225,11 +1266,9 @@ window.masteryFeedbackNext = function() {
 };
 
 window.replayMasteryAudio = function() { 
-    if (currentMasteryTarget && 'speechSynthesis' in window) { 
-        window.speechSynthesis.cancel(); 
-        let u = new SpeechSynthesisUtterance(currentMasteryTarget.en); 
-        u.lang = 'en-US'; 
-        window.speechSynthesis.speak(u); 
+    if (currentMasteryTarget) { 
+        window.forceSpeak = true;
+        speakEnglishWord(currentMasteryTarget.en); 
     } 
 };
 
