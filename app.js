@@ -1883,17 +1883,18 @@ window.toggleBookLibMode = function() {
     
     if (mode === 'normal') {
         setDisplayState('normal-book-area', true);
-        setDisplayState('gsat-claim-area', false);
+        setDisplayState('gsat-book-area', false);
     } else if (mode === 'gsat') {
         setDisplayState('normal-book-area', false);
-        setDisplayState('gsat-claim-area', true);
+        setDisplayState('gsat-book-area', true);
         
-        // 如果還沒載入過 JSON，就去抓取
-        if (gsatVocabLv1.length === 0) {
+        // 確保剛切換過去時，有載入學測題庫
+        if (typeof gsatVocabLv1 !== 'undefined' && gsatVocabLv1.length === 0) {
             fetchGSATVocab();
         }
     }
 };
+
 
 // 2. 異步抓取 vocabularylv1.json
 async function fetchGSATVocab() {
