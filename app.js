@@ -901,7 +901,7 @@ let currentMasteryTarget = null;
 let masteryModeType = 'comprehensive';
 let delayWaitTurns = 4;
 
-// 🏆 核心難度與獎勵計算引擎
+// 🏆 核心難度與獎勵計算引擎 (🌟 新規則：只有完全精通才給 50 分)
 function calculateReward(word, stepKey) {
     let isGsat = word.isGSAT === true;
     let bookTag = word.bookTag || '';
@@ -920,22 +920,13 @@ function calculateReward(word, stepKey) {
     let isSeasonEligible = isGsat || bookLength >= 15;
     let points = 0;
 
-    if (isGsat) {
-        // 學測單字：基礎分乘上難度倍率
-        let baseMap = {
-            'L0': 10,
-            'Comp_1': 10, 'Comp_2': 20, 'Comp_3': 30, 'Comp_Grad': 100,
-            'Conn_1': 20, 'Conn_Grad': 100
-        };
-        points = Math.round(baseMap[stepKey] * multiplier);
-    } else {
-        // 普通單字：無論是否滿15字，總分一律為 50 分 (若未滿 15 字，則只給生涯積分，不給排位分)
-        let normalMap = {
-            'L0': 0, // 暖身不給分，集中在後續發放
-            'Comp_1': 10, 'Comp_2': 10, 'Comp_3': 10, 'Comp_Grad': 20,
-            'Conn_1': 15, 'Conn_Grad': 35
-        };
-        points = normalMap[stepKey] || 0;
+    // 🌟 只有「通過延遲評測 (畢業)」才給分
+    if (stepKey === 'Comp_Grad' || stepKey === 'Conn_Grad') {
+        if (isGsat) {
+            points = Math.round(50 * multiplier);
+        } else if (isSeasonEligible) {
+            points = 50;
+        }
     }
 
     return { points, isSeasonEligible };
@@ -1286,7 +1277,7 @@ window.checkMasteryPuzzle = function(forced = false) {
 
 function showMasteryTyping(word, isDelayed) {
     setDisplayState('mastery-typing-area', true); 
-    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 3: 主主動輸出";
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 3: 主動輸出";
     document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
     
     const input = document.getElementById('mastery-typing-input'); 
