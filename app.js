@@ -1868,3 +1868,127 @@ window.addEventListener('load', () => {
         }
     }, 150); 
 });
+
+
+
+// ==========================================================================
+// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法)
+// ==========================================================================
+
+let gsatVocabLv1 = []; // 暫存從 JSON 抓下來的單字庫
+
+// 1. 切換 單字簿庫 / 學測單字庫 視窗
+window.toggleBookLibMode = function() {
+    const mode = document.getElementById('book-lib-selector').value;
+    
+    if (mode === 'normal') {
+        setDisplayState('normal-book-area', true);
+        setDisplayState('gsat-claim-area', false);
+    } else if (mode === 'gsat') {
+        setDisplayState('normal-book-area', false);
+        setDisplayState('gsat-claim-area', true);
+        
+        // 如果還沒載入過 JSON，就去抓取
+        if (gsatVocabLv1.length === 0) {
+            fetchGSATVocab();
+        }
+    }
+};
+
+// 2. 異步抓取 vocabularylv1.json
+async function fetchGSATVocab() {
+    const btn = document.getElementById('btn-claim-gsat');
+    if (btn) {
+        btn.innerText = "資料庫載入中...";
+        btn.disabled = true;
+    }
+    
+    try {
+        // 從 GitHub 根目錄抓取你剛上傳的檔案
+        const response = await fetch('vocabularylv1.json');
+        if (!response.ok) throw new Error("網路請求失敗");
+        
+        const rawData = await response.json();
+        
+        // 🔄 格式轉換：把 {"word": "a", "chinese": "一"} 轉成系統看得懂的 {en: "a", zh: ["一"]}
+        gsatVocabLv1 = rawData.map(item => ({
+            en: item.word.trim(),
+            // 處理多個中文解釋，將其分割成陣列
+            zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s)
+        }));
+        
+        if (btn) {
+            btn.innerText = `開始抽取 (剩餘可抽: 待計算)`;
+            btn.disabled = false;
+        }
+        console.log(`✅ 學測 Lv1 載入成功，共 ${gsatVocabLv1.length} 字`);
+    } catch (error) {
+        console.error("載入學測單字失敗:", error);
+        if (window.SilenModal) window.SilenModal.alert("載入學測單字庫失敗，請確認 vocabularylv1.json 是否存在。");
+        if (btn) {
+            btn.innerText = "載入失敗";
+            btn.disabled = false;
+        }
+    }
+}
+
+// 3. 核心：防重複抽出演算法
+window.claimGSATWords = function() {
+    if (gsatVocabLv1.length === 0) {
+        window.SilenModal.alert("單字庫尚未載入完成，請稍候幾秒再試。");
+        return;
+    }
+
+    const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
+    const bookName = document.getElementById('gsat-claim-name').value.trim() || `學測衝刺 (抽取)`;
+    const bookTag = document.getElementById('gsat-claim-tag').value.trim();
+
+    // 🕵️‍♂️ 步驟 A：建立黑名單 (蒐集使用者已經擁有的學測單字)
+    let existingWords = new Set();
+    window.books.forEach(book => {
+        // 我們利用 tag 包含 '學測' 或是帶有 isGSAT 標記來判定
+        if (book.tag.includes('學測') || book.isGSAT) {
+            book.words.forEach(w => existingWords.add(w.en.toLowerCase()));
+        }
+    });
+
+    // ✂️ 步驟 B：過濾掉已經背過的單字
+    let availableWords = gsatVocabLv1.filter(w => !existingWords.has(w.en.toLowerCase()));
+
+    // 🛑 步驟 C：數量與狀態判定
+    if (availableWords.length === 0) {
+        window.SilenModal.alert("🏆 太厲害了！學測 Lv1 的單字已經被你全部抽完囉！");
+        return;
+    }
+
+    let finalAmount = amount;
+    if (availableWords.length < amount) {
+        window.SilenModal.alert(`⚠️ 單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`);
+        finalAmount = availableWords.length;
+    }
+
+    // 🎲 步驟 D：打亂陣列 (隨機洗牌)
+    availableWords.sort(() => Math.random() - 0.5);
+
+    // 🎁 步驟 E：截取數量並打包成新單字簿
+    let selectedWords = availableWords.slice(0, finalAmount);
+
+    window.books.push({
+        id: Date.now(),
+        name: bookName,
+        tag: bookTag,
+        isGSAT: true, // 埋入專屬標記，方便未來擴充辨識
+        words: selectedWords
+    });
+
+    // 💾 存檔並同步至雲端
+    if (typeof window.saveData === 'function') window.saveData();
+    
+    // 🎉 完成後切換回普通視窗並刷新列表
+    window.SilenModal.alert(`🎉 成功抽取 ${selectedWords.length} 個全新學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
+        // 重置選單並切換畫面
+        document.getElementById('book-lib-selector').value = 'normal';
+        window.toggleBookLibMode();
+        if (typeof window.renderBookList === 'function') window.renderBookList();
+    });
+};
