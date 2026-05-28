@@ -863,12 +863,14 @@ function getPracticeWords() {
     let queue = []; 
     window.books.forEach(book => { 
         if (selectedBookIds.has(book.id)) {
-            // 🌟 將 isGSAT、標籤難度與單字簿長度綁定到每個單字，供計分引擎判定
+            // 🌟 將 isGSAT、標籤難度、單字簿長度、所屬 ID 與精通狀態綁定
             book.words.forEach(w => queue.push({ 
                 ...w, 
+                bookId: book.id,
                 isGSAT: book.isGSAT, 
                 bookTag: book.tag || '',
                 bookLength: book.words.length,
+                mastered: w.mastered || false,
                 scored: false 
             }));
         }
@@ -884,14 +886,38 @@ function getSelectedWordsPool() {
         if (selectedBookIds.has(book.id)) {
             book.words.forEach(w => pool.push({ 
                 ...w, 
+                bookId: book.id,
                 isGSAT: book.isGSAT,
                 bookTag: book.tag || '',
-                bookLength: book.words.length 
+                bookLength: book.words.length,
+                mastered: w.mastered || false
             }));
         }
     }); 
     return pool;
 }
+
+// =====================================
+// 🌟 更新個人主頁數據 (動態計算已精通單字數)
+// =====================================
+window.updateProfileStats = function() {
+    let count = 0;
+    window.books.forEach(b => {
+        b.words.forEach(w => {
+            if (w.mastered) count++;
+        });
+    });
+    const el = document.getElementById('stat-total-words');
+    if (el) el.innerText = count;
+};
+
+// 攔截 updateHomeSummary，確保雲端同步或切換頁面時都能更新已精通數量
+const _originalUpdateHomeSummary = window.updateHomeSummary;
+window.updateHomeSummary = function() {
+    if (typeof _originalUpdateHomeSummary === 'function') _originalUpdateHomeSummary();
+    if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
+};
+window.updateProfileStats();
 
 // =====================================
 // 🚀 6. 雙軌精通模式 (Mastery Mode) + 動態權重計分引擎
@@ -906,6 +932,7 @@ function calculateReward(word, stepKey) {
     let isGsat = word.isGSAT === true;
     let bookTag = word.bookTag || '';
     let bookLength = word.bookLength || 0;
+    let isMastered = word.mastered === true; // 🌟 檢查是否已經精通過
     
     let multiplier = 1;
     if (isGsat) {
@@ -916,28 +943,55 @@ function calculateReward(word, stepKey) {
         else if (bookTag.includes('Lv6')) multiplier = 3.0;
     }
 
-    // 判斷是否具備排位賽資格 (學測字庫 OR 大於等於 15 字的普通字庫)
     let isSeasonEligible = isGsat || bookLength >= 15;
     let points = 0;
 
-    // 🌟 只有「通過延遲評測 (畢業)」才給分
     if (stepKey === 'Comp_Grad' || stepKey === 'Conn_Grad') {
-        if (isGsat) {
-            points = Math.round(50 * multiplier);
-        } else if (isSeasonEligible) {
-            points = 50;
+        if (isMastered) {
+            // 🌟 已經精通過的單字，防刷分不再給予高額畢業分數
+            points = 0;
+        } else {
+            if (isGsat) {
+                points = Math.round(50 * multiplier);
+            } else if (isSeasonEligible) {
+                points = 50;
+            }
         }
     }
 
-    return { points, isSeasonEligible };
+    return { points, isSeasonEligible, isMastered };
 }
+
+// 🌟 標記單字為永久精通並儲存
+window.markWordAsMastered = function(targetWord) {
+    if (targetWord.mastered) return;
+    let found = false;
+    window.books.forEach(book => {
+        if (book.id === targetWord.bookId) {
+            let w = book.words.find(x => x.en === targetWord.en);
+            if (w && !w.mastered) {
+                w.mastered = true;
+                found = true;
+            }
+        }
+    });
+    if (found) {
+        targetWord.mastered = true;
+        window.saveData(); // 儲存並觸發 Firebase 同步
+        window.updateProfileStats(); // 更新數字
+    }
+};
 
 window.setupMasteryMode = function(type) {
     let words = getPracticeWords(); 
     if(words.length === 0) return;
     
     masteryModeType = type; 
-    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength })); 
+    masteryPool = words.map(w => ({ 
+        en: w.en, zh: w.zh, level: 0, delay: 0, 
+        isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength,
+        bookId: w.bookId, mastered: w.mastered
+    })); 
     masteryPool.sort(() => Math.random() - 0.5);
     
     const headerTitle = document.getElementById('mastery-header-title'); 
@@ -1069,9 +1123,7 @@ window.masteryL0Next = function() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
     currentMasteryTarget.level = 1; 
     
-    let rw = calculateReward(currentMasteryTarget, 'L0');
-    if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
-    
+    // 暖身不再給分
     nextMasteryTurn(); 
 };
 
@@ -1321,23 +1373,26 @@ function checkMasteryAnswer(isCorrect) {
             
             if (lvl === 1) { 
                 currentMasteryTarget.level = 2; 
-                let rw = calculateReward(currentMasteryTarget, 'Comp_1');
-                msg.innerText = `升級至 Level 2 結構重組。${rw.points > 0 ? ` (積分 +${rw.points})` : ''}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
+                msg.innerText = `升級至 Level 2 結構重組。`; 
             } else if (lvl === 2) { 
                 currentMasteryTarget.level = 3; 
-                let rw = calculateReward(currentMasteryTarget, 'Comp_2');
-                msg.innerText = `升級至 Level 3 主動輸出。${rw.points > 0 ? ` (積分 +${rw.points})` : ''}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
+                msg.innerText = `升級至 Level 3 主動輸出。`; 
             } else if (lvl === 3) { 
                 currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; 
-                let rw = calculateReward(currentMasteryTarget, 'Comp_3');
-                msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。${rw.points > 0 ? ` (積分 +${rw.points})` : ''}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
+                msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; 
             } else if (lvl === 3.9) { 
                 currentMasteryTarget.level = 5; 
                 let rw = calculateReward(currentMasteryTarget, 'Comp_Grad');
-                msg.innerText = `通過延遲評測，該單字已完全精通！${rw.points > 0 ? ` (🏆 積分 +${rw.points})` : ''}`; 
+                
+                let extraMsg = "";
+                if (!rw.isMastered) {
+                    window.markWordAsMastered(currentMasteryTarget);
+                    extraMsg = rw.points > 0 ? ` (🏆 獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+                } else {
+                    extraMsg = " (此單字已精通過，不再重複給予分數)";
+                }
+                
+                msg.innerText = `通過延遲評測，該單字已完全精通！${extraMsg}`; 
                 if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
             }
         } else {
@@ -1352,16 +1407,23 @@ function checkMasteryAnswer(isCorrect) {
             
             if (lvl === 1) { 
                 currentMasteryTarget.level = 2; 
-                let rw = calculateReward(currentMasteryTarget, 'Conn_1');
-                msg.innerText = `升級至 Level 2 雙向連接。${rw.points > 0 ? ` (積分 +${rw.points})` : ''}`; 
-                if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
+                msg.innerText = `升級至 Level 2 雙向連接。`; 
             } else if (lvl === 2) { 
                 currentMasteryTarget.level = 2.5; currentMasteryTarget.delay = delayWaitTurns; 
                 msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; 
             } else if (lvl === 2.9) { 
                 currentMasteryTarget.level = 4; 
                 let rw = calculateReward(currentMasteryTarget, 'Conn_Grad');
-                msg.innerText = `通過延遲評測，單字連接力建立完成！${rw.points > 0 ? ` (🏆 積分 +${rw.points})` : ''}`; 
+                
+                let extraMsg = "";
+                if (!rw.isMastered) {
+                    window.markWordAsMastered(currentMasteryTarget);
+                    extraMsg = rw.points > 0 ? ` (🏆 獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+                } else {
+                    extraMsg = " (此單字已精通過，不再重複給予分數)";
+                }
+                
+                msg.innerText = `通過延遲評測，單字連接力建立完成！${extraMsg}`; 
                 if (window.addScore && rw.points > 0) window.addScore(rw.points, rw.isSeasonEligible);
             }
         } else {
