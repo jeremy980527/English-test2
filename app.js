@@ -222,7 +222,7 @@ window.quitPractice = function() {
     window.goHome(); 
 };
 
-// 🌟 側邊導覽列開關邏輯
+// 🌟 側邊導覽列開關邏輯 (就是這一段遺失了！)
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
