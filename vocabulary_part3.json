@@ -1,0 +1,3742 @@
+[
+  {
+    "word": "aboard",
+    "chinese": "在船(或飛機，車)上；上船(或飛機，車)"
+  },
+  {
+    "word": "acceptable",
+    "chinese": "可接受的"
+  },
+  {
+    "word": "accident",
+    "chinese": "意外(事情)；災禍"
+  },
+  {
+    "word": "account",
+    "chinese": "帳目；帳戶；說明 / 說明；對…負責"
+  },
+  {
+    "word": "accurate",
+    "chinese": "準確的；精確的"
+  },
+  {
+    "word": "ache",
+    "chinese": "疼痛"
+  },
+  {
+    "word": "achieve",
+    "chinese": "完成，實現"
+  },
+  {
+    "word": "achievement",
+    "chinese": "成就；達成"
+  },
+  {
+    "word": "activity",
+    "chinese": "活力；活動；行動"
+  },
+  {
+    "word": "actual",
+    "chinese": "實際的；現實的"
+  },
+  {
+    "word": "additional",
+    "chinese": "額外的，附加的"
+  },
+  {
+    "word": "admire",
+    "chinese": "欽佩；欣賞"
+  },
+  {
+    "word": "admit",
+    "chinese": "承認"
+  },
+  {
+    "word": "adopt",
+    "chinese": "採取；吸收；收養"
+  },
+  {
+    "word": "advanced",
+    "chinese": "先進的；高級的"
+  },
+  {
+    "word": "advantage",
+    "chinese": "優點，優勢"
+  },
+  {
+    "word": "adventure",
+    "chinese": "冒險，冒險活動"
+  },
+  {
+    "word": "advertise",
+    "chinese": "為…做廣告"
+  },
+  {
+    "word": "advertisement",
+    "chinese": "廣告"
+  },
+  {
+    "word": "advice",
+    "chinese": "勸告，忠告"
+  },
+  {
+    "word": "advise",
+    "chinese": "勸告，忠告"
+  },
+  {
+    "word": "adviser/advisor",
+    "chinese": "顧問；導師"
+  },
+  {
+    "word": "affect",
+    "chinese": "影響；感動"
+  },
+  {
+    "word": "afford",
+    "chinese": "買得起；有足夠的…(去做…)"
+  },
+  {
+    "word": "afterward(s)",
+    "chinese": "之後，後來"
+  },
+  {
+    "word": "agriculture",
+    "chinese": "農業，農耕"
+  },
+  {
+    "word": "air-conditioner",
+    "chinese": "冷氣機"
+  },
+  {
+    "word": "alley",
+    "chinese": "小巷，後街；小徑"
+  },
+  {
+    "word": "amaze",
+    "chinese": "使大為驚奇"
+  },
+  {
+    "word": "amazement",
+    "chinese": "驚奇，詫異"
+  },
+  {
+    "word": "ambassador",
+    "chinese": "大使；使節"
+  },
+  {
+    "word": "ambition",
+    "chinese": "雄心，抱負，野心"
+  },
+  {
+    "word": "angel",
+    "chinese": "天使；守護神"
+  },
+  {
+    "word": "angle",
+    "chinese": "角；角度"
+  },
+  {
+    "word": "announce",
+    "chinese": "宣布，發布，通知"
+  },
+  {
+    "word": "announcement",
+    "chinese": "宣告"
+  },
+  {
+    "word": "apart",
+    "chinese": "分開地，有距離地"
+  },
+  {
+    "word": "apparent",
+    "chinese": "明顯的"
+  },
+  {
+    "word": "appeal",
+    "chinese": "呼籲，懇求；吸引"
+  },
+  {
+    "word": "appreciate",
+    "chinese": "欣賞；感謝"
+  },
+  {
+    "word": "approach",
+    "chinese": "接近，靠近 / 方法"
+  },
+  {
+    "word": "approve",
+    "chinese": "贊成，同意；批准"
+  },
+  {
+    "word": "aquarium",
+    "chinese": "魚缸；水族箱"
+  },
+  {
+    "word": "arithmetic",
+    "chinese": "算術，計算"
+  },
+  {
+    "word": "arrival",
+    "chinese": "到達"
+  },
+  {
+    "word": "ash",
+    "chinese": "灰，灰燼"
+  },
+  {
+    "word": "aside",
+    "chinese": "在旁邊；到(或向)旁邊"
+  },
+  {
+    "word": "assist",
+    "chinese": "幫助，協助；支持"
+  },
+  {
+    "word": "athlete",
+    "chinese": "運動員，體育家"
+  },
+  {
+    "word": "attempt",
+    "chinese": "企圖，嘗試"
+  },
+  {
+    "word": "attitude",
+    "chinese": "態度，看法"
+  },
+  {
+    "word": "attract",
+    "chinese": "吸引；引誘"
+  },
+  {
+    "word": "attractive",
+    "chinese": "迷人的；有魅力的"
+  },
+  {
+    "word": "audience",
+    "chinese": "觀眾，聽眾，讀者"
+  },
+  {
+    "word": "author",
+    "chinese": "作者，作家"
+  },
+  {
+    "word": "automatic",
+    "chinese": "自動的"
+  },
+  {
+    "word": "automobile",
+    "chinese": "汽車"
+  },
+  {
+    "word": "available",
+    "chinese": "在手邊的；可得到的"
+  },
+  {
+    "word": "avenue",
+    "chinese": "林蔭大道，馬路"
+  },
+  {
+    "word": "average",
+    "chinese": "平均，平均數 / 平均的；一般的"
+  },
+  {
+    "word": "awake",
+    "chinese": "喚醒… / 醒來 / 醒著的"
+  },
+  {
+    "word": "awaken",
+    "chinese": "醒；覺醒 / 喚醒"
+  },
+  {
+    "word": "award",
+    "chinese": "授予，給予 / 獎；獎品"
+  },
+  {
+    "word": "aware",
+    "chinese": "知道的，察覺的"
+  },
+  {
+    "word": "awful",
+    "chinese": "可怕的，嚇人的；極糟的"
+  },
+  {
+    "word": "ax/axe",
+    "chinese": "斧"
+  },
+  {
+    "word": "background",
+    "chinese": "背景；經歷"
+  },
+  {
+    "word": "bacon",
+    "chinese": "培根；燻豬肉；鹹豬肉"
+  },
+  {
+    "word": "bacteria",
+    "chinese": "細菌"
+  },
+  {
+    "word": "badly",
+    "chinese": "壞；拙劣地；嚴重地"
+  },
+  {
+    "word": "badminton",
+    "chinese": "羽毛球"
+  },
+  {
+    "word": "baggage",
+    "chinese": "行李"
+  },
+  {
+    "word": "bait",
+    "chinese": "餌"
+  },
+  {
+    "word": "balance",
+    "chinese": "平衡；均衡 / 平衡"
+  },
+  {
+    "word": "bandage",
+    "chinese": "繃帶 / 用繃帶包紮"
+  },
+  {
+    "word": "bang",
+    "chinese": "發出砰的一聲 / 猛擊 / 砰砰的聲音"
+  },
+  {
+    "word": "bare",
+    "chinese": "赤裸的；光禿禿的"
+  },
+  {
+    "word": "barely",
+    "chinese": "幾乎沒有；僅僅"
+  },
+  {
+    "word": "barn",
+    "chinese": "穀倉；馬房，牛舍"
+  },
+  {
+    "word": "barrel",
+    "chinese": "大桶"
+  },
+  {
+    "word": "bay",
+    "chinese": "海灣；河灣"
+  },
+  {
+    "word": "beam",
+    "chinese": "樑；光線，光束"
+  },
+  {
+    "word": "beast",
+    "chinese": "野獸；畜生"
+  },
+  {
+    "word": "beggar",
+    "chinese": "乞丐"
+  },
+  {
+    "word": "behave",
+    "chinese": "表現；舉止 / 使…守規矩"
+  },
+  {
+    "word": "being",
+    "chinese": "存在，生命；生物"
+  },
+  {
+    "word": "belly",
+    "chinese": "肚子"
+  },
+  {
+    "word": "beneath",
+    "chinese": "在...之下"
+  },
+  {
+    "word": "benefit",
+    "chinese": "利益，好處；優勢"
+  },
+  {
+    "word": "berry",
+    "chinese": "莓果"
+  },
+  {
+    "word": "Bible/bible",
+    "chinese": "聖經"
+  },
+  {
+    "word": "billion",
+    "chinese": "十億"
+  },
+  {
+    "word": "bingo",
+    "chinese": "賓果遊戲；太好了"
+  },
+  {
+    "word": "biscuit",
+    "chinese": "餅乾，小麵包"
+  },
+  {
+    "word": "blame",
+    "chinese": "責備，指責"
+  },
+  {
+    "word": "blanket",
+    "chinese": "毛毯，床罩"
+  },
+  {
+    "word": "bleed",
+    "chinese": "流血，出血"
+  },
+  {
+    "word": "bless",
+    "chinese": "保佑，庇護"
+  },
+  {
+    "word": "blouse",
+    "chinese": "短上衣"
+  },
+  {
+    "word": "bold",
+    "chinese": "大膽的；粗體的"
+  },
+  {
+    "word": "boot",
+    "chinese": "靴"
+  },
+  {
+    "word": "border",
+    "chinese": "邊緣，邊界；國界"
+  },
+  {
+    "word": "bore",
+    "chinese": "鑽孔；挖井"
+  },
+  {
+    "word": "brake",
+    "chinese": "煞車 / 煞車"
+  },
+  {
+    "word": "brass",
+    "chinese": "黃銅"
+  },
+  {
+    "word": "bravery",
+    "chinese": "勇敢，勇氣"
+  },
+  {
+    "word": "breast",
+    "chinese": "乳房，胸部"
+  },
+  {
+    "word": "breath",
+    "chinese": "呼吸，氣息"
+  },
+  {
+    "word": "breathe",
+    "chinese": "呼吸 / 呼出；吸入"
+  },
+  {
+    "word": "breeze",
+    "chinese": "微風，和風"
+  },
+  {
+    "word": "bride",
+    "chinese": "新娘"
+  },
+  {
+    "word": "brilliant",
+    "chinese": "明亮的；才華橫溢的"
+  },
+  {
+    "word": "brook",
+    "chinese": "小河，小溪"
+  },
+  {
+    "word": "broom",
+    "chinese": "掃帚"
+  },
+  {
+    "word": "brow(s)",
+    "chinese": "眉毛；額頭"
+  },
+  {
+    "word": "bubble",
+    "chinese": "氣泡 / 冒泡 / 使…冒泡"
+  },
+  {
+    "word": "bucket",
+    "chinese": "水桶"
+  },
+  {
+    "word": "bud",
+    "chinese": "芽；花蕾"
+  },
+  {
+    "word": "budget",
+    "chinese": "預算"
+  },
+  {
+    "word": "buffalo",
+    "chinese": "水牛"
+  },
+  {
+    "word": "buffet",
+    "chinese": "自助餐"
+  },
+  {
+    "word": "bulb",
+    "chinese": "燈泡"
+  },
+  {
+    "word": "bull",
+    "chinese": "公牛"
+  },
+  {
+    "word": "bullet",
+    "chinese": "子彈"
+  },
+  {
+    "word": "bump",
+    "chinese": "碰，撞"
+  },
+  {
+    "word": "bunch",
+    "chinese": "串，束"
+  },
+  {
+    "word": "burden",
+    "chinese": "重擔；負擔"
+  },
+  {
+    "word": "burglar",
+    "chinese": "破門盜竊者，夜賊"
+  },
+  {
+    "word": "bury",
+    "chinese": "埋葬，安葬"
+  },
+  {
+    "word": "bush",
+    "chinese": "灌木，灌木叢"
+  },
+  {
+    "word": "buzz",
+    "chinese": "嗡嗡叫；唧唧響"
+  },
+  {
+    "word": "cabin",
+    "chinese": "客艙；小木屋"
+  },
+  {
+    "word": "campus",
+    "chinese": "校園"
+  },
+  {
+    "word": "cane",
+    "chinese": "手杖；拐杖"
+  },
+  {
+    "word": "canoe",
+    "chinese": "獨木舟"
+  },
+  {
+    "word": "canyon",
+    "chinese": "峽谷"
+  },
+  {
+    "word": "capable",
+    "chinese": "有能力的；能幹的"
+  },
+  {
+    "word": "capital",
+    "chinese": "首都；大寫字母；資本"
+  },
+  {
+    "word": "capture",
+    "chinese": "捕獲；俘虜"
+  },
+  {
+    "word": "carpenter",
+    "chinese": "木匠"
+  },
+  {
+    "word": "carriage",
+    "chinese": "四輪馬車；嬰兒車"
+  },
+  {
+    "word": "cast",
+    "chinese": "投，擲 / 卡司(演員陣容)"
+  },
+  {
+    "word": "casual",
+    "chinese": "偶然的；非正式的"
+  },
+  {
+    "word": "caterpillar",
+    "chinese": "毛蟲"
+  },
+  {
+    "word": "cattle",
+    "chinese": "牛群"
+  },
+  {
+    "word": "celebrate",
+    "chinese": "慶祝"
+  },
+  {
+    "word": "centimeter",
+    "chinese": "公分"
+  },
+  {
+    "word": "ceramic",
+    "chinese": "陶器 / 陶器的"
+  },
+  {
+    "word": "chain",
+    "chinese": "鏈，鏈條；連鎖店"
+  },
+  {
+    "word": "challenge",
+    "chinese": "挑戰 / 向…挑戰"
+  },
+  {
+    "word": "champion",
+    "chinese": "優勝者，冠軍"
+  },
+  {
+    "word": "changeable",
+    "chinese": "易變的"
+  },
+  {
+    "word": "channel",
+    "chinese": "頻道；水道；海峽"
+  },
+  {
+    "word": "chapter",
+    "chinese": "章，回"
+  },
+  {
+    "word": "charm",
+    "chinese": "魅力；符咒"
+  },
+  {
+    "word": "chat",
+    "chinese": "閒談，聊天"
+  },
+  {
+    "word": "cheek",
+    "chinese": "臉頰"
+  },
+  {
+    "word": "cheer",
+    "chinese": "歡呼，喝采 / 歡呼；鼓舞"
+  },
+  {
+    "word": "cheerful",
+    "chinese": "興高采烈的"
+  },
+  {
+    "word": "cheese",
+    "chinese": "乳酪"
+  },
+  {
+    "word": "cherry",
+    "chinese": "櫻桃"
+  },
+  {
+    "word": "chest",
+    "chinese": "胸膛"
+  },
+  {
+    "word": "chew",
+    "chinese": "咀嚼"
+  },
+  {
+    "word": "childhood",
+    "chinese": "幼年時期"
+  },
+  {
+    "word": "chill",
+    "chinese": "寒冷"
+  },
+  {
+    "word": "chilly",
+    "chinese": "寒冷的"
+  },
+  {
+    "word": "chimney",
+    "chinese": "煙囪"
+  },
+  {
+    "word": "chip",
+    "chinese": "碎片；薯條；晶片"
+  },
+  {
+    "word": "choke",
+    "chinese": "使窒息；哽住"
+  },
+  {
+    "word": "chop",
+    "chinese": "砍，劈，斬"
+  },
+  {
+    "word": "cigarette",
+    "chinese": "香煙"
+  },
+  {
+    "word": "circus",
+    "chinese": "馬戲團"
+  },
+  {
+    "word": "civil",
+    "chinese": "公民的"
+  },
+  {
+    "word": "classical",
+    "chinese": "古典的"
+  },
+  {
+    "word": "click",
+    "chinese": "卡嗒聲 / 發出卡嗒聲"
+  },
+  {
+    "word": "client",
+    "chinese": "委託人；客戶"
+  },
+  {
+    "word": "clinic",
+    "chinese": "診所"
+  },
+  {
+    "word": "clip",
+    "chinese": "剪；修剪 / 短片"
+  },
+  {
+    "word": "clue",
+    "chinese": "線索，跡象"
+  },
+  {
+    "word": "cocktail",
+    "chinese": "雞尾酒"
+  },
+  {
+    "word": "coconut",
+    "chinese": "椰子"
+  },
+  {
+    "word": "collar",
+    "chinese": "衣領；項圈"
+  },
+  {
+    "word": "collection",
+    "chinese": "收集；收藏品"
+  },
+  {
+    "word": "college",
+    "chinese": "大學；學院"
+  },
+  {
+    "word": "colony",
+    "chinese": "殖民地"
+  },
+  {
+    "word": "column",
+    "chinese": "圓柱；欄，段；縱列"
+  },
+  {
+    "word": "combine",
+    "chinese": "結合"
+  },
+  {
+    "word": "comfort",
+    "chinese": "舒適；安慰 / 安慰"
+  },
+  {
+    "word": "comma",
+    "chinese": "逗號"
+  },
+  {
+    "word": "command",
+    "chinese": "命令"
+  },
+  {
+    "word": "commercial",
+    "chinese": "電視廣告 / 商業的"
+  },
+  {
+    "word": "committee",
+    "chinese": "委員會"
+  },
+  {
+    "word": "communicate",
+    "chinese": "溝通"
+  },
+  {
+    "word": "comparison",
+    "chinese": "比較"
+  },
+  {
+    "word": "compete",
+    "chinese": "競爭；比賽"
+  },
+  {
+    "word": "complaint",
+    "chinese": "抱怨"
+  },
+  {
+    "word": "complex",
+    "chinese": "複雜的"
+  },
+  {
+    "word": "concern",
+    "chinese": "關於；關心 / 關心"
+  },
+  {
+    "word": "concert",
+    "chinese": "音樂會"
+  },
+  {
+    "word": "conclude",
+    "chinese": "結束；斷定"
+  },
+  {
+    "word": "conclusion",
+    "chinese": "結論；結局"
+  },
+  {
+    "word": "condition",
+    "chinese": "情況；條件"
+  },
+  {
+    "word": "cone",
+    "chinese": "圓錐體；甜筒"
+  },
+  {
+    "word": "confident",
+    "chinese": "有信心的"
+  },
+  {
+    "word": "confuse",
+    "chinese": "使…困惑"
+  },
+  {
+    "word": "connect",
+    "chinese": "連接，連結"
+  },
+  {
+    "word": "connection",
+    "chinese": "連接；聯絡"
+  },
+  {
+    "word": "conscious",
+    "chinese": "神志清醒的，有知覺的"
+  },
+  {
+    "word": "considerable",
+    "chinese": "相當大(多)的"
+  },
+  {
+    "word": "consideration",
+    "chinese": "考慮；體貼"
+  },
+  {
+    "word": "constant",
+    "chinese": "固定的，不變的"
+  },
+  {
+    "word": "continent",
+    "chinese": "洲；大陸"
+  },
+  {
+    "word": "contract",
+    "chinese": "契約；合同"
+  },
+  {
+    "word": "couch",
+    "chinese": "長沙發"
+  },
+  {
+    "word": "countable",
+    "chinese": "可計算的；可數的"
+  },
+  {
+    "word": "coward",
+    "chinese": "懦夫，膽怯者"
+  },
+  {
+    "word": "cradle",
+    "chinese": "搖籃"
+  },
+  {
+    "word": "crash",
+    "chinese": "碰撞；墜毀；當機"
+  },
+  {
+    "word": "crawl",
+    "chinese": "爬"
+  },
+  {
+    "word": "creative",
+    "chinese": "有創意的"
+  },
+  {
+    "word": "creator",
+    "chinese": "創造者"
+  },
+  {
+    "word": "creature",
+    "chinese": "生物"
+  },
+  {
+    "word": "credit",
+    "chinese": "賒帳；信用；功勞"
+  },
+  {
+    "word": "creep",
+    "chinese": "躡手躡足地走"
+  },
+  {
+    "word": "crew",
+    "chinese": "全體機組人員"
+  },
+  {
+    "word": "cricket",
+    "chinese": "蟋蟀；板球"
+  },
+  {
+    "word": "criminal",
+    "chinese": "罪犯 / 犯罪的"
+  },
+  {
+    "word": "crisp",
+    "chinese": "脆的"
+  },
+  {
+    "word": "crown",
+    "chinese": "王冠"
+  },
+  {
+    "word": "crunchy",
+    "chinese": "發嘎吱嘎吱聲的"
+  },
+  {
+    "word": "crutch",
+    "chinese": "撐拐"
+  },
+  {
+    "word": "cultural",
+    "chinese": "文化的"
+  },
+  {
+    "word": "cupboard",
+    "chinese": "碗櫃"
+  },
+  {
+    "word": "current",
+    "chinese": "水流，氣流；電流 / 現時的；當前的"
+  },
+  {
+    "word": "cycle",
+    "chinese": "週期"
+  },
+  {
+    "word": "dairy",
+    "chinese": "乳品場"
+  },
+  {
+    "word": "dam",
+    "chinese": "水壩"
+  },
+  {
+    "word": "dare",
+    "chinese": "敢"
+  },
+  {
+    "word": "darling",
+    "chinese": "心愛的人"
+  },
+  {
+    "word": "dash",
+    "chinese": "猛撞；猛衝 / 破折號"
+  },
+  {
+    "word": "deafen",
+    "chinese": "使聾；使聽不見"
+  },
+  {
+    "word": "dealer",
+    "chinese": "經銷商；發牌者"
+  },
+  {
+    "word": "decade",
+    "chinese": "十年"
+  },
+  {
+    "word": "deck",
+    "chinese": "艙面，甲板；一副"
+  },
+  {
+    "word": "deed",
+    "chinese": "行為；功績"
+  },
+  {
+    "word": "deepen",
+    "chinese": "使變深；加深"
+  },
+  {
+    "word": "define",
+    "chinese": "給...下定義"
+  },
+  {
+    "word": "definition",
+    "chinese": "定義"
+  },
+  {
+    "word": "delivery",
+    "chinese": "投遞；分娩"
+  },
+  {
+    "word": "democracy",
+    "chinese": "民主；民主制度"
+  },
+  {
+    "word": "democratic",
+    "chinese": "民主的"
+  },
+  {
+    "word": "deposit",
+    "chinese": "存款；保證金 / 存錢"
+  },
+  {
+    "word": "description",
+    "chinese": "描寫；形容"
+  },
+  {
+    "word": "designer",
+    "chinese": "設計者；時裝設計師"
+  },
+  {
+    "word": "desirable",
+    "chinese": "值得嚮往(擁有)的"
+  },
+  {
+    "word": "destroy",
+    "chinese": "毀壞，破壞"
+  },
+  {
+    "word": "detail",
+    "chinese": "細節；詳情"
+  },
+  {
+    "word": "determine",
+    "chinese": "決定"
+  },
+  {
+    "word": "devil",
+    "chinese": "魔鬼，惡魔"
+  },
+  {
+    "word": "dialogue",
+    "chinese": "對話；交談"
+  },
+  {
+    "word": "diet",
+    "chinese": "節食；飲食"
+  },
+  {
+    "word": "diligent",
+    "chinese": "勤勉的，勤奮的"
+  },
+  {
+    "word": "dim",
+    "chinese": "微暗的；暗淡的 / 變暗淡"
+  },
+  {
+    "word": "dime",
+    "chinese": "一角"
+  },
+  {
+    "word": "dine",
+    "chinese": "進餐，用餐"
+  },
+  {
+    "word": "dip",
+    "chinese": "浸；泡"
+  },
+  {
+    "word": "dirt",
+    "chinese": "汙物；爛泥"
+  },
+  {
+    "word": "disappoint",
+    "chinese": "使…失望"
+  },
+  {
+    "word": "disappointment",
+    "chinese": "失望"
+  },
+  {
+    "word": "disco",
+    "chinese": "迪斯科舞廳"
+  },
+  {
+    "word": "discount",
+    "chinese": "折扣 / 將…打折"
+  },
+  {
+    "word": "discovery",
+    "chinese": "發現"
+  },
+  {
+    "word": "disease",
+    "chinese": "病，疾病"
+  },
+  {
+    "word": "disk/disc",
+    "chinese": "圓盤；唱片；碟片；鐵餅"
+  },
+  {
+    "word": "dislike",
+    "chinese": "不喜愛，厭惡"
+  },
+  {
+    "word": "ditch",
+    "chinese": "水溝；壕溝"
+  },
+  {
+    "word": "dive",
+    "chinese": "跳水；潛水；俯衝"
+  },
+  {
+    "word": "dock",
+    "chinese": "碼頭"
+  },
+  {
+    "word": "dodge",
+    "chinese": "閃開，躲開"
+  },
+  {
+    "word": "domestic",
+    "chinese": "家庭的；國內的"
+  },
+  {
+    "word": "dose",
+    "chinese": "一劑，一服"
+  },
+  {
+    "word": "doubtful",
+    "chinese": "懷疑的，疑惑的"
+  },
+  {
+    "word": "drain",
+    "chinese": "排出(液體)；使流出 / 排水管"
+  },
+  {
+    "word": "dramatic",
+    "chinese": "戲劇的；戲劇性的"
+  },
+  {
+    "word": "drip",
+    "chinese": "滴(下)"
+  },
+  {
+    "word": "drown",
+    "chinese": "把…淹死 / 溺死"
+  },
+  {
+    "word": "drowsy",
+    "chinese": "昏昏欲睡的；困倦的"
+  },
+  {
+    "word": "drunk",
+    "chinese": "喝醉(酒)的"
+  },
+  {
+    "word": "due",
+    "chinese": "到期的；應支付的"
+  },
+  {
+    "word": "dump",
+    "chinese": "傾倒；拋棄 / 垃圾場"
+  },
+  {
+    "word": "dust",
+    "chinese": "灰塵，塵土"
+  },
+  {
+    "word": "eager",
+    "chinese": "熱心的；急切的"
+  },
+  {
+    "word": "earnings",
+    "chinese": "收入，工資"
+  },
+  {
+    "word": "echo",
+    "chinese": "回聲；回響 / 發出回音"
+  },
+  {
+    "word": "edit",
+    "chinese": "編輯；校訂"
+  },
+  {
+    "word": "edition",
+    "chinese": "版；版本"
+  },
+  {
+    "word": "editor",
+    "chinese": "編輯"
+  },
+  {
+    "word": "educate",
+    "chinese": "教育"
+  },
+  {
+    "word": "educational",
+    "chinese": "教育的"
+  },
+  {
+    "word": "efficient",
+    "chinese": "效率高的"
+  },
+  {
+    "word": "elbow",
+    "chinese": "手肘 / 架拐子"
+  },
+  {
+    "word": "elderly",
+    "chinese": "年長的"
+  },
+  {
+    "word": "election",
+    "chinese": "選舉"
+  },
+  {
+    "word": "electric",
+    "chinese": "電的；電動的"
+  },
+  {
+    "word": "electricity",
+    "chinese": "電"
+  },
+  {
+    "word": "electronic",
+    "chinese": "電子的"
+  },
+  {
+    "word": "emergency",
+    "chinese": "緊急情況"
+  },
+  {
+    "word": "emperor",
+    "chinese": "皇帝"
+  },
+  {
+    "word": "emphasize",
+    "chinese": "強調"
+  },
+  {
+    "word": "employ",
+    "chinese": "僱用；使用"
+  },
+  {
+    "word": "employment",
+    "chinese": "僱用；工作"
+  },
+  {
+    "word": "employee",
+    "chinese": "受僱者，雇員"
+  },
+  {
+    "word": "employer",
+    "chinese": "僱主"
+  },
+  {
+    "word": "empty",
+    "chinese": "空的；未佔用的"
+  },
+  {
+    "word": "enable",
+    "chinese": "使能夠…"
+  },
+  {
+    "word": "energetic",
+    "chinese": "精力旺盛的"
+  },
+  {
+    "word": "engage",
+    "chinese": "吸引；佔用；使訂婚"
+  },
+  {
+    "word": "engagement",
+    "chinese": "訂婚"
+  },
+  {
+    "word": "engine",
+    "chinese": "引擎；火車頭；消防車"
+  },
+  {
+    "word": "engineer",
+    "chinese": "工程師"
+  },
+  {
+    "word": "enjoyable",
+    "chinese": "快樂的；有樂趣的"
+  },
+  {
+    "word": "entry",
+    "chinese": "進入；入口；項目"
+  },
+  {
+    "word": "environmental",
+    "chinese": "環境的"
+  },
+  {
+    "word": "envy",
+    "chinese": "妒忌；羨慕"
+  },
+  {
+    "word": "erase",
+    "chinese": "擦掉，抹去"
+  },
+  {
+    "word": "escape",
+    "chinese": "逃跑；逃脫"
+  },
+  {
+    "word": "evil",
+    "chinese": "邪惡的 / 邪惡"
+  },
+  {
+    "word": "excellence",
+    "chinese": "優秀；傑出；卓越"
+  },
+  {
+    "word": "exchange",
+    "chinese": "交換；調換"
+  },
+  {
+    "word": "exhibition",
+    "chinese": "展覽；展覽會"
+  },
+  {
+    "word": "existence",
+    "chinese": "存在"
+  },
+  {
+    "word": "exit",
+    "chinese": "出口 / 出去"
+  },
+  {
+    "word": "expectation",
+    "chinese": "期待；預期"
+  },
+  {
+    "word": "expense",
+    "chinese": "費用；經費；代價"
+  },
+  {
+    "word": "experiment",
+    "chinese": "實驗；試驗"
+  },
+  {
+    "word": "explode",
+    "chinese": "使爆炸 / 爆炸"
+  },
+  {
+    "word": "export",
+    "chinese": "輸出，出口"
+  },
+  {
+    "word": "expression",
+    "chinese": "表達；措辭"
+  },
+  {
+    "word": "expressive",
+    "chinese": "表現的；表情豐富的"
+  },
+  {
+    "word": "extreme",
+    "chinese": "極端，末端 / 極端的"
+  },
+  {
+    "word": "fable",
+    "chinese": "寓言"
+  },
+  {
+    "word": "factor",
+    "chinese": "因素"
+  },
+  {
+    "word": "fade",
+    "chinese": "凋謝，枯萎；褪色"
+  },
+  {
+    "word": "faint",
+    "chinese": "頭暈的 / 昏厥"
+  },
+  {
+    "word": "fairly",
+    "chinese": "公平地；相當地"
+  },
+  {
+    "word": "fairy",
+    "chinese": "小妖精；仙女"
+  },
+  {
+    "word": "faith",
+    "chinese": "信念；信任"
+  },
+  {
+    "word": "fake",
+    "chinese": "偽造；捏造 / 假裝 / 冒牌貨；仿冒品"
+  },
+  {
+    "word": "familiar",
+    "chinese": "熟悉的；常見的"
+  },
+  {
+    "word": "fan",
+    "chinese": "狂熱者；歌(影、書)迷"
+  },
+  {
+    "word": "fancy",
+    "chinese": "愛好；迷戀 / 高貴的；花俏的"
+  },
+  {
+    "word": "fare",
+    "chinese": "票價，車(船)費"
+  },
+  {
+    "word": "farther",
+    "chinese": "更遠地"
+  },
+  {
+    "word": "fashion",
+    "chinese": "流行式樣；時尚"
+  },
+  {
+    "word": "fashionable",
+    "chinese": "流行的；時髦的"
+  },
+  {
+    "word": "fasten",
+    "chinese": "紮牢；繫緊"
+  },
+  {
+    "word": "fate",
+    "chinese": "命運；天命"
+  },
+  {
+    "word": "faucet",
+    "chinese": "水龍頭"
+  },
+  {
+    "word": "fax",
+    "chinese": "傳真機 / 傳真"
+  },
+  {
+    "word": "feather",
+    "chinese": "羽毛"
+  },
+  {
+    "word": "feature",
+    "chinese": "特徵，特色"
+  },
+  {
+    "word": "file",
+    "chinese": "文件夾；檔案；卷宗"
+  },
+  {
+    "word": "firework",
+    "chinese": "煙火"
+  },
+  {
+    "word": "fist",
+    "chinese": "拳頭"
+  },
+  {
+    "word": "flame",
+    "chinese": "火焰；火舌"
+  },
+  {
+    "word": "flavor",
+    "chinese": "味道；風味"
+  },
+  {
+    "word": "flea",
+    "chinese": "跳蚤"
+  },
+  {
+    "word": "flesh",
+    "chinese": "肉，肌肉"
+  },
+  {
+    "word": "float",
+    "chinese": "浮；漂浮"
+  },
+  {
+    "word": "flock",
+    "chinese": "群 / 聚集"
+  },
+  {
+    "word": "fold",
+    "chinese": "摺疊"
+  },
+  {
+    "word": "folk",
+    "chinese": "人們；民族"
+  },
+  {
+    "word": "follower",
+    "chinese": "追隨者；信徒"
+  },
+  {
+    "word": "fond",
+    "chinese": "喜歡的；愛好的"
+  },
+  {
+    "word": "forehead",
+    "chinese": "額頭"
+  },
+  {
+    "word": "forever",
+    "chinese": "永遠"
+  },
+  {
+    "word": "forth",
+    "chinese": "向前"
+  },
+  {
+    "word": "fortune",
+    "chinese": "財富；幸運"
+  },
+  {
+    "word": "found",
+    "chinese": "建立；創辦"
+  },
+  {
+    "word": "fountain",
+    "chinese": "泉水；噴泉；飲水機"
+  },
+  {
+    "word": "freeze",
+    "chinese": "結冰；凍牢"
+  },
+  {
+    "word": "frequent",
+    "chinese": "時常發生的，頻繁的"
+  },
+  {
+    "word": "friendship",
+    "chinese": "友誼；友好"
+  },
+  {
+    "word": "frustrate",
+    "chinese": "挫敗；阻撓"
+  },
+  {
+    "word": "fry",
+    "chinese": "油炸，油炒 / 炒菜；炸薯條"
+  },
+  {
+    "word": "fund",
+    "chinese": "資金，基金"
+  },
+  {
+    "word": "fur",
+    "chinese": "毛皮"
+  },
+  {
+    "word": "furniture",
+    "chinese": "傢俱"
+  },
+  {
+    "word": "gallon",
+    "chinese": "加侖"
+  },
+  {
+    "word": "gamble",
+    "chinese": "賭博；打賭"
+  },
+  {
+    "word": "gang",
+    "chinese": "一幫，一群"
+  },
+  {
+    "word": "gap",
+    "chinese": "裂口，缺口"
+  },
+  {
+    "word": "garlic",
+    "chinese": "大蒜；蒜頭"
+  },
+  {
+    "word": "gasoline",
+    "chinese": "汽油"
+  },
+  {
+    "word": "gesture",
+    "chinese": "姿勢；手勢 / 做手勢"
+  },
+  {
+    "word": "glance",
+    "chinese": "一瞥；掃視"
+  },
+  {
+    "word": "global",
+    "chinese": "球狀的"
+  },
+  {
+    "word": "glory",
+    "chinese": "光榮，榮譽"
+  },
+  {
+    "word": "glow",
+    "chinese": "發光；灼熱"
+  },
+  {
+    "word": "gossip",
+    "chinese": "閒話，聊天；八卦"
+  },
+  {
+    "word": "governor",
+    "chinese": "州長"
+  },
+  {
+    "word": "gown",
+    "chinese": "長禮服"
+  },
+  {
+    "word": "grab",
+    "chinese": "攫取，抓取"
+  },
+  {
+    "word": "gradual",
+    "chinese": "逐漸的，逐步的"
+  },
+  {
+    "word": "graduate",
+    "chinese": "准…畢業 / 畢業 / 畢業生"
+  },
+  {
+    "word": "grain",
+    "chinese": "穀粒"
+  },
+  {
+    "word": "gram",
+    "chinese": "克"
+  },
+  {
+    "word": "grasp",
+    "chinese": "抓牢；領會，理解"
+  },
+  {
+    "word": "grasshopper",
+    "chinese": "蚱蜢；蝗蟲"
+  },
+  {
+    "word": "greenhouse",
+    "chinese": "溫室，暖房"
+  },
+  {
+    "word": "grin",
+    "chinese": "露齒而笑"
+  },
+  {
+    "word": "grocery",
+    "chinese": "食品雜貨(店)"
+  },
+  {
+    "word": "guardian",
+    "chinese": "保護者；監護人"
+  },
+  {
+    "word": "guidance",
+    "chinese": "指導；引導"
+  },
+  {
+    "word": "gum",
+    "chinese": "口香糖"
+  },
+  {
+    "word": "gymnasium",
+    "chinese": "體育館；健身房"
+  },
+  {
+    "word": "hairdresser",
+    "chinese": "美髮師"
+  },
+  {
+    "word": "hallway",
+    "chinese": "玄關；門廳，走廊"
+  },
+  {
+    "word": "handful",
+    "chinese": "一把，一握"
+  },
+  {
+    "word": "handy",
+    "chinese": "手邊的；近便的"
+  },
+  {
+    "word": "harbor",
+    "chinese": "港灣，海港"
+  },
+  {
+    "word": "harm",
+    "chinese": "損傷，傷害"
+  },
+  {
+    "word": "harmful",
+    "chinese": "有害的"
+  },
+  {
+    "word": "harvest",
+    "chinese": "收穫"
+  },
+  {
+    "word": "hasty",
+    "chinese": "匆忙的，急忙的"
+  },
+  {
+    "word": "hatch",
+    "chinese": "孵出"
+  },
+  {
+    "word": "hawk",
+    "chinese": "鷹，隼"
+  },
+  {
+    "word": "hay",
+    "chinese": "乾草"
+  },
+  {
+    "word": "headline",
+    "chinese": "標題；頭條"
+  },
+  {
+    "word": "headquarters",
+    "chinese": "司令部，總部"
+  },
+  {
+    "word": "heal",
+    "chinese": "治癒 / 痊癒"
+  },
+  {
+    "word": "heap",
+    "chinese": "堆，堆積"
+  },
+  {
+    "word": "heaven",
+    "chinese": "天國；上帝"
+  },
+  {
+    "word": "heel",
+    "chinese": "腳後跟，踵"
+  },
+  {
+    "word": "hell",
+    "chinese": "地獄，冥府"
+  },
+  {
+    "word": "helmet",
+    "chinese": "頭盔；安全帽"
+  },
+  {
+    "word": "hesitate",
+    "chinese": "猶豫；躊躇"
+  },
+  {
+    "word": "hike",
+    "chinese": "遠足；上升"
+  },
+  {
+    "word": "hint",
+    "chinese": "暗示"
+  },
+  {
+    "word": "historian",
+    "chinese": "歷史學家"
+  },
+  {
+    "word": "historic",
+    "chinese": "歷史上著名的；有重大意義的"
+  },
+  {
+    "word": "historical",
+    "chinese": "歷史的，史學的"
+  },
+  {
+    "word": "hive",
+    "chinese": "蜂房；蜂巢"
+  },
+  {
+    "word": "hollow",
+    "chinese": "空的，中空的"
+  },
+  {
+    "word": "holy",
+    "chinese": "神聖的"
+  },
+  {
+    "word": "hometown",
+    "chinese": "故鄉，家鄉"
+  },
+  {
+    "word": "honesty",
+    "chinese": "誠實"
+  },
+  {
+    "word": "honor",
+    "chinese": "榮譽；優等成績 / 尊敬"
+  },
+  {
+    "word": "horn",
+    "chinese": "角；小號，號角"
+  },
+  {
+    "word": "horrible",
+    "chinese": "可怕的；糟透的"
+  },
+  {
+    "word": "horror",
+    "chinese": "恐怖；令人恐怖的事物"
+  },
+  {
+    "word": "hourly",
+    "chinese": "每小時的；以鐘點計算的"
+  },
+  {
+    "word": "housekeeper",
+    "chinese": "管家；主婦"
+  },
+  {
+    "word": "hug",
+    "chinese": "緊抱；擁抱"
+  },
+  {
+    "word": "humorous",
+    "chinese": "幽默的，詼諧的"
+  },
+  {
+    "word": "hush",
+    "chinese": "靜寂，沉默 / 使…沉默"
+  },
+  {
+    "word": "hut",
+    "chinese": "小屋"
+  },
+  {
+    "word": "icy",
+    "chinese": "多冰的；冰冷的"
+  },
+  {
+    "word": "ideal",
+    "chinese": "理想的 / 理想"
+  },
+  {
+    "word": "identity",
+    "chinese": "身分；同一(性)；相同"
+  },
+  {
+    "word": "ignorance",
+    "chinese": "無知"
+  },
+  {
+    "word": "image",
+    "chinese": "形象；印象"
+  },
+  {
+    "word": "imagination",
+    "chinese": "想像力"
+  },
+  {
+    "word": "immediate",
+    "chinese": "立即的，即刻的"
+  },
+  {
+    "word": "import",
+    "chinese": "進口，輸入"
+  },
+  {
+    "word": "impress",
+    "chinese": "給…極深的印象"
+  },
+  {
+    "word": "impressive",
+    "chinese": "予人深刻印象的"
+  },
+  {
+    "word": "indeed",
+    "chinese": "真正地，確實"
+  },
+  {
+    "word": "individual",
+    "chinese": "個人 / 個人的"
+  },
+  {
+    "word": "indoor",
+    "chinese": "室內的，戶內的"
+  },
+  {
+    "word": "indoors",
+    "chinese": "在室內；往室內"
+  },
+  {
+    "word": "industrial",
+    "chinese": "工業的"
+  },
+  {
+    "word": "inferior",
+    "chinese": "較差的；下級的"
+  },
+  {
+    "word": "inform",
+    "chinese": "通知，告知"
+  },
+  {
+    "word": "injure",
+    "chinese": "傷害"
+  },
+  {
+    "word": "injury",
+    "chinese": "傷害"
+  },
+  {
+    "word": "inn",
+    "chinese": "小旅館，客棧"
+  },
+  {
+    "word": "inner",
+    "chinese": "內部的，裡面的"
+  },
+  {
+    "word": "innocent",
+    "chinese": "無罪的，清白的；天真的"
+  },
+  {
+    "word": "inspect",
+    "chinese": "檢查；審查"
+  },
+  {
+    "word": "inspector",
+    "chinese": "檢查員；視察員"
+  },
+  {
+    "word": "instead",
+    "chinese": "反而，卻"
+  },
+  {
+    "word": "instruction",
+    "chinese": "教學；指示；操作指南"
+  },
+  {
+    "word": "internal",
+    "chinese": "內部的；內在的；國內的"
+  },
+  {
+    "word": "interrupt",
+    "chinese": "打斷；阻礙"
+  },
+  {
+    "word": "introduction",
+    "chinese": "介紹；引進"
+  },
+  {
+    "word": "inventor",
+    "chinese": "發明家"
+  },
+  {
+    "word": "investigate",
+    "chinese": "調查，研究"
+  },
+  {
+    "word": "ivory",
+    "chinese": "象牙；乳白色"
+  },
+  {
+    "word": "jail",
+    "chinese": "監獄；拘留所 / 監禁"
+  },
+  {
+    "word": "jar",
+    "chinese": "罐，罈"
+  },
+  {
+    "word": "jaw",
+    "chinese": "下巴，下頜"
+  },
+  {
+    "word": "jealous",
+    "chinese": "妒忌的"
+  },
+  {
+    "word": "jelly",
+    "chinese": "果凍"
+  },
+  {
+    "word": "jet",
+    "chinese": "噴射；噴射機"
+  },
+  {
+    "word": "jewel",
+    "chinese": "寶石"
+  },
+  {
+    "word": "jewelry",
+    "chinese": "珠寶；首飾"
+  },
+  {
+    "word": "journal",
+    "chinese": "雜誌，期刊；日記"
+  },
+  {
+    "word": "journey",
+    "chinese": "旅行"
+  },
+  {
+    "word": "joyful",
+    "chinese": "高興的，充滿喜悅的"
+  },
+  {
+    "word": "jungle",
+    "chinese": "叢林，密林"
+  },
+  {
+    "word": "junk",
+    "chinese": "假貨；垃圾；廢話"
+  },
+  {
+    "word": "justice",
+    "chinese": "正義；公平；司法"
+  },
+  {
+    "word": "kangaroo",
+    "chinese": "袋鼠"
+  },
+  {
+    "word": "kettle",
+    "chinese": "水壺"
+  },
+  {
+    "word": "keyboard",
+    "chinese": "鍵盤；鍵盤樂器"
+  },
+  {
+    "word": "kidney",
+    "chinese": "腎臟"
+  },
+  {
+    "word": "kilogram",
+    "chinese": "公斤"
+  },
+  {
+    "word": "kilometer",
+    "chinese": "公里"
+  },
+  {
+    "word": "kit",
+    "chinese": "成套工具；工具箱"
+  },
+  {
+    "word": "kneel",
+    "chinese": "跪(下)"
+  },
+  {
+    "word": "knight",
+    "chinese": "騎士，武士"
+  },
+  {
+    "word": "knit",
+    "chinese": "編織"
+  },
+  {
+    "word": "knob",
+    "chinese": "球形把手；門把"
+  },
+  {
+    "word": "knot",
+    "chinese": "結；節疤"
+  },
+  {
+    "word": "label",
+    "chinese": "貼紙；標籤 / 貼標籤於…；歸類於…"
+  },
+  {
+    "word": "lace",
+    "chinese": "鞋帶；花邊；飾帶"
+  },
+  {
+    "word": "ladder",
+    "chinese": "梯子"
+  },
+  {
+    "word": "latter",
+    "chinese": "後面的；後者的"
+  },
+  {
+    "word": "laughter",
+    "chinese": "笑；笑聲"
+  },
+  {
+    "word": "laundry",
+    "chinese": "洗衣店；送洗的衣服；洗好的衣服"
+  },
+  {
+    "word": "lawn",
+    "chinese": "草坪，草地"
+  },
+  {
+    "word": "leak",
+    "chinese": "漏洞，裂縫 / 洩漏"
+  },
+  {
+    "word": "leap",
+    "chinese": "跳，跳躍"
+  },
+  {
+    "word": "leather",
+    "chinese": "皮革"
+  },
+  {
+    "word": "leisure",
+    "chinese": "閒暇，空暇時間 / 空閒的"
+  },
+  {
+    "word": "lengthen",
+    "chinese": "加長，延長"
+  },
+  {
+    "word": "lens",
+    "chinese": "透鏡；鏡片"
+  },
+  {
+    "word": "liar",
+    "chinese": "說謊的人"
+  },
+  {
+    "word": "liberal",
+    "chinese": "開明的，公允的；自由的"
+  },
+  {
+    "word": "liberty",
+    "chinese": "自由；自由權"
+  },
+  {
+    "word": "librarian",
+    "chinese": "圖書館館長；圖書館員"
+  },
+  {
+    "word": "lifeboat",
+    "chinese": "救生艇"
+  },
+  {
+    "word": "lifeguard",
+    "chinese": "救生員"
+  },
+  {
+    "word": "lifetime",
+    "chinese": "一生，終身"
+  },
+  {
+    "word": "lighthouse",
+    "chinese": "燈塔"
+  },
+  {
+    "word": "limb",
+    "chinese": "肢；臂；腳；翼；四肢"
+  },
+  {
+    "word": "linen",
+    "chinese": "亞麻布"
+  },
+  {
+    "word": "lipstick",
+    "chinese": "口紅"
+  },
+  {
+    "word": "litter",
+    "chinese": "廢棄物 / 亂丟"
+  },
+  {
+    "word": "lively",
+    "chinese": "活潑的，輕快的"
+  },
+  {
+    "word": "liver",
+    "chinese": "肝臟"
+  },
+  {
+    "word": "load",
+    "chinese": "裝載；裝載量；負擔 / 裝載"
+  },
+  {
+    "word": "lobby",
+    "chinese": "大廳；會客室 / 對(議員等)進行遊說"
+  },
+  {
+    "word": "lobster",
+    "chinese": "龍蝦"
+  },
+  {
+    "word": "lollipop",
+    "chinese": "棒棒糖"
+  },
+  {
+    "word": "loose",
+    "chinese": "鬆的，寬的；鬆散的"
+  },
+  {
+    "word": "loosen",
+    "chinese": "鬆開，解開"
+  },
+  {
+    "word": "lord",
+    "chinese": "統治者；君主；上帝；閣下"
+  },
+  {
+    "word": "loudspeaker",
+    "chinese": "擴聲器，喇叭"
+  },
+  {
+    "word": "luggage",
+    "chinese": "行李"
+  },
+  {
+    "word": "lullaby",
+    "chinese": "催眠曲，搖籃曲"
+  },
+  {
+    "word": "lung",
+    "chinese": "肺，肺臟"
+  },
+  {
+    "word": "magical",
+    "chinese": "魔術的，魔法的"
+  },
+  {
+    "word": "magnet",
+    "chinese": "磁鐵，磁石"
+  },
+  {
+    "word": "maid",
+    "chinese": "少女；女僕"
+  },
+  {
+    "word": "major",
+    "chinese": "較大的；主要的；主修的 / 主修"
+  },
+  {
+    "word": "majority",
+    "chinese": "大多數，過半數"
+  },
+  {
+    "word": "mall",
+    "chinese": "購物中心"
+  },
+  {
+    "word": "manage",
+    "chinese": "管理；經營；設法做到"
+  },
+  {
+    "word": "management",
+    "chinese": "管理；經營"
+  },
+  {
+    "word": "manageable",
+    "chinese": "易辦的；可管理的"
+  },
+  {
+    "word": "manager",
+    "chinese": "負責人；主任，經理"
+  },
+  {
+    "word": "mankind",
+    "chinese": "男人；人類"
+  },
+  {
+    "word": "manners",
+    "chinese": "禮貌；規矩"
+  },
+  {
+    "word": "marble",
+    "chinese": "大理石；彈珠"
+  },
+  {
+    "word": "march",
+    "chinese": "行軍；遊行抗議；進行曲 / 前進；行軍"
+  },
+  {
+    "word": "marvelous",
+    "chinese": "令人驚歎的；非凡的"
+  },
+  {
+    "word": "mathematical",
+    "chinese": "數學的"
+  },
+  {
+    "word": "mathematics",
+    "chinese": "數學"
+  },
+  {
+    "word": "mature",
+    "chinese": "成熟的 / 變成熟"
+  },
+  {
+    "word": "mayor",
+    "chinese": "市長，鎮長"
+  },
+  {
+    "word": "meadow",
+    "chinese": "草地，牧草地"
+  },
+  {
+    "word": "meaningful",
+    "chinese": "有意義的；意味深長的"
+  },
+  {
+    "word": "meanwhile",
+    "chinese": "在此同時"
+  },
+  {
+    "word": "medal",
+    "chinese": "獎章，紀念章，勛章"
+  },
+  {
+    "word": "medical",
+    "chinese": "醫學的；醫療的"
+  },
+  {
+    "word": "medium",
+    "chinese": "中間，中庸；媒體"
+  },
+  {
+    "word": "melt",
+    "chinese": "融化；熔化"
+  },
+  {
+    "word": "membership",
+    "chinese": "會員身分"
+  },
+  {
+    "word": "memorize",
+    "chinese": "記住；背熟"
+  },
+  {
+    "word": "mend",
+    "chinese": "修理，修補"
+  },
+  {
+    "word": "mental",
+    "chinese": "精神的，心理的"
+  },
+  {
+    "word": "mention",
+    "chinese": "提到，說起"
+  },
+  {
+    "word": "merchant",
+    "chinese": "商人"
+  },
+  {
+    "word": "merry",
+    "chinese": "歡樂的，愉快的"
+  },
+  {
+    "word": "mess",
+    "chinese": "混亂 / 弄亂"
+  },
+  {
+    "word": "microphone",
+    "chinese": "麥克風"
+  },
+  {
+    "word": "microwave",
+    "chinese": "微波爐 / 用微波爐熱"
+  },
+  {
+    "word": "might",
+    "chinese": "可能；可以"
+  },
+  {
+    "word": "mighty",
+    "chinese": "強大的；強有力的"
+  },
+  {
+    "word": "mill",
+    "chinese": "磨坊；麵粉廠"
+  },
+  {
+    "word": "millionaire",
+    "chinese": "百萬富翁"
+  },
+  {
+    "word": "miner",
+    "chinese": "礦工"
+  },
+  {
+    "word": "minor",
+    "chinese": "較小的；次要的；副修的 / 副修"
+  },
+  {
+    "word": "minority",
+    "chinese": "少數；少數民族；未成年身分"
+  },
+  {
+    "word": "miracle",
+    "chinese": "奇蹟；奇蹟般的人(或物)"
+  },
+  {
+    "word": "misery",
+    "chinese": "不幸；悲"
+  },
+  {
+    "word": "missile",
+    "chinese": "飛彈，導彈"
+  },
+  {
+    "word": "missing",
+    "chinese": "失蹤的，行蹤不明的"
+  },
+  {
+    "word": "mission",
+    "chinese": "使命，任務"
+  },
+  {
+    "word": "mist",
+    "chinese": "薄霧"
+  },
+  {
+    "word": "mixture",
+    "chinese": "混合，混合物"
+  },
+  {
+    "word": "mob",
+    "chinese": "暴民"
+  },
+  {
+    "word": "mobile",
+    "chinese": "可動的，移動式的"
+  },
+  {
+    "word": "moist",
+    "chinese": "潮濕的；含淚的"
+  },
+  {
+    "word": "moisture",
+    "chinese": "濕氣；水分"
+  },
+  {
+    "word": "monk",
+    "chinese": "和尚；僧侶；修道士"
+  },
+  {
+    "word": "mood",
+    "chinese": "心情，心境"
+  },
+  {
+    "word": "mop",
+    "chinese": "拖把 / 用拖把拖洗"
+  },
+  {
+    "word": "moral",
+    "chinese": "道德(上)的"
+  },
+  {
+    "word": "motel",
+    "chinese": "汽車旅館"
+  },
+  {
+    "word": "motor",
+    "chinese": "馬達，發動機"
+  },
+  {
+    "word": "murder",
+    "chinese": "謀殺；謀殺罪 / 謀殺"
+  },
+  {
+    "word": "muscle",
+    "chinese": "肌肉"
+  },
+  {
+    "word": "mushroom",
+    "chinese": "蘑菇 / 雨後春筍般地湧現"
+  },
+  {
+    "word": "musical",
+    "chinese": "音樂的"
+  },
+  {
+    "word": "mystery",
+    "chinese": "神祕；神祕的事物"
+  },
+  {
+    "word": "nanny",
+    "chinese": "保姆"
+  },
+  {
+    "word": "nap",
+    "chinese": "打盹兒，午睡"
+  },
+  {
+    "word": "native",
+    "chinese": "天生的；祖國的；土著的 / 本地人，本國人"
+  },
+  {
+    "word": "navy",
+    "chinese": "海軍"
+  },
+  {
+    "word": "necessity",
+    "chinese": "需要，必要性；必需品"
+  },
+  {
+    "word": "necktie",
+    "chinese": "領帶"
+  },
+  {
+    "word": "neighborhood",
+    "chinese": "鄰近地區"
+  },
+  {
+    "word": "nerve",
+    "chinese": "神經"
+  },
+  {
+    "word": "nervous",
+    "chinese": "神經質的；緊張不安的"
+  },
+  {
+    "word": "network",
+    "chinese": "廣播(電視)網；電腦網路"
+  },
+  {
+    "word": "nickname",
+    "chinese": "綽號 / 給…起綽號"
+  },
+  {
+    "word": "noble",
+    "chinese": "高貴的，高尚的"
+  },
+  {
+    "word": "normal",
+    "chinese": "正常的，正規的"
+  },
+  {
+    "word": "novelist",
+    "chinese": "小說家"
+  },
+  {
+    "word": "nun",
+    "chinese": "尼姑；修女"
+  },
+  {
+    "word": "oak",
+    "chinese": "橡樹；橡木"
+  },
+  {
+    "word": "observe",
+    "chinese": "觀察；看(注意)到"
+  },
+  {
+    "word": "obvious",
+    "chinese": "明顯的；顯著的"
+  },
+  {
+    "word": "occasion",
+    "chinese": "場合，時機"
+  },
+  {
+    "word": "odd",
+    "chinese": "奇特的，古怪的；奇數的"
+  },
+  {
+    "word": "onto",
+    "chinese": "到...之上"
+  },
+  {
+    "word": "operator",
+    "chinese": "操作者；接線生"
+  },
+  {
+    "word": "opportunity",
+    "chinese": "機會"
+  },
+  {
+    "word": "opposite",
+    "chinese": "對立(相反)物 / 相反的 / 在…對面"
+  },
+  {
+    "word": "optimistic",
+    "chinese": "樂觀的"
+  },
+  {
+    "word": "origin",
+    "chinese": "起源；開端；出身"
+  },
+  {
+    "word": "original",
+    "chinese": "最初的，原始的；有獨創性的"
+  },
+  {
+    "word": "orphan",
+    "chinese": "孤兒"
+  },
+  {
+    "word": "ought to",
+    "chinese": "應當，應該"
+  },
+  {
+    "word": "outdoor",
+    "chinese": "戶外的，露天的"
+  },
+  {
+    "word": "outdoors",
+    "chinese": "在戶外，在野外"
+  },
+  {
+    "word": "outer",
+    "chinese": "外面的，外表的"
+  },
+  {
+    "word": "outline",
+    "chinese": "外形；輪廓；概要 / 畫出…的輪廓"
+  },
+  {
+    "word": "overcoat",
+    "chinese": "外套，大衣"
+  },
+  {
+    "word": "owe",
+    "chinese": "欠(債等)；把...歸功於"
+  },
+  {
+    "word": "ownership",
+    "chinese": "所有權；物主身分"
+  },
+  {
+    "word": "pad",
+    "chinese": "襯墊；護墊；便條紙簿；印泥"
+  },
+  {
+    "word": "pail",
+    "chinese": "提桶"
+  },
+  {
+    "word": "pal",
+    "chinese": "伙伴；好友"
+  },
+  {
+    "word": "palace",
+    "chinese": "皇宮，宮殿"
+  },
+  {
+    "word": "pale",
+    "chinese": "蒼白的，灰白的"
+  },
+  {
+    "word": "pancake",
+    "chinese": "薄煎餅，薄烤餅"
+  },
+  {
+    "word": "panic",
+    "chinese": "恐慌，驚慌"
+  },
+  {
+    "word": "parade",
+    "chinese": "行進，遊行"
+  },
+  {
+    "word": "paradise",
+    "chinese": "天堂；樂園"
+  },
+  {
+    "word": "parcel",
+    "chinese": "小包，包裹"
+  },
+  {
+    "word": "participate",
+    "chinese": "參加，參與"
+  },
+  {
+    "word": "passage",
+    "chinese": "通行；通路；走廊；一段"
+  },
+  {
+    "word": "passion",
+    "chinese": "熱情，激情"
+  },
+  {
+    "word": "passport",
+    "chinese": "護照；通行證"
+  },
+  {
+    "word": "password",
+    "chinese": "密碼：口令；暗語"
+  },
+  {
+    "word": "patience",
+    "chinese": "耐心；忍耐；耐性"
+  },
+  {
+    "word": "pause",
+    "chinese": "暫停；中斷"
+  },
+  {
+    "word": "pave",
+    "chinese": "鋪設，築(路等)"
+  },
+  {
+    "word": "pavement",
+    "chinese": "人行道"
+  },
+  {
+    "word": "paw",
+    "chinese": "腳爪；爪子"
+  },
+  {
+    "word": "pay",
+    "chinese": "薪俸；報酬"
+  },
+  {
+    "word": "pea",
+    "chinese": "豌豆"
+  },
+  {
+    "word": "peak",
+    "chinese": "山頂，山峰"
+  },
+  {
+    "word": "pearl",
+    "chinese": "珍珠"
+  },
+  {
+    "word": "peel",
+    "chinese": "削去…的皮，剝去…的殼"
+  },
+  {
+    "word": "peep",
+    "chinese": "窺，偷看"
+  },
+  {
+    "word": "penny",
+    "chinese": "一分；一分硬幣"
+  },
+  {
+    "word": "perform",
+    "chinese": "表演；執行"
+  },
+  {
+    "word": "performance",
+    "chinese": "表演；執行"
+  },
+  {
+    "word": "permission",
+    "chinese": "允許，許可"
+  },
+  {
+    "word": "permit",
+    "chinese": "允許，許可 / 許可證"
+  },
+  {
+    "word": "personality",
+    "chinese": "個性；人格"
+  },
+  {
+    "word": "persuade",
+    "chinese": "說服，勸服"
+  },
+  {
+    "word": "pest",
+    "chinese": "害蟲；討厭的人"
+  },
+  {
+    "word": "pickle",
+    "chinese": "醃製 / 鹽滷"
+  },
+  {
+    "word": "pill",
+    "chinese": "藥丸，藥片"
+  },
+  {
+    "word": "pilot",
+    "chinese": "領航員；駕駛員"
+  },
+  {
+    "word": "pine",
+    "chinese": "松樹；松木"
+  },
+  {
+    "word": "pint",
+    "chinese": "品脫"
+  },
+  {
+    "word": "pit",
+    "chinese": "窪坑，凹處"
+  },
+  {
+    "word": "pity",
+    "chinese": "憐憫；同情；可惜的事，憾事 / 同情…"
+  },
+  {
+    "word": "plastic",
+    "chinese": "塑膠的；塑性的"
+  },
+  {
+    "word": "plenty",
+    "chinese": "豐富；充足"
+  },
+  {
+    "word": "plug",
+    "chinese": "插頭，插塞 / 把...塞住，堵塞"
+  },
+  {
+    "word": "plum",
+    "chinese": "李子；梅子"
+  },
+  {
+    "word": "plumber",
+    "chinese": "水管工人"
+  },
+  {
+    "word": "pole",
+    "chinese": "柱；竿"
+  },
+  {
+    "word": "political",
+    "chinese": "政治的"
+  },
+  {
+    "word": "politician",
+    "chinese": "政治家；政客"
+  },
+  {
+    "word": "politics",
+    "chinese": "政治(學)"
+  },
+  {
+    "word": "poll",
+    "chinese": "投票，選舉；民意測驗"
+  },
+  {
+    "word": "pollute",
+    "chinese": "汙染"
+  },
+  {
+    "word": "pony",
+    "chinese": "小馬"
+  },
+  {
+    "word": "pop",
+    "chinese": "爆裂 / 發出砰(或啪)的響聲 / 通俗的，流行的"
+  },
+  {
+    "word": "porcelain",
+    "chinese": "瓷；瓷器"
+  },
+  {
+    "word": "portion",
+    "chinese": "部分"
+  },
+  {
+    "word": "portrait",
+    "chinese": "肖像，畫像"
+  },
+  {
+    "word": "postage",
+    "chinese": "郵資"
+  },
+  {
+    "word": "poster",
+    "chinese": "海報，廣告(畫)；布告"
+  },
+  {
+    "word": "postpone",
+    "chinese": "延遲，延緩"
+  },
+  {
+    "word": "postponement",
+    "chinese": "延期；延緩"
+  },
+  {
+    "word": "pottery",
+    "chinese": "陶器"
+  },
+  {
+    "word": "pour",
+    "chinese": "倒，灌，注"
+  },
+  {
+    "word": "poverty",
+    "chinese": "貧窮，貧困"
+  },
+  {
+    "word": "powder",
+    "chinese": "粉，粉末"
+  },
+  {
+    "word": "practical",
+    "chinese": "實際的；實用的"
+  },
+  {
+    "word": "prayer",
+    "chinese": "祈禱，禱告"
+  },
+  {
+    "word": "precious",
+    "chinese": "貴重的，珍貴的"
+  },
+  {
+    "word": "preparation",
+    "chinese": "準備，預備"
+  },
+  {
+    "word": "pressure",
+    "chinese": "壓力；壓迫"
+  },
+  {
+    "word": "pretend",
+    "chinese": "假裝"
+  },
+  {
+    "word": "prevent",
+    "chinese": "防止，預防"
+  },
+  {
+    "word": "previous",
+    "chinese": "以前的"
+  },
+  {
+    "word": "priest",
+    "chinese": "牧師；神父"
+  },
+  {
+    "word": "primary",
+    "chinese": "首要的，主要的"
+  },
+  {
+    "word": "probable",
+    "chinese": "很可能發生的"
+  },
+  {
+    "word": "process",
+    "chinese": "過程，進程 / 加工"
+  },
+  {
+    "word": "product",
+    "chinese": "產品"
+  },
+  {
+    "word": "profit",
+    "chinese": "利潤，盈利"
+  },
+  {
+    "word": "program",
+    "chinese": "節目；計畫；程式"
+  },
+  {
+    "word": "promote",
+    "chinese": "晉升；宣傳，推銷"
+  },
+  {
+    "word": "proof",
+    "chinese": "證據；物證"
+  },
+  {
+    "word": "proper",
+    "chinese": "適合的，適當的"
+  },
+  {
+    "word": "property",
+    "chinese": "財產，資產；特性；道具"
+  },
+  {
+    "word": "proposal",
+    "chinese": "提議；求婚"
+  },
+  {
+    "word": "protection",
+    "chinese": "保護，防護"
+  },
+  {
+    "word": "protective",
+    "chinese": "保護的，防護的"
+  },
+  {
+    "word": "pub",
+    "chinese": "酒吧"
+  },
+  {
+    "word": "punch",
+    "chinese": "拳打 / 用拳猛擊"
+  },
+  {
+    "word": "pure",
+    "chinese": "純粹的，不攙雜的；純潔的"
+  },
+  {
+    "word": "pursue",
+    "chinese": "追趕；追求"
+  },
+  {
+    "word": "quarrel",
+    "chinese": "爭吵"
+  },
+  {
+    "word": "queer",
+    "chinese": "奇怪的，古怪的"
+  },
+  {
+    "word": "quote",
+    "chinese": "引用；引述 / 引語，引文"
+  },
+  {
+    "word": "racial",
+    "chinese": "人種的，種族的"
+  },
+  {
+    "word": "radar",
+    "chinese": "雷達"
+  },
+  {
+    "word": "rag",
+    "chinese": "破布，碎布"
+  },
+  {
+    "word": "raisin",
+    "chinese": "葡萄乾"
+  },
+  {
+    "word": "rank",
+    "chinese": "等級；地位 / 把…評級"
+  },
+  {
+    "word": "rate",
+    "chinese": "比例；速度；等級 / 對…估價；對…評價"
+  },
+  {
+    "word": "raw",
+    "chinese": "生的，未煮過的"
+  },
+  {
+    "word": "ray",
+    "chinese": "光線；射線"
+  },
+  {
+    "word": "razor",
+    "chinese": "剃刀"
+  },
+  {
+    "word": "react",
+    "chinese": "反應"
+  },
+  {
+    "word": "reaction",
+    "chinese": "反應"
+  },
+  {
+    "word": "reasonable",
+    "chinese": "合理的；有理智的"
+  },
+  {
+    "word": "receipt",
+    "chinese": "收據"
+  },
+  {
+    "word": "receiver",
+    "chinese": "收件人；接待人；電話聽筒"
+  },
+  {
+    "word": "recognize",
+    "chinese": "認出；識別；承認"
+  },
+  {
+    "word": "recorder",
+    "chinese": "記錄者；錄音機；直笛"
+  },
+  {
+    "word": "recover",
+    "chinese": "重新獲得；恢復"
+  },
+  {
+    "word": "reduce",
+    "chinese": "減少；縮小；降低"
+  },
+  {
+    "word": "regional",
+    "chinese": "地區的"
+  },
+  {
+    "word": "regret",
+    "chinese": "懊悔；因…而遺憾"
+  },
+  {
+    "word": "relate",
+    "chinese": "講，敘述；使有聯繫"
+  },
+  {
+    "word": "relax",
+    "chinese": "鬆弛，鬆懈，放鬆"
+  },
+  {
+    "word": "release",
+    "chinese": "釋放，鬆開"
+  },
+  {
+    "word": "reliable",
+    "chinese": "可信賴的；可靠的"
+  },
+  {
+    "word": "relief",
+    "chinese": "緩和，減輕；救濟；補助"
+  },
+  {
+    "word": "religion",
+    "chinese": "宗教"
+  },
+  {
+    "word": "religious",
+    "chinese": "宗教的；虔誠的"
+  },
+  {
+    "word": "rely",
+    "chinese": "依靠，依賴"
+  },
+  {
+    "word": "remain",
+    "chinese": "剩下；保持…"
+  },
+  {
+    "word": "remind",
+    "chinese": "提醒"
+  },
+  {
+    "word": "remote",
+    "chinese": "遙遠的；偏僻的"
+  },
+  {
+    "word": "remove",
+    "chinese": "移動，搬開；去掉，消除"
+  },
+  {
+    "word": "renew",
+    "chinese": "更新；復原"
+  },
+  {
+    "word": "rent",
+    "chinese": "租金 / 出租"
+  },
+  {
+    "word": "repair",
+    "chinese": "修理；修補"
+  },
+  {
+    "word": "replace",
+    "chinese": "取代"
+  },
+  {
+    "word": "replacement",
+    "chinese": "取代"
+  },
+  {
+    "word": "represent",
+    "chinese": "象徵；代表"
+  },
+  {
+    "word": "representative",
+    "chinese": "典型，代表物"
+  },
+  {
+    "word": "republic",
+    "chinese": "共和國"
+  },
+  {
+    "word": "request",
+    "chinese": "要求，請求"
+  },
+  {
+    "word": "reserve",
+    "chinese": "預約，預訂；保留 / 儲備(物)；儲備金；保留(物)"
+  },
+  {
+    "word": "resist",
+    "chinese": "抵抗，反抗"
+  },
+  {
+    "word": "resource",
+    "chinese": "資源；物力"
+  },
+  {
+    "word": "respond",
+    "chinese": "作答，回答"
+  },
+  {
+    "word": "response",
+    "chinese": "回答；答覆"
+  },
+  {
+    "word": "responsibility",
+    "chinese": "責任"
+  },
+  {
+    "word": "restrict",
+    "chinese": "限制；限定"
+  },
+  {
+    "word": "reveal",
+    "chinese": "展現；暴露；洩露"
+  },
+  {
+    "word": "ribbon",
+    "chinese": "緞帶；絲帶"
+  },
+  {
+    "word": "rid",
+    "chinese": "使免除；使擺脫"
+  },
+  {
+    "word": "riddle",
+    "chinese": "謎，謎語"
+  },
+  {
+    "word": "ripe",
+    "chinese": "成熟的"
+  },
+  {
+    "word": "risk",
+    "chinese": "危險，風險 / 冒…的風險"
+  },
+  {
+    "word": "roar",
+    "chinese": "吼叫"
+  },
+  {
+    "word": "roast",
+    "chinese": "烤，炙，烘"
+  },
+  {
+    "word": "rob",
+    "chinese": "搶劫，劫掠"
+  },
+  {
+    "word": "robber",
+    "chinese": "搶劫者，強盜"
+  },
+  {
+    "word": "robbery",
+    "chinese": "搶劫；盜取"
+  },
+  {
+    "word": "robe",
+    "chinese": "長袍，罩袍；浴衣"
+  },
+  {
+    "word": "rocket",
+    "chinese": "火箭，飛彈"
+  },
+  {
+    "word": "romantic",
+    "chinese": "羅曼蒂克的；浪漫的"
+  },
+  {
+    "word": "rot",
+    "chinese": "腐爛，腐壞"
+  },
+  {
+    "word": "rotten",
+    "chinese": "腐爛的"
+  },
+  {
+    "word": "rough",
+    "chinese": "粗糙的；粗略的；粗野的"
+  },
+  {
+    "word": "routine",
+    "chinese": "例行公事；日常工作；慣例"
+  },
+  {
+    "word": "rug",
+    "chinese": "小地毯"
+  },
+  {
+    "word": "rumor",
+    "chinese": "謠言，謠傳"
+  },
+  {
+    "word": "rust",
+    "chinese": "鏽，鐵鏽 / 生鏽"
+  },
+  {
+    "word": "rusty",
+    "chinese": "生鏽的；變遲鈍的"
+  },
+  {
+    "word": "sack",
+    "chinese": "粗布袋；麻袋"
+  },
+  {
+    "word": "sake",
+    "chinese": "理由；緣故"
+  },
+  {
+    "word": "satisfactory",
+    "chinese": "令人滿意的"
+  },
+  {
+    "word": "saucer",
+    "chinese": "淺碟"
+  },
+  {
+    "word": "sausage",
+    "chinese": "香腸，臘腸"
+  },
+  {
+    "word": "savings",
+    "chinese": "儲金，存款"
+  },
+  {
+    "word": "scale",
+    "chinese": "刻度；尺度；大小；規模"
+  },
+  {
+    "word": "scarce",
+    "chinese": "缺乏的；不足的"
+  },
+  {
+    "word": "scarecrow",
+    "chinese": "稻草人"
+  },
+  {
+    "word": "scarf",
+    "chinese": "圍巾；披巾"
+  },
+  {
+    "word": "scary",
+    "chinese": "可怕的；駭人的"
+  },
+  {
+    "word": "scatter",
+    "chinese": "撒；使分散"
+  },
+  {
+    "word": "schedule",
+    "chinese": "時間表；課程表"
+  },
+  {
+    "word": "scholar",
+    "chinese": "學者"
+  },
+  {
+    "word": "scholarship",
+    "chinese": "獎學金"
+  },
+  {
+    "word": "scientific",
+    "chinese": "科學的"
+  },
+  {
+    "word": "scoop",
+    "chinese": "勺子；舀；鏟 / 用勺舀，用鏟子鏟"
+  },
+  {
+    "word": "scout",
+    "chinese": "偵察兵；偵察機；童子軍；球探，星探"
+  },
+  {
+    "word": "scream",
+    "chinese": "尖叫"
+  },
+  {
+    "word": "screw",
+    "chinese": "螺釘 / 旋，擰"
+  },
+  {
+    "word": "scrub",
+    "chinese": "用力擦洗"
+  },
+  {
+    "word": "seal",
+    "chinese": "海豹 / 印章；封(印) / 封，密封；蓋章"
+  },
+  {
+    "word": "secondary",
+    "chinese": "第二的；次要的；中等的"
+  },
+  {
+    "word": "security",
+    "chinese": "安全；保安；證券"
+  },
+  {
+    "word": "seek",
+    "chinese": "尋找；探索"
+  },
+  {
+    "word": "seize",
+    "chinese": "抓住；捉住"
+  },
+  {
+    "word": "seldom",
+    "chinese": "不常，很少"
+  },
+  {
+    "word": "sensible",
+    "chinese": "明智的；可注意到的"
+  },
+  {
+    "word": "sensitive",
+    "chinese": "敏感的；靈敏的"
+  },
+  {
+    "word": "separation",
+    "chinese": "分開；分離；分居"
+  },
+  {
+    "word": "sew",
+    "chinese": "縫合；縫上"
+  },
+  {
+    "word": "sex",
+    "chinese": "性別；性，色情；性行為"
+  },
+  {
+    "word": "sexual",
+    "chinese": "性的；性慾的"
+  },
+  {
+    "word": "sexy",
+    "chinese": "性感的"
+  },
+  {
+    "word": "shade",
+    "chinese": "蔭；陰涼處"
+  },
+  {
+    "word": "shadow",
+    "chinese": "影子；陰影；幽靈"
+  },
+  {
+    "word": "shady",
+    "chinese": "多蔭的"
+  },
+  {
+    "word": "shallow",
+    "chinese": "淺的；膚淺的"
+  },
+  {
+    "word": "shame",
+    "chinese": "羞恥(心)；恥辱；帶來恥辱的人(或事)；憾事"
+  },
+  {
+    "word": "shampoo",
+    "chinese": "洗髮精"
+  },
+  {
+    "word": "shave",
+    "chinese": "刮(鬍)；剃…毛"
+  },
+  {
+    "word": "shepherd",
+    "chinese": "牧羊人"
+  },
+  {
+    "word": "shiny",
+    "chinese": "發光的；晴朗的；擦亮的"
+  },
+  {
+    "word": "shorten",
+    "chinese": "變短；縮短"
+  },
+  {
+    "word": "shortly",
+    "chinese": "立刻，馬上，不久"
+  },
+  {
+    "word": "shovel",
+    "chinese": "鏟子，鐵鍬 / 用鏟鏟(起)；用鐵鍬挖"
+  },
+  {
+    "word": "shrink",
+    "chinese": "收縮，縮短；縮水"
+  },
+  {
+    "word": "sigh",
+    "chinese": "嘆氣，嘆息"
+  },
+  {
+    "word": "signal",
+    "chinese": "信號；暗號"
+  },
+  {
+    "word": "significant",
+    "chinese": "有意義的；重要的"
+  },
+  {
+    "word": "similarity",
+    "chinese": "相似；相似點"
+  },
+  {
+    "word": "sin",
+    "chinese": "罪"
+  },
+  {
+    "word": "sincere",
+    "chinese": "衷心的，真誠的"
+  },
+  {
+    "word": "sip",
+    "chinese": "啜飲"
+  },
+  {
+    "word": "situation",
+    "chinese": "形勢；情況"
+  },
+  {
+    "word": "skate",
+    "chinese": "冰鞋 / 溜冰"
+  },
+  {
+    "word": "ski",
+    "chinese": "滑雪屐；滑雪板 / 滑雪"
+  },
+  {
+    "word": "skip",
+    "chinese": "跳躍；跳繩；略過；漏掉"
+  },
+  {
+    "word": "skyscraper",
+    "chinese": "摩天樓"
+  },
+  {
+    "word": "slave",
+    "chinese": "奴隸"
+  },
+  {
+    "word": "sleeve",
+    "chinese": "袖子；袖套"
+  },
+  {
+    "word": "slice",
+    "chinese": "薄片，切片 / 把…切成薄片"
+  },
+  {
+    "word": "slippery",
+    "chinese": "滑的；容易滑的"
+  },
+  {
+    "word": "slope",
+    "chinese": "斜坡；傾斜；坡度"
+  },
+  {
+    "word": "smooth",
+    "chinese": "平滑的，光滑的；流暢的"
+  },
+  {
+    "word": "snap",
+    "chinese": "猛咬；突然折斷；快照拍攝"
+  },
+  {
+    "word": "solid",
+    "chinese": "固體的；結實的 / 固體"
+  },
+  {
+    "word": "someday",
+    "chinese": "將來有一天"
+  },
+  {
+    "word": "somehow",
+    "chinese": "以某種方式；不知怎麼的"
+  },
+  {
+    "word": "sometime",
+    "chinese": "在(將來或過去)某一時候"
+  },
+  {
+    "word": "somewhat",
+    "chinese": "有點，稍微"
+  },
+  {
+    "word": "sore",
+    "chinese": "痛的；疼痛發炎的"
+  },
+  {
+    "word": "sorrow",
+    "chinese": "悲痛，悲哀"
+  },
+  {
+    "word": "spade",
+    "chinese": "鏟；鍬；黑桃"
+  },
+  {
+    "word": "spaghetti",
+    "chinese": "義大利麵條"
+  },
+  {
+    "word": "specific",
+    "chinese": "特殊的，特定的；明確的"
+  },
+  {
+    "word": "spice",
+    "chinese": "香料，調味品"
+  },
+  {
+    "word": "spill",
+    "chinese": "溢出；濺出"
+  },
+  {
+    "word": "spin",
+    "chinese": "紡；作(繭)，結(網)；使(陀螺等)旋轉"
+  },
+  {
+    "word": "spit",
+    "chinese": "吐口水；吐痰 / 唾液，口水"
+  },
+  {
+    "word": "spite",
+    "chinese": "惡意；怨恨"
+  },
+  {
+    "word": "splash",
+    "chinese": "濺，潑"
+  },
+  {
+    "word": "spoil",
+    "chinese": "損壞；寵壞，溺愛 / 變壞"
+  },
+  {
+    "word": "sprain",
+    "chinese": "扭傷"
+  },
+  {
+    "word": "spray",
+    "chinese": "浪花，水花；噴霧 / 噴灑"
+  },
+  {
+    "word": "sprinkle",
+    "chinese": "灑，噴淋"
+  },
+  {
+    "word": "spy",
+    "chinese": "間諜 / 暗中監視"
+  },
+  {
+    "word": "squeeze",
+    "chinese": "榨，擠，壓"
+  },
+  {
+    "word": "stab",
+    "chinese": "刺，戳"
+  },
+  {
+    "word": "stable",
+    "chinese": "馬棚；畜舍"
+  },
+  {
+    "word": "stadium",
+    "chinese": "體育場，運動場"
+  },
+  {
+    "word": "staff",
+    "chinese": "職員，工作人員"
+  },
+  {
+    "word": "stale",
+    "chinese": "不新鮮的；陳舊的，無新意的"
+  },
+  {
+    "word": "stare",
+    "chinese": "盯，凝視"
+  },
+  {
+    "word": "starve",
+    "chinese": "餓死；挨餓"
+  },
+  {
+    "word": "statue",
+    "chinese": "雕像，塑像"
+  },
+  {
+    "word": "steady",
+    "chinese": "穩固的，平穩的"
+  },
+  {
+    "word": "steep",
+    "chinese": "陡峭的"
+  },
+  {
+    "word": "stepchild",
+    "chinese": "前配偶所生的孩子"
+  },
+  {
+    "word": "stepfather",
+    "chinese": "繼父，後父"
+  },
+  {
+    "word": "stepmother",
+    "chinese": "繼母，後母"
+  },
+  {
+    "word": "stereo",
+    "chinese": "立體音響裝置 / 立體聲的"
+  },
+  {
+    "word": "sticky",
+    "chinese": "黏的"
+  },
+  {
+    "word": "stiff",
+    "chinese": "僵直的，僵硬的"
+  },
+  {
+    "word": "sting",
+    "chinese": "刺，螫，叮"
+  },
+  {
+    "word": "stir",
+    "chinese": "攪拌，攪動；煽動"
+  },
+  {
+    "word": "stitch",
+    "chinese": "一針；針腳；針線"
+  },
+  {
+    "word": "stocking(s)",
+    "chinese": "長襪"
+  },
+  {
+    "word": "stool",
+    "chinese": "凳子"
+  },
+  {
+    "word": "stormy",
+    "chinese": "暴風雨的；暴躁的"
+  },
+  {
+    "word": "strategy",
+    "chinese": "戰略；策略"
+  },
+  {
+    "word": "strength",
+    "chinese": "力，力量"
+  },
+  {
+    "word": "strip",
+    "chinese": "剝去；剝奪 / 條，帶；連環漫畫"
+  },
+  {
+    "word": "structure",
+    "chinese": "結構；構造"
+  },
+  {
+    "word": "stubborn",
+    "chinese": "固執的，頑固的"
+  },
+  {
+    "word": "studio",
+    "chinese": "工作室；攝影棚；製片廠"
+  },
+  {
+    "word": "stuff",
+    "chinese": "物品，東東"
+  }
+]
