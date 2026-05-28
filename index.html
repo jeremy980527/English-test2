@@ -23,6 +23,7 @@
     <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     
+    <!-- 🌟 引入頂級拖曳排序庫 SortableJS (確保手機與電腦皆能完美拖移) -->
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
@@ -90,6 +91,7 @@
 </head>
 <body>
 
+<!-- 🌟 側邊導覽列 (Sidebar) -->
 <div id="sidebar-overlay" class="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 <div id="sidebar" class="sidebar">
     <div class="sidebar-header" onclick="window.switchView('profile'); window.toggleSidebar();">
@@ -108,6 +110,7 @@
 
 <div class="container">
     
+    <!-- 頂部導航 (加入漢堡按鈕) -->
     <header id="main-header" class="hidden" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <button class="btn-icon" onclick="window.toggleSidebar()" style="font-size: 1.6rem; padding: 0 5px; color: var(--text-main);">☰</button>
@@ -125,11 +128,14 @@
         </div>
     </header>
 
+    <!-- ========================================================= -->
+    <!-- 🏆 每週排行榜 (Leaderboard View) -->
+    <!-- ========================================================= -->
     <div id="view-leaderboard" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
-            <div class="nav-bar-right">
-                <span style="font-weight: 500; letter-spacing: 1px;">每週排位賽</span>
+            <div class="nav-bar-right" style="display: flex; align-items: center;">
+                <button class="btn-icon" onclick="if(window.showScoringRules) window.showScoringRules();" style="font-size: 0.85rem; border: 1px solid var(--border); padding: 4px 12px; border-radius: 15px; margin-right: 0;">計分規則</button>
             </div>
         </div>
 
@@ -137,7 +143,7 @@
             <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前賽季</div>
             <div id="lb-current-week" style="font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 15px; letter-spacing: 2px;">Week --</div>
             <div style="font-size: 0.95rem; color: var(--text-main);">您的本週積分：<span id="lb-my-score" style="font-size: 1.8rem; font-weight: bold; margin-left: 8px; font-family: 'Courier New', Courier, monospace;">0</span> 分</div>
-            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; letter-spacing: 0.5px;">(為防洗分，僅採計「學測單字庫」的精通升級分數)</p>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; letter-spacing: 0.5px;">(為防洗分，系統設有嚴格計分標準，詳見右上角規則)</p>
         </div>
 
         <h3 style="margin-top: 35px; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">全伺服器 Top 10</h3>
@@ -146,6 +152,11 @@
             <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">連線至伺服器中...</div>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 個人主頁 (Profile View) -->
+    <!-- ========================================================= -->
     <div id="view-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -184,6 +195,11 @@
             </p>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 歡迎頁面 (Landing View) -->
+    <!-- ========================================================= -->
     <div id="view-landing" class="hidden">
         <div class="landing-hero" style="text-align: center; padding: 60px 0; animation: fadeIn 0.6s ease;">
             <h1 style="font-size: 2.8rem; font-weight: 200; letter-spacing: 8px; margin-bottom: 10px; color: var(--accent);">SILENVOCAB</h1>
@@ -210,6 +226,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 首頁 (Home View) -->
+    <!-- ========================================================= -->
     <div id="view-home" class="hidden">
         <div class="card" style="text-align: center; padding: 30px 20px; border-color: var(--border);">
             <div id="home-book-summary" style="font-size: 1.05rem; margin-bottom: 20px; letter-spacing: 0.5px;">
@@ -249,6 +268,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 單字簿庫 -->
+    <!-- ========================================================= -->
     <div id="view-book-select" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="goHome()">返回首頁</button>
@@ -265,6 +287,7 @@
         </div>
         
         <div id="normal-book-area">
+            <!-- 渲染普通單字簿的容器 -->
             <div id="normal-book-list"></div>
             
             <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -288,6 +311,7 @@
         </div>
 
         <div id="gsat-book-area" class="hidden">
+            <!-- 渲染學測單字簿的容器 -->
             <div id="gsat-book-list"></div>
             
             <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -333,6 +357,11 @@
             </div>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 編輯與各種測驗視窗 -->
+    <!-- ========================================================= -->
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="switchView('book-select')">返回</button>
@@ -365,6 +394,7 @@
         <div id="word-list"></div>
     </div>
 
+    <!-- 測驗區域 -->
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">結束</button>
@@ -589,6 +619,7 @@
 
 </div>
 
+<!-- Modal Overlays -->
 <div id="silen-modal-overlay" class="hidden"><div class="silen-modal-box"><div id="silen-modal-msg" class="silen-modal-msg"></div><input type="text" id="silen-modal-input" class="hidden"><textarea id="silen-modal-textarea" class="hidden"></textarea><div class="silen-modal-actions"><button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden">取消</button><button id="silen-modal-btn-confirm" class="btn btn-small">確認</button></div></div></div>
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--accent); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文單字</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
