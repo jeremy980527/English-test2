@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SilenVocab</title>
+    <title>SilenVocab | 極簡英文練習</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0a0a">
@@ -23,11 +23,13 @@
     <script defer src="https://youglish.com/api/widget/js/widget.js"></script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     
+    <!-- 🌟 引入頂級拖曳排序庫 SortableJS (確保手機與電腦皆能完美拖移) -->
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
     
     <style>
+        /* 🌟 自訂下拉選單的專屬風格 */
         .custom-dropdown { position: relative; display: inline-block; user-select: none; }
         .dropdown-selected { font-size: 1.15rem; font-weight: 500; color: var(--text-main); cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.2s; display: flex; align-items: center; gap: 8px; }
         .dropdown-selected:hover { background: rgba(0,0,0,0.05); }
@@ -36,6 +38,7 @@
         .dropdown-option { padding: 12px 16px; font-size: 1rem; color: var(--text-main); cursor: pointer; transition: 0.2s; }
         .dropdown-option:hover { background: var(--primary); color: white; }
         
+        /* 表單內的下拉選單樣式 (有邊框) */
         .form-dropdown { width: 100%; }
         .form-dropdown .dropdown-selected { border: 2px solid var(--border); padding: 12px; font-size: 1rem; font-weight: normal; justify-content: space-between; background: var(--card-bg); }
         .form-dropdown .dropdown-selected:hover { border-color: var(--primary); background: transparent; }
@@ -49,26 +52,112 @@
         .drag-handle:active { cursor: grabbing; }
         .sortable-ghost { opacity: 0.3; background-color: #f0f0f0; border: 2px dashed #999 !important; }
         .book-item { transition: border-color 0.2s, background-color 0.2s; }
+
+        /* 🌟 側邊導覽列 Sidebar */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+        .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--card-bg); z-index: 2001; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+        .sidebar.open { left: 0; }
+        .sidebar-header { padding: 40px 20px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+        .sidebar-header:hover { background: rgba(0,0,0,0.02); }
+        .sidebar-menu { flex: 1; overflow-y: auto; padding: 15px 0; }
+        .sidebar-item { padding: 16px 25px; font-size: 1.05rem; font-weight: 500; color: var(--text-main); cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
+        .sidebar-item:hover { background: rgba(0,0,0,0.04); color: var(--accent); padding-left: 30px; }
+
+        /* 🌟 個人主頁 Profile */
+        .profile-header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        .profile-avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .profile-placeholder { width: 110px; height: 110px; border-radius: 50%; background: #ccc; margin: 0 auto 15px auto; display: flex; justify-content: center; align-items: center; font-size: 3rem; color: white; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .stat-value { font-size: 2.2rem; font-weight: 600; color: var(--accent); margin-bottom: 5px; font-family: 'Courier New', Courier, monospace; }
+        .stat-label { font-size: 0.85rem; color: var(--text-sub); letter-spacing: 1px; font-weight: 500; }
+        
+        .badge-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; padding: 20px 0; }
+        .badge-slot { width: 70px; height: 70px; border-radius: 50%; border: 2px dashed #ddd; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 0.8rem; background: #fafafa; letter-spacing: 1px; text-align: center; line-height: 1.2; }
     </style>
 </head>
 <body>
 
+<!-- 🌟 側邊導覽列 (Sidebar) -->
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="window.toggleSidebar()"></div>
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header" onclick="window.switchView('profile'); window.toggleSidebar();">
+        <div id="sb-avatar-placeholder" style="width: 60px; height: 60px; border-radius: 50%; background: #ccc; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 1.5rem;">?</div>
+        <img id="sb-avatar-img" src="" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--border); margin-bottom: 15px; display: none;">
+        <div id="sb-user-name" style="font-weight: 600; font-size: 1.2rem; letter-spacing: 0.5px; margin-bottom: 5px;">訪客</div>
+        <div style="font-size: 0.85rem; color: var(--text-sub); letter-spacing: 0.5px;">查看個人主頁與成就 →</div>
+    </div>
+    <div class="sidebar-menu">
+        <div class="sidebar-item" onclick="window.goHome(); window.toggleSidebar();">首頁 Dashboard</div>
+        <div class="sidebar-item" onclick="window.openBookSelect(); window.toggleSidebar();">單字簿庫</div>
+        <div class="sidebar-item" onclick="window.SilenModal.alert('每週排行榜即將開放！\n敬請期待賽季結算系統。'); window.toggleSidebar();">每週排行</div>
+        <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
+    </div>
+</div>
+
 <div class="container">
     
+    <!-- 頂部導航 (加入漢堡按鈕) -->
     <header id="main-header" class="hidden" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-            <h1 style="margin: 0; cursor: pointer;" onclick="goHome()">SilenVocab</h1>
-            <div id="online-presence-badge" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-                <span class="breathing-dot"></span>
-                <span style="font-size: 0.75rem; color: var(--text-sub); letter-spacing: 0.5px;"><span id="online-count">1</span> 人正在學習</span>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button class="btn-icon" onclick="window.toggleSidebar()" style="font-size: 1.6rem; padding: 0 5px; color: var(--text-main);">☰</button>
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <h1 style="margin: 0; cursor: pointer; letter-spacing: 1px;" onclick="goHome()">SilenVocab</h1>
+                <div id="online-presence-badge" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                    <span class="breathing-dot"></span>
+                    <span style="font-size: 0.75rem; color: var(--text-sub); letter-spacing: 0.5px;"><span id="online-count">1</span> 人正在學習</span>
+                </div>
             </div>
         </div>
         
         <div style="display: flex; align-items: center; gap: 15px;">
             <div id="auth-container"></div>
-            <button class="btn-icon" onclick="window.SilenSettings.open()" style="border: none; font-size: 1.2rem; padding: 4px;">⚙️</button>
         </div>
     </header>
+
+    <!-- ========================================================= -->
+    <!-- 🌟 全新：個人主頁 (Profile View) -->
+    <!-- ========================================================= -->
+    <div id="view-profile" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.goHome()">返回</button>
+            <div class="nav-bar-right">
+                <span style="font-weight: 500; letter-spacing: 1px;">個人主頁</span>
+            </div>
+        </div>
+        
+        <div class="profile-header">
+            <div id="profile-avatar-placeholder" class="profile-placeholder">?</div>
+            <img id="profile-avatar-img" src="" class="profile-avatar" style="display: none;">
+            <h2 id="profile-name" style="margin: 0; font-weight: 400; letter-spacing: 2px;">載入中...</h2>
+            <div id="profile-email" style="color: var(--text-sub); font-size: 0.9rem; margin-top: 8px; letter-spacing: 1px;"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total-score">0</div>
+                <div class="stat-label">生涯總積分</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total-words">0</div>
+                <div class="stat-label">已精通單字</div>
+            </div>
+        </div>
+
+        <div class="card" style="border-color: #eee;">
+            <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 10px;">賽季榮譽徽章</h3>
+            <div class="badge-container">
+                <div class="badge-slot">尚未獲得</div>
+                <div class="badge-slot">尚未獲得</div>
+                <div class="badge-slot">尚未獲得</div>
+            </div>
+            <p style="text-align: center; color: var(--text-sub); font-size: 0.85rem; margin-top: 10px; letter-spacing: 0.5px;">
+                參加每週賽季排位賽，進入前三名即可解鎖專屬徽章。
+            </p>
+        </div>
+    </div>
+    <!-- ========================================================= -->
 
     <div id="view-landing" class="hidden">
         <div class="landing-hero" style="text-align: center; padding: 60px 0; animation: fadeIn 0.6s ease;">
@@ -135,6 +224,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 單字簿庫 -->
+    <!-- ========================================================= -->
     <div id="view-book-select" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="goHome()">返回首頁</button>
@@ -151,6 +243,7 @@
         </div>
         
         <div id="normal-book-area">
+            <!-- 渲染普通單字簿的容器 -->
             <div id="normal-book-list"></div>
             
             <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -174,6 +267,7 @@
         </div>
 
         <div id="gsat-book-area" class="hidden">
+            <!-- 渲染學測單字簿的容器 -->
             <div id="gsat-book-list"></div>
             
             <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -219,6 +313,8 @@
             </div>
         </div>
     </div>
+    <!-- ========================================================= -->
+
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="switchView('book-select')">返回</button>
@@ -251,6 +347,7 @@
         <div id="word-list"></div>
     </div>
 
+    <!-- 測驗區域 -->
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="quitPractice()">結束</button>
@@ -402,6 +499,7 @@
                 <button class="mic-btn" id="mic-btn" onclick="startSpeechRecognition()" style="font-size: 1rem; font-weight: 600; letter-spacing: 1px;">REC</button>
                 <div class="speaking-status" id="speaking-status" style="margin-top: 20px;">點擊上方按鈕，念出正確單字</div>
             </div>
+
             <div id="speaking-feedback-area" class="hidden">
                 <div id="speaking-score" class="score-circle">--</div>
                 <div id="speaking-feedback-msg" class="result-status"></div>
@@ -427,10 +525,12 @@
             <div id="puzzle-answer-area" class="puzzle-container"></div>
             <div style="margin: 25px 0; border-bottom: 1px solid var(--border);"></div>
             <div id="puzzle-pool-area" class="puzzle-container"></div>
+            
             <div class="flex-row" style="justify-content: center; margin-top: 25px;">
                 <button class="btn btn-outline" onclick="showPuzzleHint()">提示</button>
                 <button class="btn" onclick="checkPuzzleState(true)">送出</button>
             </div>
+            
             <div class="result-msg" id="puzzle-message"></div>
             <div class="progress-text" id="puzzle-progress"></div>
         </div>
@@ -460,11 +560,14 @@
         <div class="practice-area" style="margin-top: 10px;">
             <div class="yg-word-display" id="yg-word" style="font-weight: 600;">word</div>
             <div class="yg-zh-display" id="yg-zh" style="margin-bottom: 30px;">中文意思</div>
+
             <p class="yg-tip">點擊下方按鈕在瀏覽器中開啟 YouGlish，<br>聽取母語者在真實語境中的精確發音。</p>
+
             <a id="yg-link" href="#" target="_blank" class="yg-open-btn">
                 在 YouGlish 上聆聽「<span id="yg-link-word"></span>」
                 <div class="yg-btn-label">開啟外部新分頁瀏覽 → youglish.com</div>
             </a>
+            
             <div class="flex-row" style="margin-top: 25px;">
                 <button class="btn btn-outline" onclick="prevYouglishCard()">上一個</button>
                 <button class="btn" onclick="nextYouglishCard()">下一個單字</button>
@@ -490,18 +593,22 @@
 <div id="silen-settings-overlay" class="hidden">
     <div class="silen-modal-box" style="max-width: 320px;">
         <h3 style="margin-top: 0; color: var(--accent); letter-spacing: 1px; margin-bottom: 25px; font-weight: 500;">偏好設定</h3>
+        
         <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')">
             <input type="checkbox" id="set-pronounce" style="pointer-events: none;">
             <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">自動朗讀英文單字</label>
         </div>
+        
         <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')">
             <input type="checkbox" id="set-sequential" style="pointer-events: none;">
             <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">「循序漸進」模式 <br><span style="font-size:0.75rem; color:var(--text-sub);">(錯誤即退回第一關)</span></label>
         </div>
+
         <div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')">
             <input type="checkbox" id="set-presence" style="pointer-events: none;">
             <label style="flex:1; cursor:pointer; font-size: 0.95rem; color: var(--text-main);">顯示即時學習人數 <br><span style="font-size:0.75rem; color:var(--text-sub);">(左上角動態提示)</span></label>
         </div>
+
         <div class="silen-modal-actions" style="flex-direction: column; gap: 10px;">
             <button class="btn btn-small" style="margin-top:0; width: 100%; padding: 12px;" onclick="window.SilenSettings.close()">完成設定</button>
             <button class="btn btn-outline btn-small" style="margin-top:0; width: 100%; padding: 12px; color: var(--error); border-color: #333;" onclick="window.SilenSettings.close(); logout();">登出帳號</button>
