@@ -1861,25 +1861,25 @@ window.prevYouglishCard = function() {
 };
 
 // ==========================================================================
-// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法，含多級別快取)
+// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法，支援 1~8 級快取)
 // ==========================================================================
 let gsatVocabCache = {
-    lv1: [],
-    lv2: []
+    lv1: [], lv2: [], lv3: [], lv4: [], 
+    lv5: [], lv6: [], lv7: [], lv8: []
 };
 
 // 處理下拉選單變更，更新唯讀標籤，並預先載入對應的單字庫
 window.updateGSATLevelUI = function() {
-    const level = document.getElementById('gsat-claim-level').value;
+    const level = document.getElementById('gsat-claim-level').value; // e.g., 'lv1'
     const tagInput = document.getElementById('gsat-claim-tag');
     const nameInput = document.getElementById('gsat-claim-name');
 
-    if (level === 'lv1') {
-        tagInput.value = '學測 Lv1';
-        if (nameInput.value === '學測進階 (抽取)') nameInput.value = '學測衝刺 (抽取)';
-    } else if (level === 'lv2') {
-        tagInput.value = '學測 Lv2';
-        if (nameInput.value === '學測衝刺 (抽取)') nameInput.value = '學測進階 (抽取)';
+    const levelNum = level.replace('lv', '');
+    
+    // 動態更新標籤與名稱
+    tagInput.value = `學測 Lv${levelNum}`;
+    if (nameInput.value.includes('抽取') || nameInput.value.trim() === '') {
+        nameInput.value = `學測 Lv${levelNum} 抽取`;
     }
     
     if (gsatVocabCache[level].length === 0) {
@@ -1927,7 +1927,7 @@ async function fetchGSATVocab(level) {
             btn.innerText = "開始抽取";
             btn.disabled = false;
         }
-        console.log(`學測 ${level} 載入成功，共 ${gsatVocabCache[level].length} 字`);
+        console.log(`學測 ${level.toUpperCase()} 載入成功，共 ${gsatVocabCache[level].length} 字`);
     } catch (error) {
         console.error(`載入 ${level} 失敗:`, error);
         if (window.SilenModal) window.SilenModal.alert(`載入失敗，請確認 vocabulary${level}.json 是否存在。`);
@@ -1947,7 +1947,8 @@ window.claimGSATWords = async function() {
     }
 
     const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
-    let defaultName = level === 'lv2' ? '學測進階 (抽取)' : '學測衝刺 (抽取)';
+    const levelNum = level.replace('lv', '');
+    let defaultName = `學測 Lv${levelNum} 抽取`;
     
     const nameInput = document.getElementById('gsat-claim-name').value.trim();
     const bookName = nameInput === '' ? defaultName : nameInput; 
@@ -1964,7 +1965,7 @@ window.claimGSATWords = async function() {
     let availableWords = gsatVocabCache[level].filter(w => !existingWords.has(w.en.toLowerCase()));
 
     if (availableWords.length === 0) {
-        window.SilenModal.alert(`太厲害了！學測 ${level.toUpperCase()} 的單字已經被你全部抽完囉！`);
+        window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被你全部抽完囉！`);
         return;
     }
 
