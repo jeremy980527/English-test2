@@ -156,12 +156,30 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         mainHeader.classList.remove('hidden');
+        
+        // 更新首頁右上角迷你頭像
         authContainer.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <img src="${user.photoURL}" alt="avatar" style="width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border);">
-                <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500; letter-spacing: 0.5px;">${user.displayName}</span>
-            </div>
+            <img src="${user.photoURL}" alt="avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer;" onclick="window.toggleSidebar()">
         `;
+        
+        // 更新側邊欄 Sidebar
+        const sbPlaceholder = document.getElementById('sb-avatar-placeholder');
+        const sbImg = document.getElementById('sb-avatar-img');
+        const sbName = document.getElementById('sb-user-name');
+        if(sbPlaceholder) sbPlaceholder.style.display = 'none';
+        if(sbImg) { sbImg.src = user.photoURL; sbImg.style.display = 'block'; }
+        if(sbName) sbName.innerText = user.displayName;
+
+        // 更新個人主頁 Profile
+        const pfPlaceholder = document.getElementById('profile-avatar-placeholder');
+        const pfImg = document.getElementById('profile-avatar-img');
+        const pfName = document.getElementById('profile-name');
+        const pfEmail = document.getElementById('profile-email');
+        if(pfPlaceholder) pfPlaceholder.style.display = 'none';
+        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'inline-block'; }
+        if(pfName) pfName.innerText = user.displayName;
+        if(pfEmail) pfEmail.innerText = user.email;
+
         syncFromCloud(user.uid);
         if (!window.isGuestMode && !hasShareLink) {
             window.goHome();
