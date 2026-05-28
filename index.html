@@ -114,7 +114,7 @@
             <button class="btn-icon" onclick="goHome()">返回首頁</button>
             <select id="book-lib-selector" onchange="window.toggleBookLibMode()" style="margin: 0; font-size: 1.2rem; font-weight: 400; letter-spacing: 1px; background: transparent; border: none; color: var(--text-main); outline: none; cursor: pointer;">
                 <option value="normal" style="color: black;">普通單字庫</option>
-                <option value="gsat" style="color: black;">學測單字庫 (Lv1)</option>
+                <option value="gsat" style="color: black;">學測單字庫 (抽卡)</option>
             </select>
             <div style="width: 60px;"></div>
         </div>
@@ -152,6 +152,14 @@
                 </p>
                 
                 <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 5px;">選擇單字等級</label>
+                    <select id="gsat-claim-level" class="input-box" onchange="updateGSATLevelUI()" style="width: 100%; cursor: pointer;">
+                        <option value="lv1">學測 Lv1 (基礎單字)</option>
+                        <option value="lv2">學測 Lv2 (進階單字)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
                     <label style="font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 5px;">抽取數量 (預設 30)</label>
                     <input type="number" id="gsat-claim-amount" value="30" min="1" max="100" style="width: 100%;" class="input-box">
                 </div>
@@ -172,6 +180,7 @@
             </div>
         </div>
     </div>
+
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="switchView('book-select')">返回</button>
