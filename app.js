@@ -2056,3 +2056,20 @@ window.addEventListener('load', () => {
         }
     }, 150); 
 });
+
+// =====================================
+// 🌟 側邊導覽列開關邏輯
+// =====================================
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+    }
+};
