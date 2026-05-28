@@ -164,8 +164,8 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-// 🌟 視窗陣列加入了 'profile'
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile'];
+// 🌟 視窗陣列加入了 'profile' 與 'leaderboard'
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -222,7 +222,6 @@ window.quitPractice = function() {
     window.goHome(); 
 };
 
-// 🌟 側邊導覽列開關邏輯 (就是這一段遺失了！)
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -2072,4 +2071,84 @@ window.toggleSidebar = function() {
         sidebar.classList.add('open');
         overlay.classList.add('show');
     }
+};
+
+
+// =====================================
+// 🌟 10. 排行榜與計分系統 (Leaderboard & Scoring)
+// =====================================
+window.myTotalScore = 0;
+window.lastScoreTime = 0;
+
+// 自動計算目前的賽季週數 (Week ID) - 永遠不需要後端手動重置
+window.getCurrentWeekId = function() {
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    return Math.floor(Date.now() / ONE_WEEK_MS);
+};
+
+// 核心給分控制器 (自帶防洗分機制)
+window.addScore = function(points, isGsatMastery = false) {
+    if (isGuestMode) return; 
+
+    // 🛡️ 防禦一：頻率限制 (如果距離上次加分不到 0.5 秒，判定為外掛洗分，拒絕給分)
+    const now = Date.now();
+    if (window.lastScoreTime && now - window.lastScoreTime < 500) return;
+    window.lastScoreTime = now;
+
+    // 累加本地總分
+    window.myTotalScore += points;
+    const elTotal = document.getElementById('stat-total-score');
+    if (elTotal) elTotal.innerText = window.myTotalScore;
+
+    // 🛡️ 防禦二：權重區分 (只有 "學測單字庫" 的精通模式，才計入排位賽積分)
+    let seasonPoints = isGsatMastery ? points : 0;
+
+    // 呼叫 Firebase 上傳分數
+    if (typeof window.uploadScoreToCloud === 'function') {
+        window.uploadScoreToCloud(window.myTotalScore, seasonPoints);
+    }
+};
+
+window.openLeaderboard = function() {
+    window.switchView('leaderboard');
+    const currentWeek = window.getCurrentWeekId();
+    document.getElementById('lb-current-week').innerText = `Week ${currentWeek}`;
+    
+    // 請求 Firebase 資料
+    if (typeof window.fetchLeaderboard === 'function') {
+        window.fetchLeaderboard(currentWeek);
+    } else {
+        document.getElementById('leaderboard-list').innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">連線錯誤：找不到雲端模組</div>';
+    }
+};
+
+window.renderLeaderboard = function(listData, mySeasonScore) {
+    document.getElementById('lb-my-score').innerText = mySeasonScore || 0;
+    const container = document.getElementById('leaderboard-list');
+    container.innerHTML = '';
+
+    if (!listData || listData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">本週尚無排名紀錄，快去搶頭香！</div>';
+        return;
+    }
+
+    listData.forEach((user, index) => {
+        let rankClass = '';
+        let rankText = index + 1;
+        if (index === 0) { rankClass = 'lb-rank-1'; rankText = '🥇'; }
+        else if (index === 1) { rankClass = 'lb-rank-2'; rankText = '🥈'; }
+        else if (index === 2) { rankClass = 'lb-rank-3'; rankText = '🥉'; }
+
+        const div = document.createElement('div');
+        div.className = 'lb-item';
+        div.innerHTML = `
+            <div class="lb-rank ${rankClass}">${rankText}</div>
+            <img src="${user.photo || 'https://via.placeholder.com/45'}" class="lb-avatar">
+            <div class="lb-info">
+                <div class="lb-name">${user.name}</div>
+            </div>
+            <div class="lb-score">${user.score} pts</div>
+        `;
+        container.appendChild(div);
+    });
 };
