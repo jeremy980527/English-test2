@@ -1,5 +1,5 @@
 // =====================================
-// 🌟 1. 自訂彈窗與設定引擎 (Modal & Settings)
+// 🌟 1. 自訂彈窗與設定引擎(Modal & Settings)
 // =====================================
 window.SilenModal = {
     overlay: null, msg: null, input: null, textarea: null, btnCancel: null, btnConfirm: null, resolvePromise: null,
