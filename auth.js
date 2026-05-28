@@ -1,10 +1,10 @@
 // =====================================
-// 🌐 Firebase 模組引入 (加入 signInWithPopup)
+// 🌐 Firebase 模組引入 (版本統一至 10.12.2，解決黑屏問題)
 // =====================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
 // 🔑 Firebase 專案配置
@@ -55,16 +55,13 @@ onValue(presenceRef, (snap) => {
 // 🔐 帳號登入與登出邏輯 (🌟 雙軌機制實作)
 // =====================================
 window.loginWithGoogle = () => {
-    // 判斷是否在 Android App 殼中
     const isApp = typeof AndroidBridge !== 'undefined';
 
     if (isApp) {
-        // App 環境：使用跳轉 (避開 WebView 無法彈窗的問題)
         signInWithRedirect(auth, provider).catch((error) => {
             if (window.SilenModal) window.SilenModal.alert("App 登入失敗：" + error.message);
         });
     } else {
-        // 網頁環境：使用彈出視窗 (完美避開手機瀏覽器跨網域 Cookie 遺失問題)
         signInWithPopup(auth, provider).catch((error) => {
             if (window.SilenModal) window.SilenModal.alert("網頁登入失敗：" + error.message);
         });
@@ -157,12 +154,10 @@ onAuthStateChanged(auth, (user) => {
         currentUser = user;
         mainHeader.classList.remove('hidden');
         
-        // 更新首頁右上角迷你頭像
         authContainer.innerHTML = `
             <img src="${user.photoURL}" alt="avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer;" onclick="window.toggleSidebar()">
         `;
         
-        // 更新側邊欄 Sidebar
         const sbPlaceholder = document.getElementById('sb-avatar-placeholder');
         const sbImg = document.getElementById('sb-avatar-img');
         const sbName = document.getElementById('sb-user-name');
@@ -170,7 +165,6 @@ onAuthStateChanged(auth, (user) => {
         if(sbImg) { sbImg.src = user.photoURL; sbImg.style.display = 'block'; }
         if(sbName) sbName.innerText = user.displayName;
 
-        // 更新個人主頁 Profile
         const pfPlaceholder = document.getElementById('profile-avatar-placeholder');
         const pfImg = document.getElementById('profile-avatar-img');
         const pfName = document.getElementById('profile-name');
@@ -179,6 +173,17 @@ onAuthStateChanged(auth, (user) => {
         if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'inline-block'; }
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
+
+        // 當載入個人主頁時，連線抓取生涯總積分
+        const elTotal = document.getElementById('stat-total-score');
+        if (elTotal) {
+            get(ref(rtdb, `users/${user.uid}/totalScore`)).then(snap => {
+                if (snap.exists()) {
+                    window.myTotalScore = snap.val();
+                    elTotal.innerText = window.myTotalScore;
+                }
+            });
+        }
 
         syncFromCloud(user.uid);
         if (!window.isGuestMode && !hasShareLink) {
@@ -225,25 +230,23 @@ window.downloadShareData = async (shareId) => {
     return null;
 };
 
-
-
 // =====================================
 // 🏆 賽季排行榜與分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(totalScore, seasonPointsToAdd) {
-    if (!currentUser || typeof database === 'undefined') return;
+    if (!currentUser || typeof rtdb === 'undefined') return;
     const uid = currentUser.uid;
     
     try {
-        // 更新個人的生涯總分 (這個未來會顯示在個人主頁)
-        await set(ref(database, `users/${uid}/totalScore`), totalScore);
+        // 更新個人的生涯總分
+        await set(ref(rtdb, `users/${uid}/totalScore`), totalScore);
         
-        // 如果這個分數是被允許計入排位賽的 (seasonPointsToAdd > 0)
+        // 如果分數是被允許計入排位賽的 (seasonPointsToAdd > 0)
         if (seasonPointsToAdd > 0) {
             const weekId = window.getCurrentWeekId();
-            const lbRef = ref(database, `leaderboard/week_${weekId}/${uid}`);
+            const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-            // 先取得目前的賽季分數
+            // 讀取現在的本週積分，再加上去
             const snapshot = await get(lbRef);
             let currentSeasonScore = 0;
             if (snapshot.exists()) {
@@ -252,7 +255,7 @@ window.uploadScoreToCloud = async function(totalScore, seasonPointsToAdd) {
             
             const newSeasonScore = currentSeasonScore + seasonPointsToAdd;
             
-            // 寫入更新後的分數與玩家資訊
+            // 更新本週排位
             await set(lbRef, {
                 name: currentUser.displayName || '匿名者',
                 photo: currentUser.photoURL || '',
@@ -264,10 +267,10 @@ window.uploadScoreToCloud = async function(totalScore, seasonPointsToAdd) {
 };
 
 window.fetchLeaderboard = async function(weekId) {
-    if (typeof database === 'undefined') return;
+    if (typeof rtdb === 'undefined') return;
     try {
-        // 🔥 關鍵效能優化：只抓取本週分數最高的前 10 名
-        const lbRef = query(ref(database, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
+        // 🔥 只抓取本週分數最高的前 10 名
+        const lbRef = query(ref(rtdb, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
         const snapshot = await get(lbRef);
         
         let list = [];
@@ -280,12 +283,12 @@ window.fetchLeaderboard = async function(weekId) {
                 data.uid = childSnap.key;
                 list.push(data);
                 if (data.uid === myUid) {
-                    mySeasonScore = data.score; // 順便偷看自己的賽季分數
+                    mySeasonScore = data.score; // 偷看自己的賽季分數
                 }
             });
         }
         
-        // Firebase orderByChild 是從小排到大，所以我們要反轉陣列，讓第一名在最上面
+        // 分數由大到小排序
         list.reverse();
         
         if (window.renderLeaderboard) {
