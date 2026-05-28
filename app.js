@@ -1940,10 +1940,16 @@ window.toggleSidebar = function() {
 window.myTotalScore = 0;
 window.lastScoreTime = 0;
 
-// 自動計算目前的賽季週數 (Week ID) - 永遠不需要後端手動重置
+// 自動計算目前的賽季週數 (以開服日為基準，永遠不需要後端手動重置)
 window.getCurrentWeekId = function() {
+    // 🌟 設定 SilenVocab 的開服基準日 (以現在的時間為第 1 季)
+    const launchDate = new Date("2026-05-28T00:00:00+08:00").getTime();
+    const now = Date.now();
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-    return Math.floor(Date.now() / ONE_WEEK_MS);
+    
+    // 計算經過了幾週，並 +1 讓開服第一週顯示為「1」
+    const weeksPassed = Math.floor((now - launchDate) / ONE_WEEK_MS);
+    return Math.max(1, weeksPassed + 1); 
 };
 
 // 核心給分控制器 (自帶防洗分機制)
@@ -1955,12 +1961,12 @@ window.addScore = function(points, isGsatMastery = false) {
     if (window.lastScoreTime && now - window.lastScoreTime < 500) return;
     window.lastScoreTime = now;
 
-    // 累加本地總分
+    // 累加本地總分 (生涯總積分)
     window.myTotalScore += points;
     const elTotal = document.getElementById('stat-total-score');
     if (elTotal) elTotal.innerText = window.myTotalScore;
 
-    // 🛡️ 防禦二：權重區分 (只有 "學測單字庫" 的精通模式，才計入排位賽積分)
+    // 🛡️ 防禦二：權重區分 (只有 "學測單字庫" 的精通模式升級，才計入排位賽積分)
     let seasonPoints = isGsatMastery ? points : 0;
 
     // 呼叫 Firebase 上傳分數
@@ -1972,7 +1978,9 @@ window.addScore = function(points, isGsatMastery = false) {
 window.openLeaderboard = function() {
     window.switchView('leaderboard');
     const currentWeek = window.getCurrentWeekId();
-    document.getElementById('lb-current-week').innerText = `Week ${currentWeek}`;
+    
+    // 🌟 顯示超有儀式感的賽季文字
+    document.getElementById('lb-current-week').innerText = `第 ${currentWeek} 賽季`;
     
     // 請求 Firebase 資料
     if (typeof window.fetchLeaderboard === 'function') {
