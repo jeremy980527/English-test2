@@ -1861,23 +1861,50 @@ window.prevYouglishCard = function() {
 };
 
 // ==========================================================================
-// 🎯 8. 學測單字庫抽卡系統 (智慧防重複演算法，支援 1~8 級快取)
+// 🎯 8. 自訂下拉選單控制與學測抽卡系統 (完美消除 Lv7, Lv8)
 // ==========================================================================
-let gsatVocabCache = {
-    lv1: [], lv2: [], lv3: [], lv4: [], 
-    lv5: [], lv6: [], lv7: [], lv8: []
+
+// --- 自訂下拉選單邏輯 ---
+window.toggleDropdown = function(id, event) {
+    if(event) event.stopPropagation();
+    document.querySelectorAll('.dropdown-options').forEach(el => {
+        if (el.id !== id) el.classList.add('hidden');
+    });
+    document.getElementById(id).classList.toggle('hidden');
 };
 
-// 處理下拉選單變更，更新唯讀標籤，並預先載入對應的單字庫
-window.updateGSATLevelUI = function() {
-    const level = document.getElementById('gsat-claim-level').value; // e.g., 'lv1'
-    const tagInput = document.getElementById('gsat-claim-tag');
-    const nameInput = document.getElementById('gsat-claim-name');
+document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-options').forEach(el => el.classList.add('hidden'));
+});
 
-    const levelNum = level.replace('lv', '');
+window.setLibMode = function(mode, text) {
+    document.querySelector('#lib-dropdown .dropdown-selected').innerHTML = text + ' ▾';
+    document.getElementById('lib-options').classList.add('hidden');
     
-    // 動態更新標籤與名稱
-    tagInput.value = `學測 Lv${levelNum}`;
+    if (mode === 'normal') {
+        setDisplayState('normal-book-area', true);
+        setDisplayState('gsat-book-area', false);
+    } else if (mode === 'gsat') {
+        setDisplayState('normal-book-area', false);
+        setDisplayState('gsat-book-area', true);
+        
+        const currentLevel = window.currentGsatLevel || 'lv1';
+        if (gsatVocabCache[currentLevel].length === 0) {
+            fetchGSATVocab(currentLevel);
+        }
+    }
+};
+
+window.currentGsatLevel = 'lv1';
+window.setGsatLevel = function(level, text) {
+    window.currentGsatLevel = level;
+    document.querySelector('#level-dropdown .dropdown-selected').innerHTML = text + ' ▾';
+    document.getElementById('level-options').classList.add('hidden');
+    
+    const levelNum = level.replace('lv', '');
+    document.getElementById('gsat-claim-tag').value = `學測 Lv${levelNum}`;
+    
+    const nameInput = document.getElementById('gsat-claim-name');
     if (nameInput.value.includes('抽取') || nameInput.value.trim() === '') {
         nameInput.value = `學測 Lv${levelNum} 抽取`;
     }
@@ -1887,21 +1914,9 @@ window.updateGSATLevelUI = function() {
     }
 };
 
-window.toggleBookLibMode = function() {
-    const mode = document.getElementById('book-lib-selector').value;
-    
-    if (mode === 'normal') {
-        setDisplayState('normal-book-area', true);
-        setDisplayState('gsat-book-area', false);
-    } else if (mode === 'gsat') {
-        setDisplayState('normal-book-area', false);
-        setDisplayState('gsat-book-area', true);
-        
-        const currentLevel = document.getElementById('gsat-claim-level') ? document.getElementById('gsat-claim-level').value : 'lv1';
-        if (gsatVocabCache[currentLevel].length === 0) {
-            fetchGSATVocab(currentLevel);
-        }
-    }
+// --- 學測抽卡核心 ---
+let gsatVocabCache = {
+    lv1: [], lv2: [], lv3: [], lv4: [], lv5: [], lv6: []
 };
 
 async function fetchGSATVocab(level) {
@@ -1939,7 +1954,7 @@ async function fetchGSATVocab(level) {
 }
 
 window.claimGSATWords = async function() {
-    const level = document.getElementById('gsat-claim-level').value;
+    const level = window.currentGsatLevel || 'lv1';
     
     if (gsatVocabCache[level].length === 0) {
         await fetchGSATVocab(level);
@@ -1956,7 +1971,6 @@ window.claimGSATWords = async function() {
 
     let existingWords = new Set();
     window.books.forEach(book => {
-        // 嚴謹地過濾所有包含「學測」標籤或是標記為 isGSAT 的單字，防止跨層級重複抽到
         if (book.tag.includes('學測') || book.isGSAT) {
             book.words.forEach(w => existingWords.add(w.en.toLowerCase()));
         }
