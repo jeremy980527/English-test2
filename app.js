@@ -478,7 +478,7 @@ function startGuestMode(data) {
 }
 
 // =====================================
-// 🌟 5. 單字簿管理 (雙軌獨立渲染機制)
+// 🌟 5. 單字簿管理 (加入 Sortable 拖拉排序)
 // =====================================
 window.updateHomeSummary = function() {
     const summaryEl = document.getElementById('home-book-summary');
@@ -506,14 +506,14 @@ window.renderBookList = function() {
     if (normalList) normalList.innerHTML = '';
     if (gsatList) gsatList.innerHTML = '';
 
-    const renderGroup = (books, container, emptyMsg) => {
-        if (books.length === 0) {
+    const renderGroup = (booksToRender, container, emptyMsg, isGsat) => {
+        if (booksToRender.length === 0) {
             container.innerHTML = `<div style="color:var(--text-sub); text-align:center; padding: 20px;">${emptyMsg}</div>`;
             return;
         }
         
         const groups = {};
-        books.forEach(book => {
+        booksToRender.forEach(book => {
             const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
             if (!groups[t]) groups[t] = [];
             groups[t].push(book);
@@ -526,21 +526,61 @@ window.renderBookList = function() {
         });
 
         keys.forEach(k => {
+            // Header 包含群組標題與排序按鈕
+            const headerWrap = document.createElement('div');
+            headerWrap.style.display = 'flex';
+            headerWrap.style.justifyContent = 'space-between';
+            headerWrap.style.alignItems = 'center';
+            headerWrap.style.marginTop = '15px';
+            headerWrap.style.marginBottom = '10px';
+
             const header = document.createElement('div');
             header.className = 'group-title';
             header.innerText = k;
-            container.appendChild(header);
-            
+            header.style.margin = '0';
+
+            const sortBtn = document.createElement('button');
+            sortBtn.className = 'btn-icon sort-toggle';
+            sortBtn.innerHTML = '⋮'; 
+            sortBtn.title = '排序單字簿';
+
+            headerWrap.appendChild(header);
+            headerWrap.appendChild(sortBtn);
+            container.appendChild(headerWrap);
+
+            // 存放該群組內所有書本的容器，給 SortableJS 抓取
+            const listContainer = document.createElement('div');
+            listContainer.className = 'sortable-group';
+            listContainer.dataset.tag = k;
+
+            // 點擊 ⋮ 切換編輯排序模式
+            sortBtn.onclick = (e) => {
+                const isActive = listContainer.classList.toggle('sorting-active');
+                e.currentTarget.classList.toggle('active', isActive);
+                listContainer.querySelectorAll('.drag-handle').forEach(el => el.classList.toggle('hidden', !isActive));
+                listContainer.querySelectorAll('.book-checkbox').forEach(el => el.classList.toggle('hidden', isActive));
+                listContainer.querySelectorAll('.edit-btn').forEach(el => el.classList.toggle('hidden', isActive));
+            };
+
             groups[k].forEach(book => {
                 const div = document.createElement('div');
                 div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                div.dataset.id = book.id; // 綁定 ID 供拖曳排序後存檔辨識
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'checkbox-wrapper';
                 wrapper.style.flex = '1';
-                
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+
+                // 隱藏的拖移把手 ☰
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle hidden';
+                dragHandle.innerHTML = '☰';
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
+                checkbox.className = 'book-checkbox';
                 checkbox.checked = selectedBookIds.has(book.id);
                 checkbox.style.pointerEvents = 'none';
                 
@@ -549,11 +589,12 @@ window.renderBookList = function() {
                 info.style.marginLeft = '15px';
                 info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 字)</span>`;
                 
+                wrapper.appendChild(dragHandle);
                 wrapper.appendChild(checkbox);
                 wrapper.appendChild(info);
                 
                 const editBtn = document.createElement('button');
-                editBtn.className = 'btn-icon';
+                editBtn.className = 'btn-icon edit-btn';
                 editBtn.innerHTML = '編輯'; 
                 editBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -564,6 +605,8 @@ window.renderBookList = function() {
                 div.appendChild(editBtn);
                 
                 div.onclick = (e) => {
+                    // 如果正在排序模式，不允許勾選
+                    if (listContainer.classList.contains('sorting-active')) return;
                     if (selectedBookIds.has(book.id)) {
                         selectedBookIds.delete(book.id);
                     } else {
@@ -571,18 +614,60 @@ window.renderBookList = function() {
                     }
                     window.renderBookList();
                 };
-                container.appendChild(div);
+                listContainer.appendChild(div);
             });
+
+            container.appendChild(listContainer);
+
+            // 初始化 SortableJS
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(listContainer, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    touchStartThreshold: 3, 
+                    onEnd: function() {
+                        window.handleSortEnd(k, listContainer, isGsat);
+                    }
+                });
+            }
         });
     };
 
     const normalBooks = window.books.filter(b => !b.isGSAT);
     const gsatBooks = window.books.filter(b => b.isGSAT);
 
-    if (normalList) renderGroup(normalBooks, normalList, '資料庫無單字簿，請在下方建立。');
-    if (gsatList) renderGroup(gsatBooks, gsatList, '尚無學測單字簿，請在下方抽取。');
+    if (normalList) renderGroup(normalBooks, normalList, '資料庫無單字簿，請在下方建立。', false);
+    if (gsatList) renderGroup(gsatBooks, gsatList, '尚無學測單字簿，請在下方抽取。', true);
 
     if(typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
+};
+
+// 拖曳結束後的跨陣列精準備份邏輯
+window.handleSortEnd = function(tag, listContainer, isGsat) {
+    const newOrderIds = Array.from(listContainer.children).map(el => Number(el.dataset.id));
+    
+    let indices = [];
+    window.books.forEach((b, index) => {
+        const t = (b.tag && b.tag.trim() !== '') ? b.tag.trim() : '未分類';
+        const bIsGsat = !!b.isGSAT;
+        if (t === tag && bIsGsat === isGsat) {
+            indices.push(index);
+        }
+    });
+
+    if (indices.length !== newOrderIds.length) return;
+
+    let bookMap = {};
+    window.books.forEach(b => bookMap[b.id] = b);
+
+    // 把 DOM 順序洗回去原陣列中的絕對位置，確保其他群組不被影響
+    indices.forEach((globalIndex, i) => {
+        const newId = newOrderIds[i];
+        window.books[globalIndex] = bookMap[newId];
+    });
+
+    window.saveData();
 };
 
 window.handleFileUpload = function(event) {
@@ -1861,10 +1946,8 @@ window.prevYouglishCard = function() {
 };
 
 // ==========================================================================
-// 🎯 8. 自訂下拉選單控制與學測抽卡系統 (完美消除 Lv7, Lv8)
+// 🎯 8. 自訂下拉選單控制與學測抽卡系統 (拔除 Lv7, Lv8)
 // ==========================================================================
-
-// --- 自訂下拉選單邏輯 ---
 window.toggleDropdown = function(id, event) {
     if(event) event.stopPropagation();
     document.querySelectorAll('.dropdown-options').forEach(el => {
@@ -1914,7 +1997,6 @@ window.setGsatLevel = function(level, text) {
     }
 };
 
-// --- 學測抽卡核心 ---
 let gsatVocabCache = {
     lv1: [], lv2: [], lv3: [], lv4: [], lv5: [], lv6: []
 };
