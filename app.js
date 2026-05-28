@@ -1556,14 +1556,23 @@ window.toggleSidebar = function() {
 window.myTotalScore = 0;
 window.lastScoreTime = 0;
 
+// 🌟 彈出計分規則說明
+window.showScoringRules = function() {
+    window.SilenModal.alert(
+        "🏆 賽季計分規則\n\n" +
+        "為了確保排位賽的公平性，系統設有以下防洗分機制：\n\n" +
+        "1. 只有在「精通模式」中將單字完全精通 (通過延遲評測畢業)，才能一口氣獲得 50 分的大獎勵，中間升級階段不給分。\n\n" +
+        "2. 自建的普通單字簿需包含「至少 15 個單字」才具備計分資格。\n\n" +
+        "3. 學測單字庫依據難度 (Lv1~Lv6) 享有額外的通關分數加成 (最高可達 3 倍)！"
+    );
+};
+
 // 自動計算目前的賽季週數 (以開服日為基準，永遠不需要後端手動重置)
 window.getCurrentWeekId = function() {
-    // 🌟 設定 SilenVocab 的開服基準日 (以現在的時間為第 1 季)
     const launchDate = new Date("2026-05-28T00:00:00+08:00").getTime();
     const now = Date.now();
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     
-    // 計算經過了幾週，並 +1 讓開服第一週顯示為「1」
     const weeksPassed = Math.floor((now - launchDate) / ONE_WEEK_MS);
     return Math.max(1, weeksPassed + 1); 
 };
@@ -1572,7 +1581,7 @@ window.getCurrentWeekId = function() {
 window.addScore = function(points, isGsatMastery = false) {
     if (isGuestMode) return; 
 
-    // 🛡️ 防禦一：頻率限制 (如果距離上次加分不到 0.5 秒，判定為外掛洗分，拒絕給分)
+    // 🛡️ 防禦一：頻率限制
     const now = Date.now();
     if (window.lastScoreTime && now - window.lastScoreTime < 500) return;
     window.lastScoreTime = now;
@@ -1582,7 +1591,7 @@ window.addScore = function(points, isGsatMastery = false) {
     const elTotal = document.getElementById('stat-total-score');
     if (elTotal) elTotal.innerText = window.myTotalScore;
 
-    // 🛡️ 防禦二：權重區分 (只有 "學測單字庫" 的精通模式升級，才計入排位賽積分)
+    // 🛡️ 防禦二：權重區分 (判斷是否具備排位賽積分資格)
     let seasonPoints = isGsatMastery ? points : 0;
 
     // 呼叫 Firebase 上傳分數
@@ -1595,10 +1604,8 @@ window.openLeaderboard = function() {
     window.switchView('leaderboard');
     const currentWeek = window.getCurrentWeekId();
     
-    // 🌟 顯示超有儀式感的賽季文字
     document.getElementById('lb-current-week').innerText = `第 ${currentWeek} 賽季`;
     
-    // 請求 Firebase 資料
     if (typeof window.fetchLeaderboard === 'function') {
         window.fetchLeaderboard(currentWeek);
     } else {
