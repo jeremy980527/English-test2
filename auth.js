@@ -224,3 +224,74 @@ window.downloadShareData = async (shareId) => {
     }
     return null;
 };
+
+
+
+// =====================================
+// 🏆 賽季排行榜與分數同步邏輯
+// =====================================
+window.uploadScoreToCloud = async function(totalScore, seasonPointsToAdd) {
+    if (!currentUser || typeof database === 'undefined') return;
+    const uid = currentUser.uid;
+    
+    try {
+        // 更新個人的生涯總分 (這個未來會顯示在個人主頁)
+        await set(ref(database, `users/${uid}/totalScore`), totalScore);
+        
+        // 如果這個分數是被允許計入排位賽的 (seasonPointsToAdd > 0)
+        if (seasonPointsToAdd > 0) {
+            const weekId = window.getCurrentWeekId();
+            const lbRef = ref(database, `leaderboard/week_${weekId}/${uid}`);
+            
+            // 先取得目前的賽季分數
+            const snapshot = await get(lbRef);
+            let currentSeasonScore = 0;
+            if (snapshot.exists()) {
+                currentSeasonScore = snapshot.val().score || 0;
+            }
+            
+            const newSeasonScore = currentSeasonScore + seasonPointsToAdd;
+            
+            // 寫入更新後的分數與玩家資訊
+            await set(lbRef, {
+                name: currentUser.displayName || '匿名者',
+                photo: currentUser.photoURL || '',
+                score: newSeasonScore,
+                timestamp: Date.now()
+            });
+        }
+    } catch(e) { console.error("上傳分數失敗", e); }
+};
+
+window.fetchLeaderboard = async function(weekId) {
+    if (typeof database === 'undefined') return;
+    try {
+        // 🔥 關鍵效能優化：只抓取本週分數最高的前 10 名
+        const lbRef = query(ref(database, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
+        const snapshot = await get(lbRef);
+        
+        let list = [];
+        let mySeasonScore = 0;
+        const myUid = currentUser ? currentUser.uid : null;
+
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnap) => {
+                const data = childSnap.val();
+                data.uid = childSnap.key;
+                list.push(data);
+                if (data.uid === myUid) {
+                    mySeasonScore = data.score; // 順便偷看自己的賽季分數
+                }
+            });
+        }
+        
+        // Firebase orderByChild 是從小排到大，所以我們要反轉陣列，讓第一名在最上面
+        list.reverse();
+        
+        if (window.renderLeaderboard) {
+            window.renderLeaderboard(list, mySeasonScore);
+        }
+    } catch(e) {
+        console.error("抓取排行榜失敗", e);
+    }
+};
