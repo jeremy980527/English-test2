@@ -833,7 +833,7 @@ window.renderWordList = function() {
                 </div>
             `;
         } else {
-            // 👁️ 預覽模式：新增獨立的實體「✏️」編輯按鈕
+            // 👁️ 預覽模式：去 emoji 版，使用黑色「修改」實體按鈕
             let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
             div.innerHTML = `
                 <div style="flex: 1; padding-right: 15px;">
@@ -841,7 +841,7 @@ window.renderWordList = function() {
                     <div class="word-zh">${word.zh.join(', ')}</div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <button class="btn-icon" style="border:none; font-size: 1.1rem; padding: 5px; margin: 0; color: var(--text-sub);" onclick="window.startEditWord(${actualIndex})" title="編輯單字">✏️</button>
+                    <button class="btn btn-small" style="margin: 0; padding: 4px 12px; background: #222; color: #fff; border: 1px solid #444; font-size: 0.85rem;" onclick="window.startEditWord(${actualIndex})">修改</button>
                     <button class="btn-icon btn-delete" style="border:none; padding: 5px; margin: 0;" onclick="window.deleteWord(${actualIndex})" title="刪除單字">✕</button>
                 </div>
             `;
@@ -884,7 +884,7 @@ window.addWord = function() {
     const zhStr = document.getElementById('input-zh').value.trim();
     if(!en || !zhStr) { window.SilenModal.alert("英文與中文欄位不可為空"); return; }
     
-    window.books.find(b => b.id === currentBookId).words.push({ 
+    window.books.find(b => b.id === currentBookId).push({ 
         en: en, 
         pos: pos,
         zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) 
