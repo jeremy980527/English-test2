@@ -906,17 +906,6 @@ window.finalizeMasterySession = function() {
     if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
     if (typeof window.saveData === 'function') window.saveData(); 
 
-    // 🌟 修正：一口氣打包所有分數送出，並使用 force=true 繞過防連點機制
-    if (typeof window.addScore === 'function' && totalPoints > 0) {
-        window.addScore(totalPoints, totalSeasonPoints, true);
-    }
-
-    pendingMasteredWords = [];
-};
-
-    if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
-    if (typeof window.saveData === 'function') window.saveData(); 
-
     pendingMasteredWords.forEach(word => {
         let stepKey = (masteryModeType === 'comprehensive') ? 'Comp_Grad' : 'Conn_Grad';
         let rw = calculateReward(word, stepKey);
