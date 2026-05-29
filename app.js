@@ -125,8 +125,7 @@ window.toggleSetting = function(type) {
 };
 
 // =====================================
-// =====================================
-// 2. 全局變數與基礎邏輯 (Globals)
+// 🌟 2. 全局變數與基礎邏輯 (Globals)
 // =====================================
 window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
 let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
@@ -165,7 +164,8 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard'];
+// 🌟 修正：把 'pos' 加入畫面白名單中！
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -211,7 +211,6 @@ window.quitPractice = function() {
         window.speechSynthesis.cancel(); 
     }
     
-    // 🌟 關鍵核心攔截：退出任何測驗前，先強制呼叫延遲結算引擎，打包上傳雲端
     if (typeof window.finalizeMasterySession === 'function') {
         window.finalizeMasterySession();
     }
@@ -227,7 +226,6 @@ window.quitPractice = function() {
     window.goHome(); 
 };
 
-// 🌟 側邊導覽列開關邏輯 (剛剛不小心被我遺漏的拼圖)
 window.toggleSidebar = function() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
