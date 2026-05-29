@@ -881,18 +881,38 @@ window.bufferWordAsMastered = function(targetWord) {
 window.finalizeMasterySession = function() {
     if (pendingMasteredWords.length === 0) return;
 
-    console.log(`🎬 偵測到精通練習結束，開始大批次結算... 共有 ${pendingMasteredWords.length} 個新精通單字`);
+    console.log(`🎬 偵測到精通練習結束，開始大批次結算... 共有 ${pendingMasteredWords.length} 個新精通單字/片語`);
     
+    let totalPoints = 0;
+    let totalSeasonPoints = 0;
+
     pendingMasteredWords.forEach(targetWord => {
+        // 寫入精通狀態
         window.books.forEach(book => {
             if (book.id === targetWord.bookId) {
                 let w = book.words.find(x => x.en === targetWord.en);
-                if (w && !w.mastered) {
-                    w.mastered = true;
-                }
+                if (w && !w.mastered) w.mastered = true;
             }
         });
+        
+        // 計算這個單字應得的分數
+        let stepKey = (masteryModeType === 'comprehensive' || masteryModeType === 'phrase') ? 'Comp_Grad' : 'Conn_Grad';
+        let rw = window.calculateReward(targetWord, stepKey);
+        
+        totalPoints += rw.points;
+        if (rw.isSeasonEligible) totalSeasonPoints += rw.points;
     });
+
+    if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
+    if (typeof window.saveData === 'function') window.saveData(); 
+
+    // 🌟 修正：一口氣打包所有分數送出，並使用 force=true 繞過防連點機制
+    if (typeof window.addScore === 'function' && totalPoints > 0) {
+        window.addScore(totalPoints, totalSeasonPoints, true);
+    }
+
+    pendingMasteredWords = [];
+};
 
     if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
     if (typeof window.saveData === 'function') window.saveData(); 
