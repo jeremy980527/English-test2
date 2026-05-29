@@ -498,8 +498,9 @@ function startGuestMode(data) {
     }
 }
 
+
 // =====================================
-// 🌟 5. 題庫管理與精通度計算 (含片語庫支援)
+// 🌟 5. 題庫管理與精通度計算 (支援詞性 POS)
 // =====================================
 window.updateProfileStats = function() {
     let count = 0;
@@ -531,7 +532,6 @@ window.updateHomeSummary = function() {
     } else {
         summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${isPhraseSelected?'片語':'單字'}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
         
-        // 🌟 根據選取的題庫類型，自動切換首頁的練習模式 UI
         if (isPhraseSelected) {
             setDisplayState('word-practice-area', false);
             setDisplayState('phrase-practice-area', true);
@@ -607,7 +607,6 @@ window.renderBookList = function() {
                 div.onclick = () => {
                     if (listContainer.classList.contains('sorting-active')) return;
                     
-                    // 🌟 排他性選取邏輯：單字與片語不可混選
                     if (!selectedBookIds.has(book.id)) {
                         let currentType = book.isPhrase ? 'phrase' : 'word';
                         let hasConflict = false;
@@ -618,14 +617,11 @@ window.renderBookList = function() {
                             }
                         });
                         
-                        if (hasConflict) {
-                            selectedBookIds.clear(); // 清空不同類型的選取，實現物理隔離
-                        }
+                        if (hasConflict) selectedBookIds.clear(); 
                         selectedBookIds.add(book.id);
                     } else {
                         selectedBookIds.delete(book.id);
                     }
-                    
                     window.renderBookList();
                 };
                 listContainer.appendChild(div);
@@ -697,6 +693,7 @@ window.addPhraseBookSimple = function() {
     window.saveData(); document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; window.renderBookList();
 };
 
+// 🌟 全新支援三段式解析：英文 - 中文 - 詞性
 window.addBookWithImport = function() {
     const name = document.getElementById('new-book-name').value.trim();
     const tag = document.getElementById('new-book-tag').value.trim();
@@ -706,14 +703,30 @@ window.addBookWithImport = function() {
     
     const lines = rawText.split('\n'); const newWords = [];
     lines.forEach(line => {
-        let separatorIndex = line.indexOf('-'); if (separatorIndex === -1) separatorIndex = line.indexOf('–'); 
-        if (separatorIndex > 0) {
-            const en = line.substring(0, separatorIndex).trim();
-            const zhStr = line.substring(separatorIndex + 1).trim();
-            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) });
+        let sep1 = line.indexOf('-'); if (sep1 === -1) sep1 = line.indexOf('–'); 
+        if (sep1 > 0) {
+            const en = line.substring(0, sep1).trim();
+            let remainder = line.substring(sep1 + 1).trim();
+            
+            let sep2 = remainder.indexOf('-'); if (sep2 === -1) sep2 = remainder.indexOf('–');
+            let zhStr = remainder;
+            let pos = '';
+            
+            if (sep2 > 0) {
+                zhStr = remainder.substring(0, sep2).trim();
+                pos = remainder.substring(sep2 + 1).trim();
+            }
+            
+            if (en && zhStr) {
+                newWords.push({ 
+                    en: en, 
+                    zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s),
+                    pos: pos 
+                });
+            }
         }
     });
-    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文」結構"); return; }
+    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文 - 詞性(選填)」結構"); return; }
     window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: false }); 
     window.saveData();
     document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; document.getElementById('import-content').value = ''; 
@@ -733,7 +746,7 @@ window.addPhraseBookWithImport = function() {
         if (separatorIndex > 0) {
             const en = line.substring(0, separatorIndex).trim();
             const zhStr = line.substring(separatorIndex + 1).trim();
-            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) });
+            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s), pos: '' });
         }
     });
     if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文片語 - 中文」結構"); return; }
@@ -748,7 +761,13 @@ window.toggleExportMenu = function() { document.getElementById('export-menu').cl
 window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
     if (!book || book.words.length === 0) { window.SilenModal.alert("無可用數據匯出。"); window.toggleExportMenu(); return; }
-    const content = book.words.map(w => `${w.en} - ${w.zh.join(' / ')}`).join('\n');
+    
+    // 匯出時一併把詞性帶出
+    const content = book.words.map(w => {
+        if (w.pos && w.pos.trim() !== '') return `${w.en} - ${w.zh.join(' / ')} - ${w.pos}`;
+        return `${w.en} - ${w.zh.join(' / ')}`;
+    }).join('\n');
+    
     if (type === 'copy') {
         if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(content).then(() => window.SilenModal.alert("已複製到剪貼簿。")).catch(() => window.SilenModal.prompt("請複製以下內容：", content)); } 
         else { window.SilenModal.prompt("請複製以下內容：", content); }
@@ -784,20 +803,34 @@ window.saveBookInfo = function() {
     book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
 };
 
+// 🌟 單字列表加上詞性標籤渲染
 window.renderWordList = function() {
     const book = window.books.find(b => b.id === currentBookId); const list = document.getElementById('word-list'); list.innerHTML = '';
     [...book.words].reverse().forEach((word, index) => {
         const div = document.createElement('div'); div.className = 'word-item';
-        div.innerHTML = `<div><div class="word-en">${word.en}</div><div class="word-zh">${word.zh.join(', ')}</div></div><button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${book.words.length - 1 - index})">✕</button>`;
+        let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
+        div.innerHTML = `<div><div class="word-en">${word.en} ${posHtml}</div><div class="word-zh">${word.zh.join(', ')}</div></div><button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${book.words.length - 1 - index})">✕</button>`;
         list.appendChild(div);
     });
 };
 
 window.addWord = function() {
-    const en = document.getElementById('input-en').value.trim(); const zhStr = document.getElementById('input-zh').value.trim();
-    if(!en || !zhStr) { window.SilenModal.alert("欄位不完整"); return; }
-    window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) }); 
-    window.saveData(); document.getElementById('input-en').value = ''; document.getElementById('input-zh').value = ''; document.getElementById('input-en').focus(); window.renderWordList();
+    const en = document.getElementById('input-en').value.trim(); 
+    const pos = document.getElementById('input-pos').value.trim(); 
+    const zhStr = document.getElementById('input-zh').value.trim();
+    if(!en || !zhStr) { window.SilenModal.alert("英文與中文欄位不可為空"); return; }
+    
+    window.books.find(b => b.id === currentBookId).words.push({ 
+        en: en, 
+        pos: pos,
+        zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) 
+    }); 
+    window.saveData(); 
+    document.getElementById('input-en').value = ''; 
+    document.getElementById('input-pos').value = ''; 
+    document.getElementById('input-zh').value = ''; 
+    document.getElementById('input-en').focus(); 
+    window.renderWordList();
 };
 
 window.deleteWord = function(index) { 
@@ -809,7 +842,7 @@ window.getPracticeWords = function() {
     let queue = []; 
     window.books.forEach(book => { 
         if (selectedBookIds.has(book.id)) {
-            book.words.forEach(w => queue.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, scored: false }));
+            book.words.forEach(w => queue.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, scored: false, pos: w.pos || '' }));
         }
     });
     if (queue.length === 0) { window.SilenModal.alert("範圍內不含數據。"); return []; } 
@@ -821,7 +854,7 @@ window.getSelectedWordsPool = function() {
     let pool = []; 
     window.books.forEach(book => { 
         if (selectedBookIds.has(book.id)) {
-            book.words.forEach(w => pool.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false }));
+            book.words.forEach(w => pool.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, pos: w.pos || '' }));
         }
     }); 
     return pool;
@@ -2335,4 +2368,89 @@ window.checkPhraseAnswer = function(isCorrect) {
     
     const nextBtn = document.getElementById('mastery-btn-next');
     nextBtn.onclick = () => window.nextPhraseMasteryTurn();
+};
+
+
+
+// ==========================================================================
+// 🌟 12. 詞性挑戰模式 (POS Challenge)
+// ==========================================================================
+window.setupPosMode = function() { 
+    let rawQueue = window.getPracticeWords(); 
+    if (!rawQueue || rawQueue.length === 0) return; 
+    
+    // 自動過濾掉沒有填寫詞性的單字
+    practiceQueue = rawQueue.filter(w => w.pos && w.pos.trim() !== '');
+    
+    if (practiceQueue.length === 0) {
+        window.SilenModal.alert("目前選取的題庫中，沒有包含「詞性標記」的單字！\n\n💡 提示：請先到題庫編輯區，或重新匯入帶有詞性的單字格式。");
+        return;
+    }
+    
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    
+    currentMode = 'pos'; 
+    currentCardIndex = 0; 
+    initialQueueLength = practiceQueue.length; 
+    completedCount = 0; 
+    
+    setDisplayState('pos-seq-badge', isSequentialMode, 'inline-block'); 
+    window.switchView('pos'); 
+    window.showPosNextCard(); 
+};
+
+window.showPosNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    
+    const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('pos-interaction-area', true, 'block'); 
+    setDisplayState('pos-feedback-area', false); 
+    
+    document.getElementById('pos-progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    
+    document.getElementById('pos-word-display').innerText = w.en; 
+    document.getElementById('pos-zh-display').innerText = w.zh.join(' / '); 
+    document.getElementById('pos-feedback-question-copy').innerText = w.en; 
+};
+
+window.checkPosAnswer = function(selectedPos) {
+    if (currentCardIndex >= practiceQueue.length) return;
+    const w = practiceQueue[currentCardIndex]; 
+    
+    // 嚴謹的比對邏輯 (去除點號與空白，並支援一個單字有多個詞性的寫法，例如 "n., v.")
+    const ans = selectedPos.toLowerCase().replace(/\./g, '').trim();
+    const correctPosArr = w.pos.toLowerCase().split(/[\/,;，；\s]+/).map(x => x.replace(/\./g, '').trim());
+    
+    let c = correctPosArr.includes(ans);
+    
+    lastAnswerCorrect = c; 
+    if (c && !w.scored) { 
+        w.scored = true; 
+        if (typeof window.addScore === 'function') window.addScore(10, false); 
+    }
+    
+    if (!c && !isSequentialMode) window.requeueWord(w); 
+    
+    setDisplayState('pos-interaction-area', false); 
+    setDisplayState('pos-feedback-area', true, 'flex'); 
+    
+    const i = document.getElementById('pos-feedback-icon'); 
+    const s = document.getElementById('pos-feedback-status'); 
+    document.getElementById('pos-feedback-answer').innerText = w.pos; 
+    
+    if (c) { 
+        i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 分)'; s.className = 'result-status status-correct'; 
+    } else { 
+        i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; 
+    } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handlePosNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { 
+        window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showPosNextCard(); }); 
+    } else { 
+        currentCardIndex++; window.showPosNextCard(); 
+    }
 };
