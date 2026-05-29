@@ -303,8 +303,6 @@ window.fetchLeaderboard = async function(weekId) {
 // ==========================================
 // 🌟 同步更新使用者名稱至 Firebase 雲端與排行榜
 // ==========================================
-import { updateProfile } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore"; 
 
 window.updateCloudUserName = async function(newName) {
     // 1. 確認使用者是否已登入
