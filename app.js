@@ -1993,18 +1993,24 @@ window.getCurrentWeekId = function() {
     return Math.max(1, weeksPassed + 1); 
 };
 
-window.addScore = function(points, isGsatMastery = false) {
+window.addScore = function(points, isSeasonEligible = false, force = false) {
     if (isGuestMode) return; 
 
     const now = Date.now();
-    if (window.lastScoreTime && now - window.lastScoreTime < 500) return;
+    // 🌟 修正：加上 force 參數，讓大批次結算可以繞過 500ms 的防刷分限制
+    if (!force && window.lastScoreTime && now - window.lastScoreTime < 500) return;
     window.lastScoreTime = now;
 
     window.myTotalScore += points;
     const elTotal = document.getElementById('stat-total-score');
     if (elTotal) elTotal.innerText = window.myTotalScore;
 
-    let seasonPoints = isGsatMastery ? points : 0;
+    let seasonPoints = 0;
+    if (typeof isSeasonEligible === 'number') {
+        seasonPoints = isSeasonEligible; // 支援批次傳入整包排位分
+    } else {
+        seasonPoints = isSeasonEligible ? points : 0; // 兼容原版布林值
+    }
 
     if (typeof window.uploadScoreToCloud === 'function') {
         window.uploadScoreToCloud(window.myTotalScore, seasonPoints);
