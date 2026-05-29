@@ -110,6 +110,7 @@
 </head>
 <body>
 
+<!-- 🌟 側邊導覽列 (Sidebar) -->
 <div id="sidebar-overlay" class="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 <div id="sidebar" class="sidebar">
     <div class="sidebar-header" onclick="window.switchView('profile'); window.toggleSidebar();">
@@ -128,6 +129,7 @@
 
 <div class="container">
     
+    <!-- 頂部導航 -->
     <header id="main-header" class="hidden" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <button class="btn-icon" onclick="window.toggleSidebar()" style="font-size: 1.6rem; padding: 0 5px; color: var(--text-main);">☰</button>
@@ -145,6 +147,9 @@
         </div>
     </header>
 
+    <!-- ========================================================= -->
+    <!-- 🏆 每週排行榜 (Leaderboard View) -->
+    <!-- ========================================================= -->
     <div id="view-leaderboard" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -166,6 +171,11 @@
             <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">連線至伺服器中...</div>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 個人主頁 (Profile View) -->
+    <!-- ========================================================= -->
     <div id="view-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -204,6 +214,11 @@
             </p>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 歡迎頁面 (Landing View) -->
+    <!-- ========================================================= -->
     <div id="view-landing" class="hidden">
         <div class="landing-hero" style="text-align: center; padding: 60px 0; animation: fadeIn 0.6s ease;">
             <h1 style="font-size: 2.8rem; font-weight: 200; letter-spacing: 8px; margin-bottom: 10px; color: var(--accent);">SILENVOCAB</h1>
@@ -230,6 +245,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 首頁 (Home View) -->
+    <!-- ========================================================= -->
     <div id="view-home" class="hidden">
         <div class="card" style="text-align: center; padding: 30px 20px; border-color: var(--border);">
             <div id="home-book-summary" style="font-size: 1.05rem; margin-bottom: 20px; letter-spacing: 0.5px;">
@@ -241,6 +259,7 @@
         <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
             <h2 style="letter-spacing: 1px; color: var(--text-sub); font-size: 1.1rem; font-weight: 500; margin-bottom: 20px;">開始練習</h2>
             
+            <!-- 🌟 單字專屬模式 -->
             <div id="word-practice-area">
                 <div class="flex-row" style="margin-bottom: 20px;">
                     <button class="btn mastery-btn-comp" style="flex: 1; padding: 16px; font-size: 0.95rem; margin-top: 0; letter-spacing: 1px;" onclick="window.setupMasteryMode('comprehensive')">
@@ -259,6 +278,7 @@
                     <button class="btn btn-outline" onclick="window.setupMultipleChoice('en-to-zh')">選擇題 (英選中)</button>
                     <button class="btn btn-outline" onclick="window.setupMultipleChoice('zh-to-en')">選擇題 (中選英)</button>
                 </div>
+                <!-- 🌟 新增詞性挑戰按鈕 -->
                 <div class="flex-row" style="margin-top: 10px;">
                     <button class="btn btn-outline" style="border-color:#ff9800; color:#ff9800;" onclick="window.setupPosMode()">詞性挑戰</button>
                     <button class="btn btn-outline" onclick="window.setupPuzzleMode()">拼圖</button>
@@ -269,6 +289,7 @@
                 </div>
             </div>
 
+            <!-- 🌟 片語專屬模式 -->
             <div id="phrase-practice-area" class="hidden">
                 <button class="btn mastery-btn-comp" style="width: 100%; padding: 20px; font-size: 1.1rem; letter-spacing: 1px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border-color: #1e3c72; margin-bottom: 15px;" onclick="window.setupPhraseMasteryMode()">
                     片語綜合練習模式<br><span style="font-size: 0.8rem; font-weight: normal; opacity: 0.8; letter-spacing: 0px;">(含雙向選擇、斷點拼圖與盲打)</span>
@@ -279,6 +300,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 單字/片語簿庫 -->
+    <!-- ========================================================= -->
     <div id="view-book-select" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回首頁</button>
@@ -295,6 +319,7 @@
             <div style="width: 60px;"></div>
         </div>
         
+        <!-- 單字簿區域 -->
         <div id="normal-book-area">
             <div id="normal-book-list"></div>
             
@@ -306,6 +331,7 @@
                 </div>
                 <div style="display: flex; justify-content: flex-end;"><span class="import-trigger" onclick="window.toggleImportArea('word')">批量匯入 / 讀取檔案</span></div>
                 <div id="import-area" class="hidden import-section">
+                    <!-- 🌟 匯入格式提示更新 -->
                     <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0; letter-spacing: 0.5px;">格式: <span style="color:var(--accent)">英文 - 中文 - 詞性(選填)</span> (換行新增)</p>
                     <div style="margin-bottom: 15px;">
                         <input type="file" id="import-file" accept=".txt" style="display: none;" onchange="window.handleFileUpload(event, 'word')">
@@ -363,6 +389,7 @@
             </div>
         </div>
 
+        <!-- 🌟 片語簿區域 -->
         <div id="phrase-book-area" class="hidden">
             <div id="phrase-book-list"></div>
             
@@ -387,10 +414,15 @@
         </div>
 
     </div>
+    <!-- ========================================================= -->
+
+    <!-- ========================================================= -->
+    <!-- 編輯視窗 -->
+    <!-- ========================================================= -->
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.switchView('book-select')">返回</button>
-            <h2 id="edit-book-title" style="font-size: 1.1rem; font-weight: 400; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">編輯單字簿</h2>
+            <h2 id="edit-book-title" style="font-size: 1.1rem; font-weight: 400; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">編輯題庫</h2>
             <div class="nav-bar-right">
                 <button class="btn-icon" onclick="window.toggleExportMenu()">匯出</button>
                 <div id="export-menu" class="export-menu">
@@ -412,9 +444,20 @@
 
         <div style="margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; color: var(--text-sub); font-size: 0.95rem;">新增詞彙</div>
         <div class="card">
+            <!-- 🌟 編輯區新增詞性下拉選單 -->
             <div class="flex-row" style="margin-bottom: 10px;">
                 <input type="text" id="input-en" placeholder="英文 (e.g., measure)" style="flex: 2;">
-                <input type="text" id="input-pos" placeholder="詞性 (選填)" style="flex: 1;">
+                <select id="input-pos" style="flex: 1; padding: 12px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 1rem; outline: none; cursor: pointer;">
+                    <option value="">詞性 (無)</option>
+                    <option value="n.">n. (名詞)</option>
+                    <option value="v.">v. (動詞)</option>
+                    <option value="vt.">vt. (及物)</option>
+                    <option value="vi.">vi. (不及物)</option>
+                    <option value="adj.">adj. (形容)</option>
+                    <option value="adv.">adv. (副詞)</option>
+                    <option value="prep.">prep. (介係)</option>
+                    <option value="conj.">conj. (連接)</option>
+                </select>
             </div>
             <input type="text" id="input-zh" placeholder="中文意思 (多個意思請用逗號分隔)">
             <button class="btn btn-small" onclick="window.addWord()">加入題庫</button>
@@ -422,6 +465,9 @@
         <div id="word-list"></div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 詞性挑戰專屬測驗區域 (NEW!) -->
+    <!-- ========================================================= -->
     <div id="view-pos" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -458,6 +504,12 @@
             <div class="progress-text" id="pos-progress-display"></div>
         </div>
     </div>
+    <!-- ========================================================= -->
+
+
+    <!-- ========================================================= -->
+    <!-- 綜合精通與測驗區域 -->
+    <!-- ========================================================= -->
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -533,6 +585,7 @@
         </div>
     </div>
 
+    <!-- 其他八大模式區塊 -->
     <div id="view-practice" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -682,11 +735,12 @@
 
 </div>
 
+<!-- Modal Overlays -->
 <div id="silen-modal-overlay" class="hidden"><div class="silen-modal-box"><div id="silen-modal-msg" class="silen-modal-msg"></div><input type="text" id="silen-modal-input" class="hidden"><textarea id="silen-modal-textarea" class="hidden"></textarea><div class="silen-modal-actions"><button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden">取消</button><button id="silen-modal-btn-confirm" class="btn btn-small">確認</button></div></div></div>
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--accent); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
 
-<script src="app.js?v=1001"></script>
+<script src="app.js?v=1002"></script>
 <script type="module" src="auth.js"></script>
 
 </body>
