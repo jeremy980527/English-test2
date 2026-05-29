@@ -498,6 +498,336 @@ function startGuestMode(data) {
     }
 }
 
+
+// =====================================
+// 🌟 5. 題庫管理與精通度計算 (含片語庫支援)
+// =====================================
+window.updateProfileStats = function() {
+    let count = 0;
+    window.books.forEach(b => { b.words.forEach(w => { if (w.mastered) count++; }); });
+    const el = document.getElementById('stat-total-words');
+    if (el) el.innerText = count;
+};
+
+window.updateHomeSummary = function() {
+    window.updateProfileStats();
+    const summaryEl = document.getElementById('home-book-summary');
+    if (!summaryEl) return;
+    
+    let selectedCount = 0, wordCount = 0;
+    let isPhraseSelected = false;
+    
+    window.books.forEach(b => { 
+        if (selectedBookIds.has(b.id)) { 
+            selectedCount++; 
+            wordCount += b.words.length; 
+            if (b.isPhrase) isPhraseSelected = true;
+        } 
+    });
+    
+    if (selectedCount === 0) {
+        summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未勾選範圍。請進入控制區選取題庫。</span>';
+        setDisplayState('word-practice-area', true);
+        setDisplayState('phrase-practice-area', false);
+    } else {
+        summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${isPhraseSelected?'片語':'單字'}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
+        
+        // 🌟 根據選取的題庫類型，自動切換首頁的練習模式 UI
+        if (isPhraseSelected) {
+            setDisplayState('word-practice-area', false);
+            setDisplayState('phrase-practice-area', true);
+        } else {
+            setDisplayState('word-practice-area', true);
+            setDisplayState('phrase-practice-area', false);
+        }
+    }
+};
+
+window.renderBookList = function() {
+    const normalList = document.getElementById('normal-book-list');
+    const gsatList = document.getElementById('gsat-book-list');
+    const phraseList = document.getElementById('phrase-book-list');
+    
+    if (normalList) normalList.innerHTML = '';
+    if (gsatList) gsatList.innerHTML = '';
+    if (phraseList) phraseList.innerHTML = '';
+
+    const renderGroup = (booksToRender, container, emptyMsg, type) => {
+        if (!container) return;
+        if (booksToRender.length === 0) { container.innerHTML = `<div style="color:var(--text-sub); text-align:center; padding: 20px;">${emptyMsg}</div>`; return; }
+        
+        const groups = {};
+        booksToRender.forEach(book => {
+            const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
+            if (!groups[t]) groups[t] = []; groups[t].push(book);
+        });
+
+        const keys = Object.keys(groups).sort((a, b) => {
+            if (a === '未分類') return 1; if (b === '未分類') return -1; return a.localeCompare(b);
+        });
+
+        keys.forEach(k => {
+            const headerWrap = document.createElement('div');
+            headerWrap.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;';
+            const header = document.createElement('div'); header.className = 'group-title'; header.innerText = k; header.style.margin = '0';
+            const sortBtn = document.createElement('button'); sortBtn.className = 'btn-icon sort-toggle'; sortBtn.innerHTML = '⋮'; 
+
+            headerWrap.appendChild(header); headerWrap.appendChild(sortBtn); container.appendChild(headerWrap);
+
+            const listContainer = document.createElement('div');
+            listContainer.className = 'sortable-group'; listContainer.dataset.tag = k;
+
+            sortBtn.onclick = (e) => {
+                const isActive = listContainer.classList.toggle('sorting-active');
+                e.currentTarget.classList.toggle('active', isActive);
+                listContainer.querySelectorAll('.drag-handle').forEach(el => el.classList.toggle('hidden', !isActive));
+                listContainer.querySelectorAll('.book-checkbox').forEach(el => el.classList.toggle('hidden', isActive));
+                listContainer.querySelectorAll('.edit-btn').forEach(el => el.classList.toggle('hidden', isActive));
+            };
+
+            groups[k].forEach(book => {
+                const div = document.createElement('div');
+                div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                div.dataset.id = book.id; 
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-wrapper'; wrapper.style.cssText = 'flex:1; display:flex; align-items:center;';
+
+                const dragHandle = document.createElement('span'); dragHandle.className = 'drag-handle hidden'; dragHandle.innerHTML = '☰';
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'book-checkbox'; checkbox.checked = selectedBookIds.has(book.id); checkbox.style.pointerEvents = 'none';
+                const info = document.createElement('div'); info.style.cssText = 'flex:1; margin-left:15px;';
+                info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 項)</span>`;
+                
+                wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
+                
+                const editBtn = document.createElement('button'); editBtn.className = 'btn-icon edit-btn'; editBtn.innerHTML = '編輯'; 
+                editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
+                
+                div.appendChild(wrapper); div.appendChild(editBtn);
+                
+                div.onclick = () => {
+                    if (listContainer.classList.contains('sorting-active')) return;
+                    
+                    // 🌟 排他性選取邏輯：單字與片語不可混選
+                    if (!selectedBookIds.has(book.id)) {
+                        let currentType = book.isPhrase ? 'phrase' : 'word';
+                        let hasConflict = false;
+                        window.books.forEach(b => {
+                            if (selectedBookIds.has(b.id)) {
+                                let bType = b.isPhrase ? 'phrase' : 'word';
+                                if (bType !== currentType) hasConflict = true;
+                            }
+                        });
+                        
+                        if (hasConflict) {
+                            selectedBookIds.clear(); // 清空不同類型的選取，實現物理隔離
+                        }
+                        selectedBookIds.add(book.id);
+                    } else {
+                        selectedBookIds.delete(book.id);
+                    }
+                    
+                    window.renderBookList();
+                };
+                listContainer.appendChild(div);
+            });
+
+            container.appendChild(listContainer);
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(listContainer, { handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost', touchStartThreshold: 3, onEnd: () => window.handleSortEnd(k, listContainer, type) });
+            }
+        });
+    };
+
+    renderGroup(window.books.filter(b => !b.isGSAT && !b.isPhrase), normalList, '資料庫無單字簿，請在下方建立。', 'normal');
+    renderGroup(window.books.filter(b => b.isGSAT && !b.isPhrase), gsatList, '尚無學測單字簿，請在下方抽取。', 'gsat');
+    renderGroup(window.books.filter(b => b.isPhrase), phraseList, '尚無片語簿，請在下方建立。', 'phrase');
+    window.updateHomeSummary();
+};
+
+window.handleSortEnd = function(tag, listContainer, type) {
+    const newOrderIds = Array.from(listContainer.children).map(el => Number(el.dataset.id));
+    let indices = [];
+    window.books.forEach((b, index) => {
+        const t = (b.tag && b.tag.trim() !== '') ? b.tag.trim() : '未分類';
+        let bType = b.isPhrase ? 'phrase' : (b.isGSAT ? 'gsat' : 'normal');
+        if (t === tag && bType === type) indices.push(index);
+    });
+    if (indices.length !== newOrderIds.length) return;
+    let bookMap = {}; window.books.forEach(b => bookMap[b.id] = b);
+    indices.forEach((globalIndex, i) => { window.books[globalIndex] = bookMap[newOrderIds[i]]; });
+    window.saveData();
+};
+
+window.handleFileUpload = function(event, type) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) { 
+        if(type === 'phrase') document.getElementById('import-content-phrase').value = e.target.result;
+        else document.getElementById('import-content').value = e.target.result; 
+        event.target.value = ''; 
+    };
+    reader.readAsText(file);
+};
+
+window.toggleImportArea = function(type) {
+    if(type === 'phrase') {
+        const area = document.getElementById('import-area-phrase');
+        if (area.classList.contains('hidden')) { setDisplayState('import-area-phrase', true); setDisplayState('btn-create-simple-phrase', false); } 
+        else { setDisplayState('import-area-phrase', false); setDisplayState('btn-create-simple-phrase', true); }
+    } else {
+        const area = document.getElementById('import-area');
+        if (area.classList.contains('hidden')) { setDisplayState('import-area', true); setDisplayState('btn-create-simple', false); } 
+        else { setDisplayState('import-area', false); setDisplayState('btn-create-simple', true); }
+    }
+};
+
+window.addBookSimple = function() {
+    const name = document.getElementById('new-book-name').value.trim();
+    const tag = document.getElementById('new-book-tag').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入單字簿名稱"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: false }); 
+    window.saveData(); document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; window.renderBookList();
+};
+
+window.addPhraseBookSimple = function() {
+    const name = document.getElementById('new-phrase-name').value.trim();
+    const tag = document.getElementById('new-phrase-tag').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入片語簿名稱"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: true }); 
+    window.saveData(); document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; window.renderBookList();
+};
+
+window.addBookWithImport = function() {
+    const name = document.getElementById('new-book-name').value.trim();
+    const tag = document.getElementById('new-book-tag').value.trim();
+    const rawText = document.getElementById('import-content').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入單字簿名稱"); return; } 
+    if (!rawText) { window.SilenModal.alert("請輸入轉換內容"); return; }
+    
+    const lines = rawText.split('\n'); const newWords = [];
+    lines.forEach(line => {
+        let separatorIndex = line.indexOf('-'); if (separatorIndex === -1) separatorIndex = line.indexOf('–'); 
+        if (separatorIndex > 0) {
+            const en = line.substring(0, separatorIndex).trim();
+            const zhStr = line.substring(separatorIndex + 1).trim();
+            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) });
+        }
+    });
+    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文」結構"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: false }); 
+    window.saveData();
+    document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; document.getElementById('import-content').value = ''; 
+    window.toggleImportArea('word'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個單字。`);
+};
+
+window.addPhraseBookWithImport = function() {
+    const name = document.getElementById('new-phrase-name').value.trim();
+    const tag = document.getElementById('new-phrase-tag').value.trim();
+    const rawText = document.getElementById('import-content-phrase').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入片語簿名稱"); return; } 
+    if (!rawText) { window.SilenModal.alert("請輸入轉換內容"); return; }
+    
+    const lines = rawText.split('\n'); const newWords = [];
+    lines.forEach(line => {
+        let separatorIndex = line.indexOf('-'); if (separatorIndex === -1) separatorIndex = line.indexOf('–'); 
+        if (separatorIndex > 0) {
+            const en = line.substring(0, separatorIndex).trim();
+            const zhStr = line.substring(separatorIndex + 1).trim();
+            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) });
+        }
+    });
+    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文片語 - 中文」結構"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: true }); 
+    window.saveData();
+    document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; document.getElementById('import-content-phrase').value = ''; 
+    window.toggleImportArea('phrase'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個片語。`);
+};
+
+window.toggleExportMenu = function() { document.getElementById('export-menu').classList.toggle('active'); };
+
+window.exportBook = function(type) {
+    const book = window.books.find(b => b.id === currentBookId);
+    if (!book || book.words.length === 0) { window.SilenModal.alert("無可用數據匯出。"); window.toggleExportMenu(); return; }
+    const content = book.words.map(w => `${w.en} - ${w.zh.join(' / ')}`).join('\n');
+    if (type === 'copy') {
+        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(content).then(() => window.SilenModal.alert("已複製到剪貼簿。")).catch(() => window.SilenModal.prompt("請複製以下內容：", content)); } 
+        else { window.SilenModal.prompt("請複製以下內容：", content); }
+    } else if (type === 'download') {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${book.name || 'Export'}.txt`; 
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    window.toggleExportMenu();
+};
+
+document.addEventListener('click', (event) => {
+    const menu = document.getElementById('export-menu'); const exportBtn = document.querySelector('.nav-bar-right .btn-icon');
+    if (menu && menu.classList.contains('active') && !menu.contains(event.target) && event.target !== exportBtn) menu.classList.remove('active');
+});
+
+window.deleteCurrentBook = function() {
+    window.SilenModal.confirm('確定要永久刪除此題庫嗎？').then((agreed) => {
+        if(agreed) { window.books = window.books.filter(b => b.id !== currentBookId); selectedBookIds.delete(currentBookId); window.saveData(); window.openBookSelect(); }
+    });
+};
+
+window.openEditBook = function(id) { 
+    currentBookId = id; const book = window.books.find(b => b.id === id);
+    document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
+    document.getElementById('export-menu').classList.remove('active'); window.renderWordList(); window.switchView('edit'); 
+};
+
+window.saveBookInfo = function() {
+    const book = window.books.find(b => b.id === currentBookId); if(!book) return;
+    const newName = document.getElementById('edit-book-name-input').value.trim(); const newTag = document.getElementById('edit-book-tag-input').value.trim();
+    if(!newName) { window.SilenModal.alert('名稱不能為空。'); return; }
+    book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
+};
+
+window.renderWordList = function() {
+    const book = window.books.find(b => b.id === currentBookId); const list = document.getElementById('word-list'); list.innerHTML = '';
+    [...book.words].reverse().forEach((word, index) => {
+        const div = document.createElement('div'); div.className = 'word-item';
+        div.innerHTML = `<div><div class="word-en">${word.en}</div><div class="word-zh">${word.zh.join(', ')}</div></div><button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${book.words.length - 1 - index})">✕</button>`;
+        list.appendChild(div);
+    });
+};
+
+window.addWord = function() {
+    const en = document.getElementById('input-en').value.trim(); const zhStr = document.getElementById('input-zh').value.trim();
+    if(!en || !zhStr) { window.SilenModal.alert("欄位不完整"); return; }
+    window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) }); 
+    window.saveData(); document.getElementById('input-en').value = ''; document.getElementById('input-zh').value = ''; document.getElementById('input-en').focus(); window.renderWordList();
+};
+
+window.deleteWord = function(index) { 
+    window.books.find(b => b.id === currentBookId).words.splice(index, 1); window.saveData(); window.renderWordList(); 
+};
+
+window.getPracticeWords = function() {
+    if (selectedBookIds.size === 0) { window.SilenModal.alert("請先選取題庫範圍。"); return []; }
+    let queue = []; 
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            book.words.forEach(w => queue.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, scored: false }));
+        }
+    });
+    if (queue.length === 0) { window.SilenModal.alert("範圍內不含數據。"); return []; } 
+    return queue;
+};
+
+window.getSelectedWordsPool = function() {
+    if (isGuestMode) return guestWords;
+    let pool = []; 
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            book.words.forEach(w => pool.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false }));
+        }
+    }); 
+    return pool;
+};
+
 // =====================================
 // 🌟 5. 單字簿管理 (包含 SortableJS 拖曳排序)
 // =====================================
@@ -852,74 +1182,6 @@ window.addWord = function() {
     const zhArray = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
     window.books.find(b => b.id === currentBookId).words.push({ en: en, zh: zhArray }); 
     window.saveData();
-    document.getElementById('input-en').value = ''; 
-    document.getElementById('input-zh').value = ''; 
-    document.getElementById('input-en').focus(); 
-    renderWordList();
-};
-
-window.deleteWord = function(index) { 
-    window.books.find(b => b.id === currentBookId).words.splice(index, 1); 
-    window.saveData(); 
-    renderWordList(); 
-};
-
-function getPracticeWords() {
-    if (selectedBookIds.size === 0) { window.SilenModal.alert("請先選取單字簿範圍。"); return []; }
-    let queue = []; 
-    window.books.forEach(book => { 
-        if (selectedBookIds.has(book.id)) {
-            // 🌟 綁定所有必要的中介資料
-            book.words.forEach(w => queue.push({ 
-                ...w, 
-                bookId: book.id,
-                isGSAT: book.isGSAT, 
-                bookTag: book.tag || '',
-                bookLength: book.words.length,
-                mastered: w.mastered || false,
-                scored: false 
-            }));
-        }
-    });
-    if (queue.length === 0) { window.SilenModal.alert("範圍內不含單字。"); return []; } 
-    return queue;
-}
-
-function getSelectedWordsPool() {
-    if (isGuestMode) return guestWords;
-    let pool = []; 
-    window.books.forEach(book => { 
-        if (selectedBookIds.has(book.id)) {
-            book.words.forEach(w => pool.push({ 
-                ...w, 
-                bookId: book.id,
-                isGSAT: book.isGSAT,
-                bookTag: book.tag || '',
-                bookLength: book.words.length,
-                mastered: w.mastered || false
-            }));
-        }
-    }); 
-    return pool;
-}
-
-// 攔截 updateHomeSummary，確保雲端同步或切換頁面時都能更新已精通數量
-window.updateProfileStats = function() {
-    let count = 0;
-    window.books.forEach(b => {
-        b.words.forEach(w => {
-            if (w.mastered) count++;
-        });
-    });
-    const el = document.getElementById('stat-total-words');
-    if (el) el.innerText = count;
-};
-
-const _originalUpdateHomeSummary = window.updateHomeSummary;
-window.updateHomeSummary = function() {
-    if (typeof _originalUpdateHomeSummary === 'function') _originalUpdateHomeSummary();
-    if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
-};
 
 
 // =====================================
