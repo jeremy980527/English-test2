@@ -1,9 +1,9 @@
 // =====================================
-// 🌐 Firebase 模組引入  (版本統一至 10.12.2，解決黑屏問題)
+// 🌐 Firebase 模組引入 (版本統一至 10.12.2)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
@@ -119,10 +119,11 @@ async function syncFromCloud(uid) {
 async function syncToCloud(uid, booksData) {
     if (!uid) return;
     try {
+        // 使用 merge: true 確保就算沒有建立過文檔也不會報錯
         await setDoc(doc(db, "users", uid), {
             books: booksData,
             lastUpdated: new Date().toISOString()
-        });
+        }, { merge: true });
         console.log("💾 進度已備份至雲端。");
     } catch (error) {
         console.error("雲端備份錯誤:", error);
@@ -299,11 +300,9 @@ window.fetchLeaderboard = async function(weekId) {
     }
 };
 
-
 // ==========================================
 // 🌟 同步更新使用者名稱至 Firebase 雲端與排行榜
 // ==========================================
-
 window.updateCloudUserName = async function(newName) {
     // 1. 確認使用者是否已登入
     const user = auth.currentUser;
@@ -319,18 +318,25 @@ window.updateCloudUserName = async function(newName) {
         // 2. 更新 Firebase Auth 帳號系統的顯示名稱
         await updateProfile(user, { displayName: newName });
 
-        // 3. 更新 Firestore 資料庫中的排行榜資料 (假設你的集合叫做 "users")
-        // 如果你的資料庫路徑或變數不同，請將 db 和 "users" 替換成你實際的設定
+        // 3. 更新 Firestore 資料庫中的排行榜資料 (使用 setDoc + merge 確保文檔自動建立)
         const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-            name: newName
-        });
+        await setDoc(userRef, { name: newName }, { merge: true });
 
-        // 4. 成功提示並刷新排行榜
+        // 4. 同步更新 Realtime Database 本週排行榜上的名字
+        if (typeof window.getCurrentWeekId === 'function') {
+            const weekId = window.getCurrentWeekId();
+            const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${user.uid}`);
+            const snap = await get(lbRef);
+            if (snap.exists()) {
+                await set(lbRef, { ...snap.val(), name: newName });
+            }
+        }
+
+        // 5. 成功提示並刷新排行榜
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert(`🎉 改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
         
-        // 如果有開著排行榜，順便幫它重新抓取最新資料
+        // 幫它重新抓取最新資料
         if (typeof window.fetchLeaderboard === 'function' && typeof window.getCurrentWeekId === 'function') {
             window.fetchLeaderboard(window.getCurrentWeekId());
         }
