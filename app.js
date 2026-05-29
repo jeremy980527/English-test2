@@ -498,6 +498,7 @@ function startGuestMode(data) {
     }
 }
 
+
 // =====================================
 // 🌟 5. 題庫管理與精通度計算 (支援詞性 POS)
 // =====================================
@@ -707,21 +708,9 @@ window.addBookWithImport = function() {
             let remainder = line.substring(sep1 + 1).trim();
             
             let sep2 = remainder.indexOf('-'); if (sep2 === -1) sep2 = remainder.indexOf('–');
-            let zhStr = remainder;
-            let pos = '';
-            
-            if (sep2 > 0) {
-                zhStr = remainder.substring(0, sep2).trim();
-                pos = remainder.substring(sep2 + 1).trim();
-            }
-            
-            if (en && zhStr) {
-                newWords.push({ 
-                    en: en, 
-                    zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s),
-                    pos: pos 
-                });
-            }
+            let zhStr = remainder; let pos = '';
+            if (sep2 > 0) { zhStr = remainder.substring(0, sep2).trim(); pos = remainder.substring(sep2 + 1).trim(); }
+            if (en && zhStr) { newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s), pos: pos }); }
         }
     });
     if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文 - 詞性(選填)」結構"); return; }
@@ -740,10 +729,10 @@ window.addPhraseBookWithImport = function() {
     
     const lines = rawText.split('\n'); const newWords = [];
     lines.forEach(line => {
-        let separatorIndex = line.indexOf('-'); if (separatorIndex === -1) separatorIndex = line.indexOf('–'); 
-        if (separatorIndex > 0) {
-            const en = line.substring(0, separatorIndex).trim();
-            const zhStr = line.substring(separatorIndex + 1).trim();
+        let sep1 = line.indexOf('-'); if (sep1 === -1) sep1 = line.indexOf('–'); 
+        if (sep1 > 0) {
+            const en = line.substring(0, sep1).trim();
+            const zhStr = line.substring(sep1 + 1).trim();
             if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s), pos: '' });
         }
     });
@@ -802,7 +791,7 @@ window.saveBookInfo = function() {
     book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
 };
 
-// 🌟 單字列表加上詞性標籤渲染 (支援點擊即時編輯)
+// 🌟 單字列表加上詞性標籤渲染 (支援實體按鈕點擊即時編輯)
 window.editingWordIndex = null;
 
 window.renderWordList = function() {
@@ -819,9 +808,14 @@ window.renderWordList = function() {
             // ✏️ 編輯模式
             div.style.flexDirection = 'column';
             div.style.alignItems = 'stretch';
+            
+            // 安全處理引號，防止 HTML 字串被截斷
+            const safeEn = word.en.replace(/"/g, '&quot;');
+            const safeZh = word.zh.join(', ').replace(/"/g, '&quot;');
+            
             div.innerHTML = `
                 <div class="flex-row" style="margin-bottom: 10px;">
-                    <input type="text" id="inline-en-${actualIndex}" value="${word.en}" style="flex: 2; padding: 8px; font-size: 1rem;">
+                    <input type="text" id="inline-en-${actualIndex}" value="${safeEn}" style="flex: 2; padding: 8px; font-size: 1rem;">
                     <select id="inline-pos-${actualIndex}" style="flex: 1; padding: 8px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); border-radius: 8px; outline: none; font-size: 1rem;">
                         <option value="" ${word.pos===''?'selected':''}>無</option>
                         <option value="n." ${word.pos==='n.'?'selected':''}>n. (名詞)</option>
@@ -834,21 +828,24 @@ window.renderWordList = function() {
                         <option value="conj." ${word.pos==='conj.'?'selected':''}>conj. (連接)</option>
                     </select>
                 </div>
-                <input type="text" id="inline-zh-${actualIndex}" value="${word.zh.join(', ')}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
+                <input type="text" id="inline-zh-${actualIndex}" value="${safeZh}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
                 <div class="flex-row" style="justify-content: flex-end; margin-top: 5px;">
                     <button class="btn btn-outline btn-small" onclick="window.cancelEditWord()">取消</button>
                     <button class="btn btn-small" onclick="window.saveEditWord(${actualIndex})">儲存</button>
                 </div>
             `;
         } else {
-            // 👁️ 預覽模式
+            // 👁️ 預覽模式：新增獨立的實體「✏️」編輯按鈕
             let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
             div.innerHTML = `
-                <div style="flex: 1; cursor: pointer; padding-right: 15px;" onclick="window.startEditWord(${actualIndex})" title="點擊修改單字">
+                <div style="flex: 1; padding-right: 15px;">
                     <div class="word-en">${word.en} ${posHtml}</div>
                     <div class="word-zh">${word.zh.join(', ')}</div>
                 </div>
-                <button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${actualIndex})">✕</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-icon" style="border:none; font-size: 1.1rem; padding: 5px; margin: 0; color: var(--text-sub);" onclick="window.startEditWord(${actualIndex})" title="編輯單字">✏️</button>
+                    <button class="btn-icon btn-delete" style="border:none; padding: 5px; margin: 0;" onclick="window.deleteWord(${actualIndex})" title="刪除單字">✕</button>
+                </div>
             `;
         }
         list.appendChild(div);
