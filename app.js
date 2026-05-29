@@ -1861,136 +1861,75 @@ window.prevYouglishCard = function() {
 };
 
 // ==========================================================================
-// 🎯 8. 自訂下拉選單控制與學測抽卡系統 (支援 1~6 級快取)
+// 🌟 8. 自訂下拉選單控制與學測抽卡系統
 // ==========================================================================
 window.toggleDropdown = function(id, event) {
     if(event) event.stopPropagation();
-    document.querySelectorAll('.dropdown-options').forEach(el => {
-        if (el.id !== id) el.classList.add('hidden');
-    });
+    document.querySelectorAll('.dropdown-options').forEach(el => { if (el.id !== id) el.classList.add('hidden'); });
     document.getElementById(id).classList.toggle('hidden');
 };
 
-document.addEventListener('click', () => {
-    document.querySelectorAll('.dropdown-options').forEach(el => el.classList.add('hidden'));
-});
+document.addEventListener('click', () => { document.querySelectorAll('.dropdown-options').forEach(el => el.classList.add('hidden')); });
 
 window.setLibMode = function(mode, text) {
     document.querySelector('#lib-dropdown .dropdown-selected').innerHTML = text + ' ▾';
     document.getElementById('lib-options').classList.add('hidden');
     
-    if (mode === 'normal') {
-        setDisplayState('normal-book-area', true);
-        setDisplayState('gsat-book-area', false);
-    } else if (mode === 'gsat') {
-        setDisplayState('normal-book-area', false);
-        setDisplayState('gsat-book-area', true);
-        
-        const currentLevel = window.currentGsatLevel || 'lv1';
-        if (gsatVocabCache[currentLevel].length === 0) {
-            fetchGSATVocab(currentLevel);
-        }
+    if (mode === 'normal') { 
+        setDisplayState('normal-book-area', true); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); 
+    } else if (mode === 'gsat') { 
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', true); setDisplayState('phrase-book-area', false);
+        const currentLevel = window.currentGsatLevel || 'lv1'; 
+        if (gsatVocabCache[currentLevel].length === 0) { window.fetchGSATVocab(currentLevel); }
+    } else if (mode === 'phrase') { 
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', true); 
     }
 };
 
 window.currentGsatLevel = 'lv1';
 window.setGsatLevel = function(level, text) {
-    window.currentGsatLevel = level;
-    document.querySelector('#level-dropdown .dropdown-selected').innerHTML = text + ' ▾';
-    document.getElementById('level-options').classList.add('hidden');
-    
-    const levelNum = level.replace('lv', '');
-    document.getElementById('gsat-claim-tag').value = `學測 Lv${levelNum}`;
-    
-    const nameInput = document.getElementById('gsat-claim-name');
-    if (nameInput.value.includes('抽取') || nameInput.value.trim() === '') {
-        nameInput.value = `學測 Lv${levelNum} 抽取`;
-    }
-    
-    if (gsatVocabCache[level].length === 0) {
-        fetchGSATVocab(level);
-    }
+    window.currentGsatLevel = level; document.querySelector('#level-dropdown .dropdown-selected').innerHTML = text + ' ▾'; document.getElementById('level-options').classList.add('hidden');
+    const levelNum = level.replace('lv', ''); document.getElementById('gsat-claim-tag').value = `學測 Lv${levelNum}`;
+    const nameInput = document.getElementById('gsat-claim-name'); if (nameInput.value.includes('抽取') || nameInput.value.trim() === '') { nameInput.value = `學測 Lv${levelNum} 抽取`; }
+    if (gsatVocabCache[level].length === 0) { window.fetchGSATVocab(level); }
 };
 
-let gsatVocabCache = {
-    lv1: [], lv2: [], lv3: [], lv4: [], lv5: [], lv6: []
-};
+let gsatVocabCache = { lv1: [], lv2: [], lv3: [], lv4: [], lv5: [], lv6: [] };
 
-async function fetchGSATVocab(level) {
-    const btn = document.getElementById('btn-claim-gsat');
-    if (btn) { btn.innerText = "資料庫載入中..."; btn.disabled = true; }
-    
+window.fetchGSATVocab = async function(level) {
+    const btn = document.getElementById('btn-claim-gsat'); if (btn) { btn.innerText = "資料庫載入中..."; btn.disabled = true; }
     try {
-        const fileName = `vocabulary${level}.json`;
-        const response = await fetch(fileName);
-        if (!response.ok) throw new Error("網路請求失敗");
-        
-        const rawData = await response.json();
-        gsatVocabCache[level] = rawData.map(item => ({
-            en: item.word.trim(),
-            zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s)
-        }));
-        
+        const fileName = `vocabulary${level}.json`; const response = await fetch(fileName); if (!response.ok) throw new Error("網路請求失敗");
+        const rawData = await response.json(); gsatVocabCache[level] = rawData.map(item => ({ en: item.word.trim(), zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s) }));
         if (btn) { btn.innerText = "開始抽取"; btn.disabled = false; }
     } catch (error) {
-        console.error(`載入 ${level} 失敗:`, error);
-        if (window.SilenModal) window.SilenModal.alert(`載入失敗，請確認 vocabulary${level}.json 是否存在。`);
+        console.error(`載入 ${level} 失敗:`, error); if (window.SilenModal) window.SilenModal.alert(`載入失敗，請確認 vocabulary${level}.json 是否存在。`);
         if (btn) { btn.innerText = "載入失敗"; btn.disabled = false; }
     }
-}
+};
 
 window.claimGSATWords = async function() {
     const level = window.currentGsatLevel || 'lv1';
-    
-    if (gsatVocabCache[level].length === 0) {
-        await fetchGSATVocab(level);
-        if (gsatVocabCache[level].length === 0) return; 
-    }
+    if (gsatVocabCache[level].length === 0) { await window.fetchGSATVocab(level); if (gsatVocabCache[level].length === 0) return; }
 
     const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
-    const levelNum = level.replace('lv', '');
-    let defaultName = `學測 Lv${levelNum} 抽取`;
-    
-    const nameInput = document.getElementById('gsat-claim-name').value.trim();
-    const bookName = nameInput === '' ? defaultName : nameInput; 
-    const bookTag = document.getElementById('gsat-claim-tag').value.trim();
+    const levelNum = level.replace('lv', ''); let defaultName = `學測 Lv${levelNum} 抽取`;
+    const nameInput = document.getElementById('gsat-claim-name').value.trim(); const bookName = nameInput === '' ? defaultName : nameInput; const bookTag = document.getElementById('gsat-claim-tag').value.trim();
 
     let existingWords = new Set();
-    window.books.forEach(book => {
-        if (book.tag.includes('學測') || book.isGSAT) {
-            book.words.forEach(w => existingWords.add(w.en.toLowerCase()));
-        }
-    });
-
+    window.books.forEach(book => { if (book.tag.includes('學測') || book.isGSAT) { book.words.forEach(w => existingWords.add(w.en.toLowerCase())); } });
     let availableWords = gsatVocabCache[level].filter(w => !existingWords.has(w.en.toLowerCase()));
 
-    if (availableWords.length === 0) {
-        window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被你全部抽完囉！`);
-        return;
-    }
+    if (availableWords.length === 0) { window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被你全部抽完囉！`); return; }
 
     let finalAmount = amount;
-    if (availableWords.length < amount) {
-        window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`);
-        finalAmount = availableWords.length;
-    }
+    if (availableWords.length < amount) { window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`); finalAmount = availableWords.length; }
 
-    availableWords.sort(() => Math.random() - 0.5);
-    let selectedWords = availableWords.slice(0, finalAmount);
-
-    window.books.push({
-        id: Date.now(),
-        name: bookName,
-        tag: bookTag,
-        isGSAT: true, 
-        words: selectedWords
-    });
+    availableWords.sort(() => Math.random() - 0.5); let selectedWords = availableWords.slice(0, finalAmount);
+    window.books.push({ id: Date.now(), name: bookName, tag: bookTag, isGSAT: true, isPhrase: false, words: selectedWords });
 
     if (typeof window.saveData === 'function') window.saveData();
-    
-    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => {
-        if (typeof window.renderBookList === 'function') window.renderBookList();
-    });
+    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => { if (typeof window.renderBookList === 'function') window.renderBookList(); });
 };
 
 // =====================================
@@ -2094,4 +2033,291 @@ window.renderLeaderboard = function(listData, mySeasonScore) {
         `;
         container.appendChild(div);
     });
+};
+
+
+// ==========================================================================
+// 🌟 11. 片語專屬綜合練習模式
+// ==========================================================================
+let phrasePuzzleSource = [];
+let phrasePuzzleTemplate = [];
+
+window.setupPhraseMasteryMode = function() {
+    let words = window.getPracticeWords(); 
+    if(!words || words.length === 0) return;
+    
+    masteryModeType = 'phrase'; 
+    pendingMasteredWords = []; 
+    
+    masteryPool = words.map(w => ({ 
+        en: w.en, zh: w.zh, level: 0, delay: 0, 
+        isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength,
+        bookId: w.bookId, mastered: w.mastered
+    })); 
+    masteryPool.sort(() => Math.random() - 0.5);
+    
+    const headerTitle = document.getElementById('mastery-header-title'); 
+    const progressBar = document.getElementById('mastery-progress-bar');
+    const l0Card = document.getElementById('mastery-l0-card'); 
+    const nextBtns = document.querySelectorAll('#view-mastery .btn:not(.btn-icon):not(.btn-outline)');
+
+    headerTitle.innerText = "片語綜合練習"; 
+    headerTitle.style.color = "#1e3c72"; 
+    progressBar.style.background = "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"; 
+    l0Card.style.borderColor = "#1e3c72";
+    nextBtns.forEach(b => { 
+        b.style.background = "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)";
+        b.style.borderColor = "#1e3c72";
+        b.style.color = "#fff";
+        b.classList.add('btn-next-big');
+    });
+
+    const l0Btn = document.getElementById('mastery-btn-l0');
+    l0Btn.onclick = () => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
+        currentMasteryTarget.level = 1; 
+        window.nextPhraseMasteryTurn();
+    };
+
+    const submitBtn = document.getElementById('mastery-btn-puzzle');
+    submitBtn.onclick = () => window.checkPhrasePuzzle(true);
+
+    window.switchView('mastery'); 
+    window.updateMasteryProgress(); 
+    window.nextPhraseMasteryTurn();
+};
+
+window.nextPhraseMasteryTurn = function() {
+    let targetLevel = 5; 
+    let mastered = masteryPool.filter(w => w.level === targetLevel).length;
+    document.getElementById('mastery-progress-bar').style.width = ((mastered / masteryPool.length) * 100) + '%';
+    document.getElementById('mastery-status-text').innerText = `精通進度: ${mastered} / ${masteryPool.length}`;
+
+    if (mastered === masteryPool.length) {
+        window.hideAllMasteryAreas(); 
+        document.getElementById('mastery-success-title').style.color = "#1e3c72";
+        setDisplayState('mastery-success-area', true); 
+        window.finalizeMasterySession();
+        return;
+    }
+
+    window.hideAllMasteryAreas();
+    
+    let l0 = masteryPool.filter(w => w.level === 0);
+    if (l0.length > 0) { 
+        currentMasteryTarget = l0[0]; 
+        window.showMasteryL0(currentMasteryTarget); 
+        return; 
+    }
+
+    let delayReady = masteryPool.filter(w => w.level === 4.9 || w.level === 3.9);
+    if (delayReady.length > 0) {
+        currentMasteryTarget = delayReady.sort(() => Math.random() - 0.5)[0];
+        window.showPhraseTyping(currentMasteryTarget, currentMasteryTarget.level === 4.9);
+        return;
+    }
+
+    let active = masteryPool.filter(w => w.level >= 1 && w.level <= 4 && Number.isInteger(w.level));
+    if (active.length > 0) {
+        currentMasteryTarget = active.sort(() => Math.random() - 0.5)[0];
+        if (currentMasteryTarget.level === 1) {
+            window.showPhraseMCQ(currentMasteryTarget, 'zh-to-en');
+        } else if (currentMasteryTarget.level === 2) {
+            window.showPhraseMCQ(currentMasteryTarget, 'en-to-zh');
+        } else if (currentMasteryTarget.level === 3) {
+            window.showPhrasePuzzle(currentMasteryTarget);
+        } else if (currentMasteryTarget.level === 4) {
+            window.showPhraseTyping(currentMasteryTarget, false);
+        }
+        return;
+    }
+
+    let waiting = masteryPool.filter(w => w.level === 4.5 || w.level === 3.5);
+    if (waiting.length > 0) {
+        let forceTarget = waiting[0]; 
+        forceTarget.level = forceTarget.level === 4.5 ? 4.9 : 3.9; 
+        currentMasteryTarget = forceTarget;
+        window.showPhraseTyping(currentMasteryTarget, true);
+        return;
+    }
+};
+
+window.showPhraseMCQ = function(word, mode) {
+    setDisplayState('mastery-mcq-area', true);
+    document.getElementById('mastery-mcq-badge').innerText = mode === 'zh-to-en' ? "Lv 1: 視覺辨識 (中選英)" : "Lv 2: 雙向語意 (英選中)";
+    document.getElementById('mastery-mcq-q').innerText = mode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
+    
+    let options = [word]; 
+    let distractors = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); 
+    options.push(...distractors.slice(0, 3));
+    
+    if (options.length < 4) { 
+        let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); 
+        options.push(...fallback.slice(0, 4 - options.length)); 
+    }
+    options = options.slice(0, 4).sort(() => Math.random() - 0.5);
+    
+    const optArea = document.getElementById('mastery-mcq-options'); 
+    optArea.innerHTML = '';
+    
+    options.forEach(opt => { 
+        let btn = document.createElement('button'); 
+        btn.className = 'btn-mcq'; 
+        btn.innerText = mode === 'zh-to-en' ? opt.en : opt.zh.join(' / '); 
+        btn.onclick = () => window.checkPhraseAnswer(opt.en === word.en); 
+        optArea.appendChild(btn); 
+    });
+};
+
+window.showPhrasePuzzle = function(word) {
+    setDisplayState('mastery-puzzle-area', true); 
+    document.getElementById('mastery-puzzle-badge').innerText = "Lv 3: 斷點拼圖";
+    document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / '); 
+    document.getElementById('mastery-puzzle-hint-display').innerText = ''; 
+    
+    puzzleUserAnswer = []; 
+    let enStr = word.en.toLowerCase();
+    let sourceTokens = [];
+    let ansTemplate = [];
+    
+    let i = 0;
+    let tokenIndex = 0;
+    while(i < enStr.length) {
+        if (enStr.slice(i, i+3) === '...') {
+            sourceTokens.push({ id: tokenIndex, char: '...', used: false });
+            ansTemplate.push({ isSpace: false, addSpaceAfter: false, char: '...' });
+            tokenIndex++; i += 3;
+        } else if (enStr[i] === ' ') {
+            if (ansTemplate.length > 0) ansTemplate[ansTemplate.length - 1].addSpaceAfter = true;
+            i++;
+        } else {
+            sourceTokens.push({ id: tokenIndex, char: enStr[i], used: false });
+            ansTemplate.push({ isSpace: false, addSpaceAfter: false, char: enStr[i] });
+            tokenIndex++; i++;
+        }
+    }
+    
+    phrasePuzzleTemplate = ansTemplate;
+    for (let j = sourceTokens.length - 1; j > 0; j--) { 
+        const k = Math.floor(Math.random() * (j + 1)); 
+        [sourceTokens[j], sourceTokens[k]] = [sourceTokens[k], sourceTokens[j]]; 
+    }
+    phrasePuzzleSource = sourceTokens;
+    window.renderPhrasePuzzleBoard();
+};
+
+window.renderPhrasePuzzleBoard = function() {
+    const ansArea = document.getElementById('mastery-puzzle-ans'); 
+    const poolArea = document.getElementById('mastery-puzzle-pool');
+    ansArea.innerHTML = ''; poolArea.innerHTML = '';
+    
+    puzzleUserAnswer.forEach((letterObj, idx) => { 
+        const tile = document.createElement('div'); 
+        tile.className = 'letter-tile'; 
+        if (phrasePuzzleTemplate[idx] && phrasePuzzleTemplate[idx].addSpaceAfter) tile.classList.add('phrase-space');
+        tile.innerText = letterObj.char; 
+        tile.onclick = () => { 
+            puzzleUserAnswer[idx].used = false; 
+            puzzleUserAnswer.splice(idx, 1); 
+            window.renderPhrasePuzzleBoard(); 
+        }; 
+        ansArea.appendChild(tile); 
+    });
+    
+    if (puzzleUserAnswer.length < phrasePuzzleTemplate.length) { 
+        const placeholder = document.createElement('div'); 
+        placeholder.className = 'letter-tile empty'; 
+        if (phrasePuzzleTemplate[puzzleUserAnswer.length] && phrasePuzzleTemplate[puzzleUserAnswer.length].addSpaceAfter) {
+            placeholder.classList.add('phrase-space');
+        }
+        placeholder.innerText = '_'; 
+        ansArea.appendChild(placeholder); 
+    }
+    
+    phrasePuzzleSource.forEach(letterObj => { 
+        if (!letterObj.used) { 
+            const tile = document.createElement('div'); 
+            tile.className = 'letter-tile'; 
+            tile.innerText = letterObj.char; 
+            tile.onclick = () => { 
+                letterObj.used = true; 
+                puzzleUserAnswer.push(letterObj); 
+                window.renderPhrasePuzzleBoard(); 
+                window.checkPhrasePuzzle(false);
+            }; 
+            poolArea.appendChild(tile); 
+        } 
+    });
+};
+
+window.checkPhrasePuzzle = function(forced = false) {
+    if(!currentMasteryTarget) return;
+    const currentString = puzzleUserAnswer.map(o => o.char).join('');
+    const targetString = phrasePuzzleTemplate.map(o => o.char).join('');
+    if (puzzleUserAnswer.length === phrasePuzzleTemplate.length || forced) {
+        window.checkPhraseAnswer(currentString === targetString);
+    }
+};
+
+window.showPhraseTyping = function(word, isDelayed) {
+    setDisplayState('mastery-typing-area', true); 
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 4: 高容錯輸出";
+    document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
+    
+    const input = document.getElementById('mastery-typing-input'); 
+    input.value = ''; 
+    setTimeout(() => input.focus(), 50); 
+    
+    input.onkeypress = (e) => { 
+        if(e.key === 'Enter') { 
+            e.preventDefault(); 
+            const val = input.value.trim().toLowerCase(); 
+            const target = word.en.toLowerCase(); 
+            
+            const normVal = val.replace(/\.{1,}/g, '...').replace(/\s+/g, ' ').trim();
+            const normTarget = target.replace(/\.{1,}/g, '...').replace(/\s+/g, ' ').trim();
+            
+            window.checkPhraseAnswer(normVal === normTarget);
+        } 
+    };
+};
+
+window.checkPhraseAnswer = function(isCorrect) {
+    window.hideAllMasteryAreas(); 
+    setDisplayState('mastery-feedback-area', true, 'flex');
+    
+    const icon = document.getElementById('mastery-fb-icon'); 
+    const status = document.getElementById('mastery-fb-status'); 
+    const msg = document.getElementById('mastery-fb-msg');
+    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
+    
+    window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); 
+    window.tickMasteryDelays(); 
+    
+    let lvl = currentMasteryTarget.level;
+
+    if (isCorrect) {
+        icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確'; status.className = 'result-status status-correct';
+        if (lvl === 0) { currentMasteryTarget.level = 1; msg.innerText = `升級至 Level 1 中選英。`; }
+        else if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 英選中。`; } 
+        else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = `升級至 Level 3 斷點拼圖。`; } 
+        else if (lvl === 3) { currentMasteryTarget.level = 4; msg.innerText = `升級至 Level 4 高容錯輸出。`; } 
+        else if (lvl === 4) { currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
+        else if (lvl === 4.9) { 
+            currentMasteryTarget.level = 5; 
+            let rw = window.calculateReward(currentMasteryTarget, 'Comp_Grad');
+            let extraMsg = "";
+            if (!rw.isMastered) {
+                window.bufferWordAsMastered(currentMasteryTarget);
+                extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+            } else { extraMsg = " (此片語已精通過，不再重複給予分數)"; }
+            msg.innerText = `通過延遲評測，該片語已完全精通！${extraMsg}`; 
+        }
+    } else {
+        icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+        currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 中選英。";
+    }
+    
+    const nextBtn = document.getElementById('mastery-btn-next');
+    nextBtn.onclick = () => window.nextPhraseMasteryTurn();
 };
