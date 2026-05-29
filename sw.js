@@ -1,4 +1,4 @@
-const CACHE_NAME = 'silenvocab-v16'; //v8
+const CACHE_NAME = 'silenvocab-v17'; //v8
 
 // 定義需要快取的核心檔案
 const ASSETS_TO_CACHE = [
