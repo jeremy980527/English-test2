@@ -298,3 +298,48 @@ window.fetchLeaderboard = async function(weekId) {
         console.error("抓取排行榜失敗", e);
     }
 };
+
+
+// ==========================================
+// 🌟 同步更新使用者名稱至 Firebase 雲端與排行榜
+// ==========================================
+import { updateProfile } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore"; 
+
+window.updateCloudUserName = async function(newName) {
+    // 1. 確認使用者是否已登入
+    const user = auth.currentUser;
+    if (!user) {
+        window.SilenModal.alert("請先登入帳號，才能將名稱同步至雲端排行榜！");
+        return;
+    }
+
+    const btn = document.querySelector('.profile-header .btn');
+    if (btn) btn.innerText = "同步中...";
+
+    try {
+        // 2. 更新 Firebase Auth 帳號系統的顯示名稱
+        await updateProfile(user, { displayName: newName });
+
+        // 3. 更新 Firestore 資料庫中的排行榜資料 (假設你的集合叫做 "users")
+        // 如果你的資料庫路徑或變數不同，請將 db 和 "users" 替換成你實際的設定
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+            name: newName
+        });
+
+        // 4. 成功提示並刷新排行榜
+        if (btn) btn.innerText = "更改名稱";
+        window.SilenModal.alert(`🎉 改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
+        
+        // 如果有開著排行榜，順便幫它重新抓取最新資料
+        if (typeof window.fetchLeaderboard === 'function' && typeof window.getCurrentWeekId === 'function') {
+            window.fetchLeaderboard(window.getCurrentWeekId());
+        }
+
+    } catch (error) {
+        console.error("雲端名稱同步失敗:", error);
+        if (btn) btn.innerText = "更改名稱";
+        window.SilenModal.alert("雲端同步失敗，請檢查網路連線或資料庫權限。");
+    }
+};
