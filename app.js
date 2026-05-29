@@ -498,7 +498,6 @@ function startGuestMode(data) {
     }
 }
 
-
 // =====================================
 // 🌟 5. 題庫管理與精通度計算 (支援詞性 POS)
 // =====================================
@@ -693,7 +692,6 @@ window.addPhraseBookSimple = function() {
     window.saveData(); document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; window.renderBookList();
 };
 
-// 🌟 全新支援三段式解析：英文 - 中文 - 詞性
 window.addBookWithImport = function() {
     const name = document.getElementById('new-book-name').value.trim();
     const tag = document.getElementById('new-book-tag').value.trim();
@@ -762,7 +760,6 @@ window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
     if (!book || book.words.length === 0) { window.SilenModal.alert("無可用數據匯出。"); window.toggleExportMenu(); return; }
     
-    // 匯出時一併把詞性帶出
     const content = book.words.map(w => {
         if (w.pos && w.pos.trim() !== '') return `${w.en} - ${w.zh.join(' / ')} - ${w.pos}`;
         return `${w.en} - ${w.zh.join(' / ')}`;
@@ -793,7 +790,9 @@ window.deleteCurrentBook = function() {
 window.openEditBook = function(id) { 
     currentBookId = id; const book = window.books.find(b => b.id === id);
     document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
-    document.getElementById('export-menu').classList.remove('active'); window.renderWordList(); window.switchView('edit'); 
+    document.getElementById('export-menu').classList.remove('active'); 
+    window.editingWordIndex = null;
+    window.renderWordList(); window.switchView('edit'); 
 };
 
 window.saveBookInfo = function() {
@@ -803,15 +802,85 @@ window.saveBookInfo = function() {
     book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
 };
 
-// 🌟 單字列表加上詞性標籤渲染
+// 🌟 單字列表加上詞性標籤渲染 (支援點擊即時編輯)
+window.editingWordIndex = null;
+
 window.renderWordList = function() {
-    const book = window.books.find(b => b.id === currentBookId); const list = document.getElementById('word-list'); list.innerHTML = '';
+    const book = window.books.find(b => b.id === currentBookId); 
+    const list = document.getElementById('word-list'); 
+    list.innerHTML = '';
+    
     [...book.words].reverse().forEach((word, index) => {
-        const div = document.createElement('div'); div.className = 'word-item';
-        let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
-        div.innerHTML = `<div><div class="word-en">${word.en} ${posHtml}</div><div class="word-zh">${word.zh.join(', ')}</div></div><button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${book.words.length - 1 - index})">✕</button>`;
+        const actualIndex = book.words.length - 1 - index;
+        const div = document.createElement('div'); 
+        div.className = 'word-item';
+        
+        if (window.editingWordIndex === actualIndex) {
+            // ✏️ 編輯模式
+            div.style.flexDirection = 'column';
+            div.style.alignItems = 'stretch';
+            div.innerHTML = `
+                <div class="flex-row" style="margin-bottom: 10px;">
+                    <input type="text" id="inline-en-${actualIndex}" value="${word.en}" style="flex: 2; padding: 8px; font-size: 1rem;">
+                    <select id="inline-pos-${actualIndex}" style="flex: 1; padding: 8px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); border-radius: 8px; outline: none; font-size: 1rem;">
+                        <option value="" ${word.pos===''?'selected':''}>無</option>
+                        <option value="n." ${word.pos==='n.'?'selected':''}>n. (名詞)</option>
+                        <option value="v." ${word.pos==='v.'?'selected':''}>v. (動詞)</option>
+                        <option value="vt." ${word.pos==='vt.'?'selected':''}>vt. (及物)</option>
+                        <option value="vi." ${word.pos==='vi.'?'selected':''}>vi. (不及物)</option>
+                        <option value="adj." ${word.pos==='adj.'?'selected':''}>adj. (形容)</option>
+                        <option value="adv." ${word.pos==='adv.'?'selected':''}>adv. (副詞)</option>
+                        <option value="prep." ${word.pos==='prep.'?'selected':''}>prep. (介係)</option>
+                        <option value="conj." ${word.pos==='conj.'?'selected':''}>conj. (連接)</option>
+                    </select>
+                </div>
+                <input type="text" id="inline-zh-${actualIndex}" value="${word.zh.join(', ')}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
+                <div class="flex-row" style="justify-content: flex-end; margin-top: 5px;">
+                    <button class="btn btn-outline btn-small" onclick="window.cancelEditWord()">取消</button>
+                    <button class="btn btn-small" onclick="window.saveEditWord(${actualIndex})">儲存</button>
+                </div>
+            `;
+        } else {
+            // 👁️ 預覽模式
+            let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
+            div.innerHTML = `
+                <div style="flex: 1; cursor: pointer; padding-right: 15px;" onclick="window.startEditWord(${actualIndex})" title="點擊修改單字">
+                    <div class="word-en">${word.en} ${posHtml}</div>
+                    <div class="word-zh">${word.zh.join(', ')}</div>
+                </div>
+                <button class="btn-icon btn-delete" style="border:none;" onclick="window.deleteWord(${actualIndex})">✕</button>
+            `;
+        }
         list.appendChild(div);
     });
+};
+
+window.startEditWord = function(index) {
+    window.editingWordIndex = index;
+    window.renderWordList();
+};
+
+window.cancelEditWord = function() {
+    window.editingWordIndex = null;
+    window.renderWordList();
+};
+
+window.saveEditWord = function(index) {
+    const en = document.getElementById(`inline-en-${index}`).value.trim();
+    const pos = document.getElementById(`inline-pos-${index}`).value.trim();
+    const zhStr = document.getElementById(`inline-zh-${index}`).value.trim();
+    
+    if(!en || !zhStr) { window.SilenModal.alert("英文與中文不可為空"); return; }
+    
+    const book = window.books.find(b => b.id === currentBookId);
+    
+    book.words[index].en = en;
+    book.words[index].pos = pos;
+    book.words[index].zh = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
+    
+    window.saveData();
+    window.editingWordIndex = null;
+    window.renderWordList();
 };
 
 window.addWord = function() {
@@ -834,7 +903,9 @@ window.addWord = function() {
 };
 
 window.deleteWord = function(index) { 
-    window.books.find(b => b.id === currentBookId).words.splice(index, 1); window.saveData(); window.renderWordList(); 
+    window.books.find(b => b.id === currentBookId).words.splice(index, 1); 
+    window.saveData(); 
+    window.renderWordList(); 
 };
 
 window.getPracticeWords = function() {
