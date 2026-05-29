@@ -70,6 +70,7 @@
         .sortable-ghost { opacity: 0.3; background-color: #f0f0f0; border: 2px dashed #999 !important; }
         .book-item { transition: border-color 0.2s, background-color 0.2s; }
         .phrase-space { margin-right: 18px !important; border-right: 2px dashed rgba(255,255,255,0.2); padding-right: 18px !important; }
+        .word-pos { color: #ff9800; font-weight: bold; margin-left: 8px; font-size: 0.85rem; letter-spacing: 0.5px; }
 
         /* 🌟 側邊導覽列 Sidebar */
         .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -214,8 +215,8 @@
                     <div style="font-size: 0.85rem; color: var(--text-sub); line-height: 1.6; letter-spacing: 0.5px;">透過多維度量化關卡與延遲記憶演算法，將短期輸入精確轉化為永久深層記憶。</div>
                 </div>
                 <div style="margin-bottom: 30px;">
-                    <div style="font-size: 1.05rem; color: var(--accent); margin-bottom: 6px; font-weight: 500; letter-spacing: 1px;">八大核心訓練</div>
-                    <div style="font-size: 0.85rem; color: var(--text-sub); line-height: 1.6; letter-spacing: 0.5px;">整合拼圖重組、視覺辨識辨字、雙向連接與口說語音辨識，全方位攻克單字盲點。</div>
+                    <div style="font-size: 1.05rem; color: var(--accent); margin-bottom: 6px; font-weight: 500; letter-spacing: 1px;">核心綜合訓練</div>
+                    <div style="font-size: 0.85rem; color: var(--text-sub); line-height: 1.6; letter-spacing: 0.5px;">整合拼圖重組、視覺辨識辨字、詞性區分與口說語音辨識，全方位攻克盲點。</div>
                 </div>
                 <div>
                     <div style="font-size: 1.05rem; color: var(--accent); margin-bottom: 6px; font-weight: 500; letter-spacing: 1px;">雲端智能備份</div>
@@ -259,8 +260,8 @@
                     <button class="btn btn-outline" onclick="window.setupMultipleChoice('zh-to-en')">選擇題 (中選英)</button>
                 </div>
                 <div class="flex-row" style="margin-top: 10px;">
+                    <button class="btn btn-outline" style="border-color:#ff9800; color:#ff9800;" onclick="window.setupPosMode()">詞性挑戰</button>
                     <button class="btn btn-outline" onclick="window.setupPuzzleMode()">拼圖</button>
-                    <button class="btn btn-outline" onclick="window.setupMemoryMode()">翻卡</button>
                 </div>
                 <div class="flex-row" style="margin-top: 10px;">
                     <button class="btn btn-outline btn-yg" onclick="window.setupYouglishMode()">YouGlish 沉浸</button>
@@ -305,12 +306,12 @@
                 </div>
                 <div style="display: flex; justify-content: flex-end;"><span class="import-trigger" onclick="window.toggleImportArea('word')">批量匯入 / 讀取檔案</span></div>
                 <div id="import-area" class="hidden import-section">
-                    <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0; letter-spacing: 0.5px;">格式: <span style="color:var(--accent)">英文 - 中文</span> (換行新增)</p>
+                    <p style="font-size:0.8rem; color:var(--text-sub); margin:0 0 10px 0; letter-spacing: 0.5px;">格式: <span style="color:var(--accent)">英文 - 中文 - 詞性(選填)</span> (換行新增)</p>
                     <div style="margin-bottom: 15px;">
                         <input type="file" id="import-file" accept=".txt" style="display: none;" onchange="window.handleFileUpload(event, 'word')">
                         <button class="btn btn-outline btn-small" onclick="document.getElementById('import-file').click()">選擇 txt 檔案</button>
                     </div>
-                    <textarea id="import-content" placeholder="可直接貼上，或使用上方按鈕讀取 txt 檔案...&#10;範例：&#10;theory - 學說；理論&#10;psychology - 心理學"></textarea>
+                    <textarea id="import-content" placeholder="可直接貼上，或使用上方按鈕讀取 txt 檔案...&#10;範例：&#10;measure - 測量 - n.&#10;psychology - 心理學"></textarea>
                     <button class="btn btn-outline" onclick="window.addBookWithImport()">建立並匯入資料</button>
                 </div>
                 <button id="btn-create-simple" class="btn btn-outline" onclick="window.addBookSimple()">建立空白單字簿</button>
@@ -411,13 +412,52 @@
 
         <div style="margin-top: 30px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; color: var(--text-sub); font-size: 0.95rem;">新增詞彙</div>
         <div class="card">
-            <input type="text" id="input-en" placeholder="英文 (e.g., Apple 或 take over)">
+            <div class="flex-row" style="margin-bottom: 10px;">
+                <input type="text" id="input-en" placeholder="英文 (e.g., measure)" style="flex: 2;">
+                <input type="text" id="input-pos" placeholder="詞性 (選填)" style="flex: 1;">
+            </div>
             <input type="text" id="input-zh" placeholder="中文意思 (多個意思請用逗號分隔)">
             <button class="btn btn-small" onclick="window.addWord()">加入題庫</button>
         </div>
         <div id="word-list"></div>
     </div>
 
+    <div id="view-pos" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
+            <div class="nav-bar-right">
+                <span style="color:#ff9800; letter-spacing: 0.5px;">詞性挑戰</span>
+                <span id="pos-seq-badge" class="mode-badge hidden">循序漸進</span>
+            </div>
+        </div>
+        <div class="practice-area">
+            <div id="pos-interaction-area">
+                <div class="question-text" id="pos-word-display" style="font-size:2.8rem; font-weight: 600; color: var(--accent);">Word</div>
+                <div class="yg-zh-display" id="pos-zh-display" style="margin-bottom: 30px; font-size: 1.2rem; color: var(--text-sub);">中文意思</div>
+                <div class="mcq-grid" id="pos-options-area" style="grid-template-columns: 1fr 1fr;">
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('n.')" style="border-color: #ff9800; color: #ff9800;">名詞 (n.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('v.')" style="border-color: #ff9800; color: #ff9800;">動詞 (v.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('vt.')" style="border-color: #ff9800; color: #ff9800;">及物動詞 (vt.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('vi.')" style="border-color: #ff9800; color: #ff9800;">不及物動詞 (vi.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('adj.')" style="border-color: #ff9800; color: #ff9800;">形容詞 (adj.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('adv.')" style="border-color: #ff9800; color: #ff9800;">副詞 (adv.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('prep.')" style="border-color: #ff9800; color: #ff9800;">介係詞 (prep.)</button>
+                    <button class="btn-mcq" onclick="window.checkPosAnswer('conj.')" style="border-color: #ff9800; color: #ff9800;">連接詞 (conj.)</button>
+                </div>
+            </div>
+            <div id="pos-feedback-area" class="hidden">
+                <div class="question-text" id="pos-feedback-question-copy" style="font-size: 1.6rem; margin-bottom: 15px; color: var(--text-sub);"></div>
+                <div id="pos-feedback-icon" class="big-icon"></div>
+                <div id="pos-feedback-status" class="result-status"></div>
+                <div class="answer-reveal">
+                    正確詞性: <span id="pos-feedback-answer" style="color: #ff9800; margin-left: 8px; font-weight: 600; font-size: 1.2rem;"></span>
+                    <button class="tts-btn-large" onclick="window.replayAudio()" style="font-size: 0.9rem; margin-left: 10px; border: 1px solid #444; padding: 4px 10px; border-radius: 15px;">播放讀音</button>
+                </div>
+                <button class="btn btn-next-big" style="background-color: #ff9800; color: #000;" onclick="window.handlePosNextClick()">下一個</button>
+            </div>
+            <div class="progress-text" id="pos-progress-display"></div>
+        </div>
+    </div>
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -646,7 +686,7 @@
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--accent); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
 
-<script src="app.js?v=1000"></script>
+<script src="app.js?v=1001"></script>
 <script type="module" src="auth.js"></script>
 
 </body>
