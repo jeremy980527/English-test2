@@ -125,6 +125,7 @@ window.toggleSetting = function(type) {
 };
 
 // =====================================
+// =====================================
 // 2. 全局變數與基礎邏輯 (Globals)
 // =====================================
 window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
@@ -224,6 +225,21 @@ window.quitPractice = function() {
         return;
     }
     window.goHome(); 
+};
+
+// 🌟 側邊導覽列開關邏輯 (剛剛不小心被我遺漏的拼圖)
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+    }
 };
 
 // =====================================
