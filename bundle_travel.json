@@ -1,0 +1,8 @@
+[
+  { "en": "customs", "zh": ["海關"], "pos": "n." },
+  { "en": "declare", "zh": ["申報"], "pos": "v." },
+  { "en": "boarding pass", "zh": ["登機證"], "pos": "n." },
+  { "en": "baggage claim", "zh": ["行李提領處"], "pos": "n." },
+  { "en": "take off", "zh": ["起飛"], "pos": "v." },
+  { "en": "itinerary", "zh": ["行程表"], "pos": "n." }
+]
