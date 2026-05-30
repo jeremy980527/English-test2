@@ -417,7 +417,6 @@ window.updateHomeSummary = function() {
     let isStoreSelected = false;
     
     window.books.forEach(b => { 
-        // 🔥 自動修復：強制把商城擴充包的 isPhrase 轉回 false，讓它享有一般單字的所有模式
         if (b.isStore) b.isPhrase = false;
 
         if (selectedBookIds.has(b.id)) { 
@@ -436,7 +435,6 @@ window.updateHomeSummary = function() {
         let typeStr = isStoreSelected ? '商城組合' : (isPhraseSelected ? '片語' : '單字');
         summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
         
-        // 🔥 核心修正：只要不是純片語庫，就全部顯示 8 大綜合模式！
         if (isPhraseSelected) {
             setDisplayState('word-practice-area', false);
             setDisplayState('phrase-practice-area', true);
@@ -507,11 +505,34 @@ window.renderBookList = function() {
                 wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
                 
                 if (book.isStore) {
+                    // 🌟 允許刪除商城包！
+                    const actionContainer = document.createElement('div');
+                    actionContainer.style.cssText = 'display: flex; align-items: center; gap: 10px;';
+                    
                     const lockIcon = document.createElement('div');
-                    lockIcon.style.cssText = 'color: var(--text-sub); font-size: 0.9rem; padding: 4px 8px;';
+                    lockIcon.style.cssText = 'color: var(--text-sub); font-size: 0.85rem;';
                     lockIcon.innerText = "官方組合包";
-                    div.appendChild(wrapper);
-                    div.appendChild(lockIcon);
+                    
+                    const delBtn = document.createElement('button'); 
+                    delBtn.className = 'btn-icon edit-btn'; 
+                    delBtn.innerHTML = '刪除'; 
+                    delBtn.style.color = '#ff4444';
+                    delBtn.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        window.SilenModal.confirm('確定要刪除此擴充包嗎？\n(刪除後可至商城「免費重新下載」最新版本)').then(agreed => {
+                            if(agreed) {
+                                window.books = window.books.filter(b => b.id !== book.id);
+                                selectedBookIds.delete(book.id);
+                                window.saveData();
+                                window.renderBookList();
+                            }
+                        });
+                    };
+                    
+                    actionContainer.appendChild(lockIcon);
+                    actionContainer.appendChild(delBtn);
+                    div.appendChild(wrapper); 
+                    div.appendChild(actionContainer);
                 } else {
                     const editBtn = document.createElement('button'); editBtn.className = 'btn-icon edit-btn'; editBtn.innerHTML = '編輯'; 
                     editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
@@ -1987,8 +2008,9 @@ window.handlePosNextClick = function() {
 };
 
 // ==========================================================================
-// 🌟 13. 單字擴充商城系統 (同專案相對路徑版 + 極簡黑白風)
+// 🌟 13. 單字擴充商城系統 (防快取 + 購買紀錄 + 允許重新下載)
 // ==========================================================================
+let purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || [];
 
 window.openStore = async function() {
     window.switchView('store');
@@ -1998,7 +2020,8 @@ window.openStore = async function() {
     container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
     
     try {
-        const res = await fetch("store_catalog.json");
+        // 🔥 加入時間戳強制打破快取，確保抓到最新 json
+        const res = await fetch("store_catalog.json?t=" + Date.now());
         if (!res.ok) throw new Error("Catalog fetch failed");
         const catalogData = await res.json();
         window.renderStoreCatalog(catalogData);
@@ -2016,13 +2039,18 @@ window.renderStoreCatalog = function(catalogData) {
     container.innerHTML = '';
 
     catalogData.forEach(bundle => {
-        const isOwned = window.books.some(b => b.bundleId === bundle.id);
+        const isInstalled = window.books.some(b => b.bundleId === bundle.id);
+        const isPurchased = purchasedBundles.includes(bundle.id);
+        
         const card = document.createElement('div');
         card.className = 'store-card';
         
         let actionBtnHtml = '';
-        if (isOwned) {
-            actionBtnHtml = `<div class="store-owned">已擁有此擴充包</div>`;
+        if (isInstalled) {
+            actionBtnHtml = `<div class="store-owned">✔ 已安裝於擴充庫</div>`;
+        } else if (isPurchased) {
+            // 🌟 已買過，提供免費重新下載 (方便抓取更新版 JSON)
+            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #333; color: #fff; border: 1px solid #555; font-weight: 600;" onclick="window.purchaseBundle('${bundle.id}', 0, '${bundle.name}')">免費重新下載 (已解鎖)</button>`;
         } else {
             actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #fff; color: #000; border: 1px solid #fff; font-weight: 600;" onclick="window.purchaseBundle('${bundle.id}', ${bundle.price}, '${bundle.name}')">花費 ${bundle.price} 積分下載</button>`;
         }
@@ -2045,19 +2073,30 @@ window.purchaseBundle = function(bundleId, price, bundleName) {
         return;
     }
 
-    window.SilenModal.confirm(`確定要花費 ${price} 積分下載「${bundleName}」嗎？`).then(async agreed => {
+    let confirmMsg = price > 0 ? `確定要花費 ${price} 積分解鎖「${bundleName}」嗎？` : `確定要重新下載最新的「${bundleName}」嗎？`;
+
+    window.SilenModal.confirm(confirmMsg).then(async agreed => {
         if (agreed) {
             window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
             try {
-                const res = await fetch(bundleId + ".json");
+                // 🔥 加入時間戳強制打破快取，保證抓到你剛在 Github 存檔的最新版
+                const res = await fetch(bundleId + ".json?t=" + Date.now());
                 if (!res.ok) throw new Error("Bundle fetch failed");
                 const bundleData = await res.json();
                 
-                window.myTotalScore -= price;
-                document.getElementById('store-my-score').innerText = window.myTotalScore;
-                if (typeof window.uploadScoreToCloud === 'function') {
-                    window.uploadScoreToCloud(window.myTotalScore, 0); 
+                if (price > 0) {
+                    window.myTotalScore -= price;
+                    document.getElementById('store-my-score').innerText = window.myTotalScore;
+                    if (typeof window.uploadScoreToCloud === 'function') {
+                        window.uploadScoreToCloud(window.myTotalScore, 0); 
+                    }
+                }
+
+                // 記錄已購買
+                if (!purchasedBundles.includes(bundleId)) {
+                    purchasedBundles.push(bundleId);
+                    localStorage.setItem('sv_purchased_bundles', JSON.stringify(purchasedBundles));
                 }
 
                 window.books.push({
@@ -2065,7 +2104,6 @@ window.purchaseBundle = function(bundleId, price, bundleName) {
                     name: bundleName,
                     tag: "官方擴充",
                     isGSAT: false,
-                    // 🔥 修正點：設為 false，當作一般單字處理，開啟完整 8 大模式！
                     isPhrase: false, 
                     isStore: true,  
                     bundleId: bundleId,
