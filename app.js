@@ -825,7 +825,7 @@ window.getSelectedWordsPool = function() {
 };
 
 // =====================================
-// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算
+// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算 (全新 5 階升級版)
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
@@ -913,6 +913,7 @@ window.updateMasteryProgress = function() {
     return mastered === masteryPool.length;
 };
 
+// 🌟 全新 5 階關卡推進邏輯
 window.nextMasteryTurn = function() {
     if (window.updateMasteryProgress()) {
         window.hideAllMasteryAreas(); document.getElementById('mastery-success-title').style.color = (masteryModeType === 'comprehensive') ? "#9c27b0" : "#009688";
@@ -922,30 +923,45 @@ window.nextMasteryTurn = function() {
     let l0 = masteryPool.filter(w => w.level === 0);
     if (l0.length > 0) { currentMasteryTarget = l0[0]; window.showMasteryL0(currentMasteryTarget); return; }
 
-    let delayReady = masteryPool.filter(w => w.level === 3.9 || w.level === 2.9);
+    let delayReady = masteryPool.filter(w => w.level === 4.9 || w.level === 2.9);
     if (delayReady.length > 0) {
         currentMasteryTarget = delayReady.sort(() => Math.random() - 0.5)[0];
-        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); else window.showMasteryMCQ(currentMasteryTarget, true); 
+        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); 
+        else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', true); 
         return;
     }
 
-    let active = masteryPool.filter(w => w.level >= 1 && w.level <= 3 && Number.isInteger(w.level));
+    let active = masteryPool.filter(w => w.level >= 1 && w.level <= 4 && Number.isInteger(w.level));
     if (active.length > 0) {
         currentMasteryTarget = active.sort(() => Math.random() - 0.5)[0];
-        if (currentMasteryTarget.level === 1) window.showMasteryMCQ(currentMasteryTarget, false);
-        else if (currentMasteryTarget.level === 2) { if (masteryModeType === 'comprehensive') window.showMasteryPuzzle(currentMasteryTarget); else window.showMasteryMatch(currentMasteryTarget); }
-        else if (currentMasteryTarget.level === 3) window.showMasteryTyping(currentMasteryTarget, false);
+        
+        if (currentMasteryTarget.level === 1) {
+            if (masteryModeType === 'comprehensive') window.showMasteryMCQ(currentMasteryTarget, 'en-to-zh', false);
+            else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', false);
+        }
+        else if (currentMasteryTarget.level === 2) { 
+            if (masteryModeType === 'comprehensive') window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', false); 
+            else window.showMasteryMatch(currentMasteryTarget); 
+        }
+        else if (currentMasteryTarget.level === 3) { 
+            if (masteryModeType === 'comprehensive') window.showMasteryPuzzle(currentMasteryTarget); 
+        }
+        else if (currentMasteryTarget.level === 4) {
+            if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, false);
+        }
         return;
     }
 
-    let waiting = masteryPool.filter(w => w.level === 3.5 || w.level === 2.5);
+    let waiting = masteryPool.filter(w => w.level === 4.5 || w.level === 2.5);
     if (waiting.length > 0) {
-        let forceTarget = waiting[0]; forceTarget.level = forceTarget.level === 3.5 ? 3.9 : 2.9; currentMasteryTarget = forceTarget;
-        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); else window.showMasteryMCQ(currentMasteryTarget, true); return;
+        let forceTarget = waiting[0]; forceTarget.level = forceTarget.level === 4.5 ? 4.9 : 2.9; currentMasteryTarget = forceTarget;
+        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); 
+        else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', true); 
+        return;
     }
 };
 
-window.tickMasteryDelays = function() { masteryPool.forEach(w => { if (w.level === 3.5 || w.level === 2.5) { w.delay--; if (w.delay <= 0) { w.level = (w.level === 3.5) ? 3.9 : 2.9; } } }); };
+window.tickMasteryDelays = function() { masteryPool.forEach(w => { if (w.level === 4.5 || w.level === 2.5) { w.delay--; if (w.delay <= 0) { w.level = (w.level === 4.5) ? 4.9 : 2.9; } } }); };
 window.hideAllMasteryAreas = function() { ['mastery-l0-area', 'mastery-mcq-area', 'mastery-match-area', 'mastery-puzzle-area', 'mastery-typing-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => { setDisplayState(id, false); }); };
 
 window.showMasteryL0 = function(word) {
@@ -954,14 +970,29 @@ window.showMasteryL0 = function(word) {
 };
 window.masteryL0Next = function() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); currentMasteryTarget.level = 1; window.nextMasteryTurn(); };
 
-window.showMasteryMCQ = function(word, isDelayed) {
-    setDisplayState('mastery-mcq-area', true); document.getElementById('mastery-mcq-badge').innerText = isDelayed ? "Lv 3: 延遲固化 (畢業評測)" : "Lv 1: 視覺辨識";
-    document.getElementById('mastery-mcq-q').innerText = word.zh.join(' / ');
+// 🌟 升級版選擇題引擎：支援英選中(Lv1)與中選英(Lv2)
+window.showMasteryMCQ = function(word, mode, isDelayed) {
+    setDisplayState('mastery-mcq-area', true); 
+    
+    let badgeText = "";
+    if (isDelayed) badgeText = "Lv 3: 延遲固化 (畢業評測)"; // 連結力模式用
+    else if (mode === 'en-to-zh') badgeText = "Lv 1: 視覺辨識 (英選中)";
+    else badgeText = masteryModeType === 'comprehensive' ? "Lv 2: 逆向回想 (中選英)" : "Lv 1: 視覺辨識 (中選英)";
+    
+    document.getElementById('mastery-mcq-badge').innerText = badgeText;
+    document.getElementById('mastery-mcq-q').innerText = (mode === 'zh-to-en') ? word.zh.join(' / ') : word.en;
+    
     let options = [word]; let distractors = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...distractors.slice(0, 3));
     if (options.length < 4) { let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...fallback.slice(0, 4 - options.length)); }
     options = options.slice(0, 4).sort(() => Math.random() - 0.5);
+    
     const optArea = document.getElementById('mastery-mcq-options'); optArea.innerHTML = '';
-    options.forEach(opt => { let btn = document.createElement('button'); btn.className = 'btn-mcq'; btn.innerText = opt.en; btn.onclick = () => window.checkMasteryAnswer(opt.en === word.en); optArea.appendChild(btn); });
+    options.forEach(opt => { 
+        let btn = document.createElement('button'); btn.className = 'btn-mcq'; 
+        btn.innerText = (mode === 'zh-to-en') ? opt.en : opt.zh[0]; 
+        btn.onclick = () => window.checkMasteryAnswer(opt.en === word.en); 
+        optArea.appendChild(btn); 
+    });
 };
 
 let matchEnSelected = null, matchZhSelected = null, matchMistake = false, matchPairsLeft = 4;
@@ -1003,7 +1034,10 @@ window.checkMatchPair = function() {
 };
 
 window.showMasteryPuzzle = function(word) {
-    setDisplayState('mastery-puzzle-area', true); document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / '); document.getElementById('mastery-puzzle-hint-display').innerText = ''; 
+    setDisplayState('mastery-puzzle-area', true); 
+    document.getElementById('mastery-puzzle-badge').innerText = "Lv 3: 結構重組"; 
+    document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / '); 
+    document.getElementById('mastery-puzzle-hint-display').innerText = ''; 
     puzzleUserAnswer = []; let letters = word.en.toLowerCase().split('');
     for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
     puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false })); window.renderMasteryPuzzleBoard();
@@ -1037,7 +1071,8 @@ window.checkMasteryPuzzle = function(forced = false) {
 };
 
 window.showMasteryTyping = function(word, isDelayed) {
-    setDisplayState('mastery-typing-area', true); document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 3: 主動輸出";
+    setDisplayState('mastery-typing-area', true); 
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 4: 主動輸出";
     document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
     const input = document.getElementById('mastery-typing-input'); input.value = ''; setTimeout(() => input.focus(), 50); 
     input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); window.checkMasteryTyping(); } };
@@ -1048,6 +1083,7 @@ window.checkMasteryTyping = function() {
     const val = document.getElementById('mastery-typing-input').value.trim().toLowerCase(); const target = currentMasteryTarget.en.toLowerCase(); window.checkMasteryAnswer(val === target);
 };
 
+// 🌟 全新精通模式升級判定引擎
 window.checkMasteryAnswer = function(isCorrect) {
     window.hideAllMasteryAreas(); setDisplayState('mastery-feedback-area', true, 'flex');
     const icon = document.getElementById('mastery-fb-icon'); const status = document.getElementById('mastery-fb-status'); const msg = document.getElementById('mastery-fb-msg');
@@ -1058,10 +1094,11 @@ window.checkMasteryAnswer = function(isCorrect) {
     if (masteryModeType === 'comprehensive') {
         if (isCorrect) {
             icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確'; status.className = 'result-status status-correct';
-            if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 結構重組。`; } 
-            else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = `升級至 Level 3 主動輸出。`; } 
-            else if (lvl === 3) { currentMasteryTarget.level = 3.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
-            else if (lvl === 3.9) { 
+            if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 逆向回想。`; } 
+            else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = `升級至 Level 3 結構重組。`; } 
+            else if (lvl === 3) { currentMasteryTarget.level = 4; msg.innerText = `升級至 Level 4 主動輸出。`; } 
+            else if (lvl === 4) { currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
+            else if (lvl === 4.9) { 
                 currentMasteryTarget.level = 5; let rw = window.calculateReward(currentMasteryTarget, 'Comp_Grad'); let extraMsg = "";
                 if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
                 else { extraMsg = " (此單字已精通過，不再重複給予分數)"; }
