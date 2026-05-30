@@ -1987,57 +1987,36 @@ window.handlePosNextClick = function() {
 };
 
 // ==========================================================================
-// 🌟 13. 單字擴充商城系統 (Store Engine)
+// 🌟 13. 單字擴充商城系統 (同專案相對路徑版 + 極簡黑白風)
 // ==========================================================================
 
-// 模擬放在 Github 上的商城型錄 (未來你可以在這裡無限擴充)
-const MOCK_STORE_CATALOG = [
-    { 
-        id: "bundle_travel", 
-        name: "✈️ 出國與入境求生包", 
-        desc: "過海關、機場報到、飯店Check-in必備核心字彙。背熟這包，出國不求人！", 
-        price: 500, 
-        wordCount: 40 
-    },
-    { 
-        id: "bundle_business", 
-        name: "💼 職場 Email 高頻金句", 
-        desc: "寫信不再卡詞，外商公司天天在用的商務單字與片語組合。", 
-        price: 800, 
-        wordCount: 65 
-    }
-];
-
-// 模擬放在 Github 上的實際單字內容 (未來會用 fetch 抓取 .json)
-const MOCK_BUNDLE_DATA = {
-    "bundle_travel": [
-        { en: "customs", zh: ["海關"], pos: "n." },
-        { en: "declare", zh: ["申報"], pos: "v." },
-        { en: "boarding pass", zh: ["登機證"], pos: "n." },
-        { en: "baggage claim", zh: ["行李提領處"], pos: "n." },
-        { en: "take off", zh: ["起飛"], pos: "v." },
-        { en: "itinerary", zh: ["行程表"], pos: "n." }
-    ],
-    "bundle_business": [
-        { en: "attach", zh: ["附上", "附件"], pos: "v." },
-        { en: "clarify", zh: ["澄清", "說明"], pos: "v." },
-        { en: "propose", zh: ["提議"], pos: "v." },
-        { en: "regarding", zh: ["關於"], pos: "prep." },
-        { en: "follow up on", zh: ["後續追蹤"], pos: "v." }
-    ]
-};
-
-window.openStore = function() {
+window.openStore = async function() {
     window.switchView('store');
     document.getElementById('store-my-score').innerText = window.myTotalScore || 0;
-    window.renderStoreCatalog();
+    
+    const container = document.getElementById('store-catalog-area');
+    container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
+    
+    try {
+        // 🔥 直接呼叫同資料夾下的型錄檔案，不用管網址了！
+        const res = await fetch("store_catalog.json");
+        if (!res.ok) throw new Error("Catalog fetch failed");
+        const catalogData = await res.json();
+        window.renderStoreCatalog(catalogData);
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--error); letter-spacing: 1px;">載入失敗，請確認 store_catalog.json 是否已放在專案目錄中。</div>';
+    }
 };
 
-window.renderStoreCatalog = function() {
+window.currentCatalogData = [];
+
+window.renderStoreCatalog = function(catalogData) {
+    window.currentCatalogData = catalogData;
     const container = document.getElementById('store-catalog-area');
     container.innerHTML = '';
 
-    MOCK_STORE_CATALOG.forEach(bundle => {
+    catalogData.forEach(bundle => {
         // 檢查使用者是否已經買過這個包了
         const isOwned = window.books.some(b => b.bundleId === bundle.id);
         
@@ -2046,9 +2025,9 @@ window.renderStoreCatalog = function() {
         
         let actionBtnHtml = '';
         if (isOwned) {
-            actionBtnHtml = `<div class="store-owned">✔ 已擁有此擴充包</div>`;
+            actionBtnHtml = `<div class="store-owned">已擁有此擴充包</div>`;
         } else {
-            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #4caf50; color: white;" onclick="window.purchaseBundle('${bundle.id}', ${bundle.price}, '${bundle.name}')">花費 ${bundle.price} 積分下載</button>`;
+            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #fff; color: #000; border: 1px solid #fff; font-weight: 600;" onclick="window.purchaseBundle('${bundle.id}', ${bundle.price}, '${bundle.name}')">花費 ${bundle.price} 積分下載</button>`;
         }
 
         card.innerHTML = `
@@ -2056,7 +2035,7 @@ window.renderStoreCatalog = function() {
                 <h4 class="store-title">${bundle.name}</h4>
                 <div class="store-price">${bundle.price} pts</div>
             </div>
-            <div class="store-desc">${bundle.desc} <br><span style="color:var(--accent); font-size: 0.8rem;">(共 ${bundle.wordCount} 個項目)</span></div>
+            <div class="store-desc">${bundle.desc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${bundle.wordCount} 個項目)</span></div>
             ${actionBtnHtml}
         `;
         container.appendChild(card);
@@ -2065,49 +2044,52 @@ window.renderStoreCatalog = function() {
 
 window.purchaseBundle = function(bundleId, price, bundleName) {
     if (window.myTotalScore < price) {
-        window.SilenModal.alert(`您的積分不足！\n\n此擴充包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。\n請多進行「綜合精通模式」賺取分數吧！`);
+        window.SilenModal.alert(`積分不足！\n\n解鎖此擴充包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。`);
         return;
     }
 
-    window.SilenModal.confirm(`確定要花費 ${price} 積分下載「${bundleName}」嗎？`).then(agreed => {
+    window.SilenModal.confirm(`確定要花費 ${price} 積分下載「${bundleName}」嗎？`).then(async agreed => {
         if (agreed) {
-            // 1. 扣除積分
-            window.myTotalScore -= price;
-            document.getElementById('store-my-score').innerText = window.myTotalScore;
+            window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
-            if (typeof window.uploadScoreToCloud === 'function') {
-                // 扣分不上傳到賽季分，只扣總分
-                window.uploadScoreToCloud(window.myTotalScore, 0); 
+            try {
+                // 🔥 也是直接呼叫檔案名稱 (例如 bundle1.json)
+                const res = await fetch(bundleId + ".json");
+                if (!res.ok) throw new Error("Bundle fetch failed");
+                const bundleData = await res.json();
+                
+                // 1. 扣除積分
+                window.myTotalScore -= price;
+                document.getElementById('store-my-score').innerText = window.myTotalScore;
+                if (typeof window.uploadScoreToCloud === 'function') {
+                    window.uploadScoreToCloud(window.myTotalScore, 0); 
+                }
+
+                // 2. 建立一本新的「商城擴充庫」單字本
+                window.books.push({
+                    id: Date.now(),
+                    name: bundleName,
+                    tag: "官方擴充",
+                    isGSAT: false,
+                    isPhrase: true, // 預設視為包含片語的綜合包，享受片語精通模式
+                    isStore: true,  
+                    bundleId: bundleId,
+                    words: bundleData
+                });
+
+                window.saveData();
+                window.renderStoreCatalog(window.currentCatalogData);
+                
+                // 3. 成功提示
+                window.SilenModal.alert(`下載成功！\n\n「${bundleName}」已加入您的擴充庫中。`).then(() => {
+                    window.setLibMode('store', '商城擴充庫');
+                    window.openBookSelect();
+                });
+
+            } catch (e) {
+                console.error(e);
+                window.SilenModal.alert(`下載失敗！\n無法獲取檔案：${bundleId}.json\n請確認該檔案是否已放進專案目錄中。`);
             }
-
-            // 2. 模擬從 Github 下載 JSON 資料
-            const bundleData = MOCK_BUNDLE_DATA[bundleId];
-            
-            if (!bundleData) {
-                window.SilenModal.alert("下載失敗：找不到該擴充包資料。");
-                return;
-            }
-
-            // 3. 建立一本新的「商城擴充庫」單字本
-            window.books.push({
-                id: Date.now(),
-                name: bundleName,
-                tag: "官方擴充",
-                isGSAT: false,
-                isPhrase: true, // 預設視為包含片語的綜合包
-                isStore: true,  // 🌟 這個標記非常重要，用來鎖定編輯與分類
-                bundleId: bundleId,
-                words: bundleData
-            });
-
-            window.saveData();
-            window.renderStoreCatalog(); // 重新渲染商城，把按鈕變成「已擁有」
-            
-            window.SilenModal.alert(`🎉 購買成功！\n\n「${bundleName}」已加入您的【商城擴充庫】中。`).then(() => {
-                // 幫使用者自動切換到商城擴充庫的檢視畫面
-                window.setLibMode('store', '商城擴充庫');
-                window.openBookSelect();
-            });
         }
     });
 };
