@@ -1,0 +1,19 @@
+[
+  { "en": "passport", "zh": ["護照"], "pos": "n." },
+  { "en": "visa", "zh": ["簽證"], "pos": "n." },
+  { "en": "tourist visa", "zh": ["觀光簽證"], "pos": "n." },
+  { "en": "business visa", "zh": ["商務簽證"], "pos": "n." },
+  { "en": "student visa", "zh": ["學生簽證"], "pos": "n." },
+  { "en": "work visa", "zh": ["工作簽證"], "pos": "n." },
+  { "en": "entry visa", "zh": ["入境簽證"], "pos": "n." },
+  { "en": "multiple-entry visa", "zh": ["多次入境簽證"], "pos": "n." },
+  { "en": "visa exemption", "zh": ["免簽"], "pos": "n." },
+  { "en": "boarding pass", "zh": ["登機證"], "pos": "n." },
+  { "en": "e-ticket", "zh": ["電子機票"], "pos": "n." },
+  { "en": "itinerary", "zh": ["行程表"], "pos": "n." },
+  { "en": "reservation", "zh": ["預訂"], "pos": "n." },
+  { "en": "confirmation", "zh": ["確認單"], "pos": "n." },
+  { "en": "biometric passport", "zh": ["生物辨識護照"], "pos": "n." },
+  { "en": "expiration date", "zh": ["到期日"], "pos": "n." },
+  { "en": "issue date", "zh": ["核發日期"], "pos": "n." }
+]
