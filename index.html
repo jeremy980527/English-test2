@@ -95,6 +95,15 @@
         .lb-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
         .lb-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 3px; color: var(--text-main); }
         .lb-score { font-size: 1.1rem; font-weight: bold; color: var(--accent); font-family: 'Courier New', Courier, monospace; text-align: right; }
+
+        /* 🌟 商城擴充庫樣式 */
+        .store-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: 0.2s; }
+        .store-card:hover { border-color: var(--accent); }
+        .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .store-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin: 0; }
+        .store-price { font-size: 1.2rem; font-weight: bold; color: #4caf50; font-family: 'Courier New', Courier, monospace; }
+        .store-desc { font-size: 0.85rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 15px; letter-spacing: 0.5px; }
+        .store-owned { color: var(--text-sub); font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -110,6 +119,7 @@
     <div class="sidebar-menu">
         <div class="sidebar-item" onclick="window.goHome(); window.toggleSidebar();">首頁 Dashboard</div>
         <div class="sidebar-item" onclick="window.openBookSelect(); window.toggleSidebar();">單字 / 片語庫</div>
+        <div class="sidebar-item" style="color: var(--accent);" onclick="window.openStore(); window.toggleSidebar();">單字擴充商城</div>
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
     </div>
@@ -134,6 +144,26 @@
         </div>
     </header>
 
+    <div id="view-store" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.goHome()">返回</button>
+            <div class="nav-bar-right">
+                <span style="font-weight: 500; letter-spacing: 1px;">擴充商城</span>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; border-color: #4caf50; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">您目前的可用積分</div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: #4caf50; font-family: 'Courier New', Courier, monospace;"><span id="store-my-score">0</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(透過綜合精通模式獲取積分，解鎖專業情境單字包)</p>
+        </div>
+
+        <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">官方嚴選組合包</h3>
+        
+        <div id="store-catalog-area" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">載入商品型錄中...</div>
+        </div>
+    </div>
     <div id="view-leaderboard" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -155,6 +185,7 @@
             <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">連線至伺服器中...</div>
         </div>
     </div>
+
     <div id="view-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -196,6 +227,7 @@
             </p>
         </div>
     </div>
+
     <div id="view-public-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.switchView('leaderboard')">返回排行榜</button>
@@ -224,9 +256,10 @@
         <div class="card" style="border-color: #333;">
             <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 10px;">賽季榮譽徽章展現</h3>
             <div class="badge-container" id="public-badges-container">
-                </div>
+            </div>
         </div>
     </div>
+
     <div id="view-landing" class="hidden">
         <div class="landing-hero" style="text-align: center; padding: 60px 0; animation: fadeIn 0.6s ease;">
             <h1 style="font-size: 2.8rem; font-weight: 200; letter-spacing: 8px; margin-bottom: 10px; color: var(--accent);">SILENVOCAB</h1>
@@ -312,6 +345,7 @@
                     <div class="dropdown-option" onclick="window.setLibMode('normal', '普通單字庫')">普通單字庫</div>
                     <div class="dropdown-option" onclick="window.setLibMode('gsat', '學測單字庫')">學測單字庫</div>
                     <div class="dropdown-option" onclick="window.setLibMode('phrase', '專屬片語庫')">專屬片語庫</div>
+                    <div class="dropdown-option" onclick="window.setLibMode('store', '商城擴充庫')" style="color: #4caf50; font-weight: bold;">商城擴充庫</div>
                 </div>
             </div>
             
@@ -406,6 +440,17 @@
                     <button class="btn btn-outline" onclick="window.addPhraseBookWithImport()">建立並匯入資料</button>
                 </div>
                 <button id="btn-create-simple-phrase" class="btn btn-outline" onclick="window.addPhraseBookSimple()">建立空白片語簿</button>
+            </div>
+        </div>
+
+        <div id="store-book-area" class="hidden">
+            <div id="store-book-list"></div>
+            
+            <div style="margin-top:40px; border-top: 1px solid var(--border); padding-top: 20px; text-align: center;">
+                <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 20px; letter-spacing: 0.5px;">在此處管理的為官方擴充組合包，為確保學習品質，無法進行手動編輯與刪減單字。</p>
+                <button class="btn" style="background-color: #4caf50; color: #fff; width: 100%; font-weight: 600; font-size: 1.05rem;" onclick="window.openStore()">
+                    前往擴充商城尋寶
+                </button>
             </div>
         </div>
 
