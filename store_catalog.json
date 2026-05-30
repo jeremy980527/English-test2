@@ -15,13 +15,13 @@
         "name": "Part 2: 機場與航班",
         "price": 200,
         "wordCount": 23
-      }
+      },
       {
         "id": "bundle_travel-3",
         "name": "Part 3: 海關與入境程序",
         "price": 200,
         "wordCount": 18
-      },
+      }
     ]
   }
 ]
