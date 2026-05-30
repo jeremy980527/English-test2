@@ -417,6 +417,9 @@ window.updateHomeSummary = function() {
     let isStoreSelected = false;
     
     window.books.forEach(b => { 
+        // 🔥 自動修復：強制把商城擴充包的 isPhrase 轉回 false，讓它享有一般單字的所有模式
+        if (b.isStore) b.isPhrase = false;
+
         if (selectedBookIds.has(b.id)) { 
             selectedCount++; 
             wordCount += b.words.length; 
@@ -433,7 +436,8 @@ window.updateHomeSummary = function() {
         let typeStr = isStoreSelected ? '商城組合' : (isPhraseSelected ? '片語' : '單字');
         summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
         
-        if (isPhraseSelected || isStoreSelected) {
+        // 🔥 核心修正：只要不是純片語庫，就全部顯示 8 大綜合模式！
+        if (isPhraseSelected) {
             setDisplayState('word-practice-area', false);
             setDisplayState('phrase-practice-area', true);
         } else {
@@ -502,11 +506,10 @@ window.renderBookList = function() {
                 
                 wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
                 
-                // 🌟 如果是商城擴充包，鎖定不讓編輯
                 if (book.isStore) {
                     const lockIcon = document.createElement('div');
                     lockIcon.style.cssText = 'color: var(--text-sub); font-size: 0.9rem; padding: 4px 8px;';
-                    lockIcon.innerText = "🔒 官方組合包";
+                    lockIcon.innerText = "官方組合包";
                     div.appendChild(wrapper);
                     div.appendChild(lockIcon);
                 } else {
@@ -519,7 +522,6 @@ window.renderBookList = function() {
                     if (listContainer.classList.contains('sorting-active')) return;
                     
                     if (!selectedBookIds.has(book.id)) {
-                        // 🌟 排他邏輯：單字 / 片語 / 商城 三者不可混選
                         let currentType = book.isStore ? 'store' : (book.isPhrase ? 'phrase' : 'word');
                         let hasConflict = false;
                         window.books.forEach(b => {
@@ -718,7 +720,6 @@ window.renderWordList = function() {
         div.className = 'word-item';
         
         if (window.editingWordIndex === actualIndex) {
-            // ✏️ 編輯模式
             div.style.flexDirection = 'column';
             div.style.alignItems = 'stretch';
             
@@ -747,7 +748,6 @@ window.renderWordList = function() {
                 </div>
             `;
         } else {
-            // 👁️ 預覽模式：去 emoji 版，使用黑色「修改」實體按鈕
             let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
             div.innerHTML = `
                 <div style="flex: 1; padding-right: 15px;">
@@ -1998,7 +1998,6 @@ window.openStore = async function() {
     container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
     
     try {
-        // 🔥 直接呼叫同資料夾下的型錄檔案，不用管網址了！
         const res = await fetch("store_catalog.json");
         if (!res.ok) throw new Error("Catalog fetch failed");
         const catalogData = await res.json();
@@ -2017,9 +2016,7 @@ window.renderStoreCatalog = function(catalogData) {
     container.innerHTML = '';
 
     catalogData.forEach(bundle => {
-        // 檢查使用者是否已經買過這個包了
         const isOwned = window.books.some(b => b.bundleId === bundle.id);
-        
         const card = document.createElement('div');
         card.className = 'store-card';
         
@@ -2053,25 +2050,23 @@ window.purchaseBundle = function(bundleId, price, bundleName) {
             window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
             try {
-                // 🔥 也是直接呼叫檔案名稱 (例如 bundle1.json)
                 const res = await fetch(bundleId + ".json");
                 if (!res.ok) throw new Error("Bundle fetch failed");
                 const bundleData = await res.json();
                 
-                // 1. 扣除積分
                 window.myTotalScore -= price;
                 document.getElementById('store-my-score').innerText = window.myTotalScore;
                 if (typeof window.uploadScoreToCloud === 'function') {
                     window.uploadScoreToCloud(window.myTotalScore, 0); 
                 }
 
-                // 2. 建立一本新的「商城擴充庫」單字本
                 window.books.push({
                     id: Date.now(),
                     name: bundleName,
                     tag: "官方擴充",
                     isGSAT: false,
-                    isPhrase: true, // 預設視為包含片語的綜合包，享受片語精通模式
+                    // 🔥 修正點：設為 false，當作一般單字處理，開啟完整 8 大模式！
+                    isPhrase: false, 
                     isStore: true,  
                     bundleId: bundleId,
                     words: bundleData
@@ -2080,7 +2075,6 @@ window.purchaseBundle = function(bundleId, price, bundleName) {
                 window.saveData();
                 window.renderStoreCatalog(window.currentCatalogData);
                 
-                // 3. 成功提示
                 window.SilenModal.alert(`下載成功！\n\n「${bundleName}」已加入您的擴充庫中。`).then(() => {
                     window.setLibMode('store', '商城擴充庫');
                     window.openBookSelect();
