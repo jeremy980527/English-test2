@@ -96,14 +96,19 @@
         .lb-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 3px; color: var(--text-main); }
         .lb-score { font-size: 1.1rem; font-weight: bold; color: var(--accent); font-family: 'Courier New', Courier, monospace; text-align: right; }
 
-        /* 🌟 商城擴充庫樣式 (黑白極簡化) */
+        /* 🌟 商城擴充庫樣式 (支援子主題清單) */
         .store-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: 0.2s; }
         .store-card:hover { border-color: #555; }
         .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .store-title { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin: 0; }
-        .store-price { font-size: 1.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace; }
         .store-desc { font-size: 0.85rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 15px; letter-spacing: 0.5px; }
         .store-owned { color: var(--text-sub); font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(255,255,255,0.05); border: 1px dashed #555; border-radius: 8px; }
+        
+        .sub-bundle-container { margin-top: 15px; border-top: 1px dashed #444; padding-top: 15px; }
+        .sub-bundle-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #151515; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
+        .sub-bundle-info { display: flex; flex-direction: column; gap: 4px; flex: 1; margin-right: 10px; }
+        .sub-bundle-name { font-size: 0.95rem; font-weight: 500; color: #ddd; }
+        .sub-bundle-meta { font-size: 0.75rem; color: #888; }
     </style>
 </head>
 <body>
@@ -158,7 +163,7 @@
             <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(完成精通挑戰以獲取積分)</p>
         </div>
 
-        <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">組合包</h3>
+        <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">官方嚴選組合包</h3>
         
         <div id="store-catalog-area" style="margin-top: 20px;">
             <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">載入商品型錄中...</div>
