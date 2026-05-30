@@ -3,7 +3,19 @@
     "id": "bundle_travel",
     "name": "出國與入境實用包",
     "desc": "過海關、機場報到必備核心字彙。",
-    "price": 500,
-    "wordCount": 6
+    "subBundles": [
+      {
+        "id": "bundle_travel-1",
+        "name": "Part 1: 旅行文件與證件",
+        "price": 200,
+        "wordCount": 17
+      },
+      {
+        "id": "bundle_travel-2",
+        "name": "Part 2: 機場與航班",
+        "price": 200,
+        "wordCount": 23
+      }
+    ]
   }
 ]
