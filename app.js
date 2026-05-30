@@ -2008,7 +2008,7 @@ window.handlePosNextClick = function() {
 };
 
 // ==========================================================================
-// 🌟 13. 單字擴充商城系統 (防快取 + 購買紀錄 + 允許重新下載)
+// 🌟 13. 單字擴充商城系統 (子主題層級版 + 同專案相對路徑)
 // ==========================================================================
 let purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || [];
 
@@ -2020,7 +2020,6 @@ window.openStore = async function() {
     container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
     
     try {
-        // 🔥 加入時間戳強制打破快取，確保抓到最新 json
         const res = await fetch("store_catalog.json?t=" + Date.now());
         if (!res.ok) throw new Error("Catalog fetch failed");
         const catalogData = await res.json();
@@ -2039,49 +2038,76 @@ window.renderStoreCatalog = function(catalogData) {
     container.innerHTML = '';
 
     catalogData.forEach(bundle => {
-        const isInstalled = window.books.some(b => b.bundleId === bundle.id);
-        const isPurchased = purchasedBundles.includes(bundle.id);
-        
         const card = document.createElement('div');
         card.className = 'store-card';
         
-        let actionBtnHtml = '';
-        if (isInstalled) {
-            actionBtnHtml = `<div class="store-owned">✔ 已安裝於擴充庫</div>`;
-        } else if (isPurchased) {
-            // 🌟 已買過，提供免費重新下載 (方便抓取更新版 JSON)
-            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #333; color: #fff; border: 1px solid #555; font-weight: 600;" onclick="window.purchaseBundle('${bundle.id}', 0, '${bundle.name}')">免費重新下載 (已解鎖)</button>`;
-        } else {
-            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #fff; color: #000; border: 1px solid #fff; font-weight: 600;" onclick="window.purchaseBundle('${bundle.id}', ${bundle.price}, '${bundle.name}')">花費 ${bundle.price} 積分下載</button>`;
-        }
-
+        // 計算這個大包底下的子包總數
+        let totalSubBundles = bundle.subBundles ? bundle.subBundles.length : 0;
+        
         card.innerHTML = `
             <div class="store-header">
                 <h4 class="store-title">${bundle.name}</h4>
-                <div class="store-price">${bundle.price} pts</div>
             </div>
-            <div class="store-desc">${bundle.desc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${bundle.wordCount} 個項目)</span></div>
-            ${actionBtnHtml}
+            <div class="store-desc">${bundle.desc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(包含 ${totalSubBundles} 個主題單字包)</span></div>
+            <button class="btn" style="width: 100%; margin: 0; background: #222; color: #fff; border: 1px solid #444; font-weight: 500;" onclick="window.toggleSubBundles('${bundle.id}')">查看主題列表 ▾</button>
+            
+            <div id="sub-list-${bundle.id}" class="sub-bundle-container hidden">
+                </div>
         `;
         container.appendChild(card);
+
+        // 渲染底下的子主題清單
+        const subContainer = document.getElementById(`sub-list-${bundle.id}`);
+        if (bundle.subBundles) {
+            bundle.subBundles.forEach(sub => {
+                const isInstalled = window.books.some(b => b.bundleId === sub.id);
+                const isPurchased = purchasedBundles.includes(sub.id);
+                
+                const subItem = document.createElement('div');
+                subItem.className = 'sub-bundle-item';
+                
+                let btnHtml = '';
+                if (isInstalled) {
+                    btnHtml = `<div style="font-size:0.8rem; color:#888;">已安裝</div>`;
+                } else if (isPurchased) {
+                    btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#fff; border:1px solid #555;" onclick="window.purchaseBundle('${sub.id}', 0, '${sub.name}')">重新下載</button>`;
+                } else {
+                    btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseBundle('${sub.id}', ${sub.price}, '${sub.name}')">${sub.price} pts</button>`;
+                }
+
+                subItem.innerHTML = `
+                    <div class="sub-bundle-info">
+                        <div class="sub-bundle-name">${sub.name}</div>
+                        <div class="sub-bundle-meta">共 ${sub.wordCount} 詞</div>
+                    </div>
+                    <div>${btnHtml}</div>
+                `;
+                subContainer.appendChild(subItem);
+            });
+        }
     });
 };
 
-window.purchaseBundle = function(bundleId, price, bundleName) {
+window.toggleSubBundles = function(bundleId) {
+    const el = document.getElementById(`sub-list-${bundleId}`);
+    if (el) el.classList.toggle('hidden');
+};
+
+window.purchaseBundle = function(subBundleId, price, subBundleName) {
     if (window.myTotalScore < price) {
-        window.SilenModal.alert(`積分不足！\n\n解鎖此擴充包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。`);
+        window.SilenModal.alert(`積分不足！\n\n解鎖此單字包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。`);
         return;
     }
 
-    let confirmMsg = price > 0 ? `確定要花費 ${price} 積分解鎖「${bundleName}」嗎？` : `確定要重新下載最新的「${bundleName}」嗎？`;
+    let confirmMsg = price > 0 ? `確定要花費 ${price} 積分解鎖「${subBundleName}」嗎？` : `確定要重新下載最新的「${subBundleName}」嗎？`;
 
     window.SilenModal.confirm(confirmMsg).then(async agreed => {
         if (agreed) {
             window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
             try {
-                // 🔥 加入時間戳強制打破快取，保證抓到你剛在 Github 存檔的最新版
-                const res = await fetch(bundleId + ".json?t=" + Date.now());
+                // 這裡會抓取例如 bundle_travel-1.json 的檔案
+                const res = await fetch(subBundleId + ".json?t=" + Date.now());
                 if (!res.ok) throw new Error("Bundle fetch failed");
                 const bundleData = await res.json();
                 
@@ -2093,34 +2119,36 @@ window.purchaseBundle = function(bundleId, price, bundleName) {
                     }
                 }
 
-                // 記錄已購買
-                if (!purchasedBundles.includes(bundleId)) {
-                    purchasedBundles.push(bundleId);
+                if (!purchasedBundles.includes(subBundleId)) {
+                    purchasedBundles.push(subBundleId);
                     localStorage.setItem('sv_purchased_bundles', JSON.stringify(purchasedBundles));
                 }
 
                 window.books.push({
                     id: Date.now(),
-                    name: bundleName,
+                    name: subBundleName,
                     tag: "官方擴充",
                     isGSAT: false,
-                    isPhrase: false, 
+                    isPhrase: false, // 確保可以使用八大模式
                     isStore: true,  
-                    bundleId: bundleId,
+                    bundleId: subBundleId,
                     words: bundleData
                 });
 
                 window.saveData();
                 window.renderStoreCatalog(window.currentCatalogData);
+                // 下載完保持清單展開
+                const parentBundleId = subBundleId.split('-')[0];
+                window.toggleSubBundles(parentBundleId);
                 
-                window.SilenModal.alert(`下載成功！\n\n「${bundleName}」已加入您的擴充庫中。`).then(() => {
+                window.SilenModal.alert(`下載成功！\n\n「${subBundleName}」已加入您的擴充庫中。`).then(() => {
                     window.setLibMode('store', '商城擴充庫');
                     window.openBookSelect();
                 });
 
             } catch (e) {
                 console.error(e);
-                window.SilenModal.alert(`下載失敗！\n無法獲取檔案：${bundleId}.json\n請確認該檔案是否已放進專案目錄中。`);
+                window.SilenModal.alert(`下載失敗！\n無法獲取檔案：${subBundleId}.json\n請確認該檔案是否已放進專案目錄中。`);
             }
         }
     });
