@@ -164,8 +164,8 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-// 🌟 已包含所有模式與公開頁面
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile'];
+// 🌟 註冊 'store' 畫面
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -398,7 +398,7 @@ window.startGuestMode = function(data) {
 };
 
 // =====================================
-// 🌟 5. 題庫管理與精通度計算 (支援詞性 POS)
+// 🌟 5. 題庫管理與精通度計算 (支援商城庫隔離)
 // =====================================
 window.updateProfileStats = function() {
     let count = 0;
@@ -414,12 +414,14 @@ window.updateHomeSummary = function() {
     
     let selectedCount = 0, wordCount = 0;
     let isPhraseSelected = false;
+    let isStoreSelected = false;
     
     window.books.forEach(b => { 
         if (selectedBookIds.has(b.id)) { 
             selectedCount++; 
             wordCount += b.words.length; 
-            if (b.isPhrase) isPhraseSelected = true;
+            if (b.isPhrase && !b.isStore) isPhraseSelected = true;
+            if (b.isStore) isStoreSelected = true;
         } 
     });
     
@@ -428,9 +430,10 @@ window.updateHomeSummary = function() {
         setDisplayState('word-practice-area', true);
         setDisplayState('phrase-practice-area', false);
     } else {
-        summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${isPhraseSelected?'片語':'單字'}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
+        let typeStr = isStoreSelected ? '商城組合' : (isPhraseSelected ? '片語' : '單字');
+        summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
         
-        if (isPhraseSelected) {
+        if (isPhraseSelected || isStoreSelected) {
             setDisplayState('word-practice-area', false);
             setDisplayState('phrase-practice-area', true);
         } else {
@@ -444,10 +447,12 @@ window.renderBookList = function() {
     const normalList = document.getElementById('normal-book-list');
     const gsatList = document.getElementById('gsat-book-list');
     const phraseList = document.getElementById('phrase-book-list');
+    const storeList = document.getElementById('store-book-list');
     
     if (normalList) normalList.innerHTML = '';
     if (gsatList) gsatList.innerHTML = '';
     if (phraseList) phraseList.innerHTML = '';
+    if (storeList) storeList.innerHTML = '';
 
     const renderGroup = (booksToRender, container, emptyMsg, type) => {
         if (!container) return;
@@ -497,20 +502,29 @@ window.renderBookList = function() {
                 
                 wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
                 
-                const editBtn = document.createElement('button'); editBtn.className = 'btn-icon edit-btn'; editBtn.innerHTML = '編輯'; 
-                editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
-                
-                div.appendChild(wrapper); div.appendChild(editBtn);
+                // 🌟 如果是商城擴充包，鎖定不讓編輯
+                if (book.isStore) {
+                    const lockIcon = document.createElement('div');
+                    lockIcon.style.cssText = 'color: var(--text-sub); font-size: 0.9rem; padding: 4px 8px;';
+                    lockIcon.innerText = "🔒 官方組合包";
+                    div.appendChild(wrapper);
+                    div.appendChild(lockIcon);
+                } else {
+                    const editBtn = document.createElement('button'); editBtn.className = 'btn-icon edit-btn'; editBtn.innerHTML = '編輯'; 
+                    editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
+                    div.appendChild(wrapper); div.appendChild(editBtn);
+                }
                 
                 div.onclick = () => {
                     if (listContainer.classList.contains('sorting-active')) return;
                     
                     if (!selectedBookIds.has(book.id)) {
-                        let currentType = book.isPhrase ? 'phrase' : 'word';
+                        // 🌟 排他邏輯：單字 / 片語 / 商城 三者不可混選
+                        let currentType = book.isStore ? 'store' : (book.isPhrase ? 'phrase' : 'word');
                         let hasConflict = false;
                         window.books.forEach(b => {
                             if (selectedBookIds.has(b.id)) {
-                                let bType = b.isPhrase ? 'phrase' : 'word';
+                                let bType = b.isStore ? 'store' : (b.isPhrase ? 'phrase' : 'word');
                                 if (bType !== currentType) hasConflict = true;
                             }
                         });
@@ -532,9 +546,10 @@ window.renderBookList = function() {
         });
     };
 
-    renderGroup(window.books.filter(b => !b.isGSAT && !b.isPhrase), normalList, '資料庫無單字簿，請在下方建立。', 'normal');
-    renderGroup(window.books.filter(b => b.isGSAT && !b.isPhrase), gsatList, '尚無學測單字簿，請在下方抽取。', 'gsat');
-    renderGroup(window.books.filter(b => b.isPhrase), phraseList, '尚無片語簿，請在下方建立。', 'phrase');
+    renderGroup(window.books.filter(b => !b.isGSAT && !b.isPhrase && !b.isStore), normalList, '資料庫無單字簿，請在下方建立。', 'normal');
+    renderGroup(window.books.filter(b => b.isGSAT && !b.isPhrase && !b.isStore), gsatList, '尚無學測單字簿，請在下方抽取。', 'gsat');
+    renderGroup(window.books.filter(b => b.isPhrase && !b.isStore), phraseList, '尚無片語簿，請在下方建立。', 'phrase');
+    renderGroup(window.books.filter(b => b.isStore), storeList, '您尚未下載任何擴充組合包。', 'store');
     window.updateHomeSummary();
 };
 
@@ -543,7 +558,7 @@ window.handleSortEnd = function(tag, listContainer, type) {
     let indices = [];
     window.books.forEach((b, index) => {
         const t = (b.tag && b.tag.trim() !== '') ? b.tag.trim() : '未分類';
-        let bType = b.isPhrase ? 'phrase' : (b.isGSAT ? 'gsat' : 'normal');
+        let bType = b.isStore ? 'store' : (b.isPhrase ? 'phrase' : (b.isGSAT ? 'gsat' : 'normal'));
         if (t === tag && bType === type) indices.push(index);
     });
     if (indices.length !== newOrderIds.length) return;
@@ -579,7 +594,7 @@ window.addBookSimple = function() {
     const name = document.getElementById('new-book-name').value.trim();
     const tag = document.getElementById('new-book-tag').value.trim();
     if (!name) { window.SilenModal.alert("請輸入單字簿名稱"); return; }
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: false }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: false, isStore: false }); 
     window.saveData(); document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; window.renderBookList();
 };
 
@@ -587,7 +602,7 @@ window.addPhraseBookSimple = function() {
     const name = document.getElementById('new-phrase-name').value.trim();
     const tag = document.getElementById('new-phrase-tag').value.trim();
     if (!name) { window.SilenModal.alert("請輸入片語簿名稱"); return; }
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: true }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: true, isStore: false }); 
     window.saveData(); document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; window.renderBookList();
 };
 
@@ -612,7 +627,7 @@ window.addBookWithImport = function() {
         }
     });
     if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文 - 詞性(選填)」結構"); return; }
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: false }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: false, isStore: false }); 
     window.saveData();
     document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; document.getElementById('import-content').value = ''; 
     window.toggleImportArea('word'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個單字。`);
@@ -635,7 +650,7 @@ window.addPhraseBookWithImport = function() {
         }
     });
     if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文片語 - 中文」結構"); return; }
-    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: true }); 
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: true, isStore: false }); 
     window.saveData();
     document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; document.getElementById('import-content-phrase').value = ''; 
     window.toggleImportArea('phrase'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個片語。`);
@@ -1386,13 +1401,15 @@ window.setLibMode = function(mode, text) {
     document.getElementById('lib-options').classList.add('hidden');
     
     if (mode === 'normal') { 
-        setDisplayState('normal-book-area', true); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); 
+        setDisplayState('normal-book-area', true); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', false);
     } else if (mode === 'gsat') { 
-        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', true); setDisplayState('phrase-book-area', false);
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', true); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', false);
         const currentLevel = window.currentGsatLevel || 'lv1'; 
         if (gsatVocabCache[currentLevel].length === 0) { window.fetchGSATVocab(currentLevel); }
     } else if (mode === 'phrase') { 
-        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', true); 
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', true); setDisplayState('store-book-area', false);
+    } else if (mode === 'store') {
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', true);
     }
 };
 
@@ -1967,4 +1984,130 @@ window.handlePosNextClick = function() {
     } else { 
         currentCardIndex++; window.showPosNextCard(); 
     }
+};
+
+// ==========================================================================
+// 🌟 13. 單字擴充商城系統 (Store Engine)
+// ==========================================================================
+
+// 模擬放在 Github 上的商城型錄 (未來你可以在這裡無限擴充)
+const MOCK_STORE_CATALOG = [
+    { 
+        id: "bundle_travel", 
+        name: "✈️ 出國與入境求生包", 
+        desc: "過海關、機場報到、飯店Check-in必備核心字彙。背熟這包，出國不求人！", 
+        price: 500, 
+        wordCount: 40 
+    },
+    { 
+        id: "bundle_business", 
+        name: "💼 職場 Email 高頻金句", 
+        desc: "寫信不再卡詞，外商公司天天在用的商務單字與片語組合。", 
+        price: 800, 
+        wordCount: 65 
+    }
+];
+
+// 模擬放在 Github 上的實際單字內容 (未來會用 fetch 抓取 .json)
+const MOCK_BUNDLE_DATA = {
+    "bundle_travel": [
+        { en: "customs", zh: ["海關"], pos: "n." },
+        { en: "declare", zh: ["申報"], pos: "v." },
+        { en: "boarding pass", zh: ["登機證"], pos: "n." },
+        { en: "baggage claim", zh: ["行李提領處"], pos: "n." },
+        { en: "take off", zh: ["起飛"], pos: "v." },
+        { en: "itinerary", zh: ["行程表"], pos: "n." }
+    ],
+    "bundle_business": [
+        { en: "attach", zh: ["附上", "附件"], pos: "v." },
+        { en: "clarify", zh: ["澄清", "說明"], pos: "v." },
+        { en: "propose", zh: ["提議"], pos: "v." },
+        { en: "regarding", zh: ["關於"], pos: "prep." },
+        { en: "follow up on", zh: ["後續追蹤"], pos: "v." }
+    ]
+};
+
+window.openStore = function() {
+    window.switchView('store');
+    document.getElementById('store-my-score').innerText = window.myTotalScore || 0;
+    window.renderStoreCatalog();
+};
+
+window.renderStoreCatalog = function() {
+    const container = document.getElementById('store-catalog-area');
+    container.innerHTML = '';
+
+    MOCK_STORE_CATALOG.forEach(bundle => {
+        // 檢查使用者是否已經買過這個包了
+        const isOwned = window.books.some(b => b.bundleId === bundle.id);
+        
+        const card = document.createElement('div');
+        card.className = 'store-card';
+        
+        let actionBtnHtml = '';
+        if (isOwned) {
+            actionBtnHtml = `<div class="store-owned">✔ 已擁有此擴充包</div>`;
+        } else {
+            actionBtnHtml = `<button class="btn" style="width: 100%; margin: 0; background: #4caf50; color: white;" onclick="window.purchaseBundle('${bundle.id}', ${bundle.price}, '${bundle.name}')">花費 ${bundle.price} 積分下載</button>`;
+        }
+
+        card.innerHTML = `
+            <div class="store-header">
+                <h4 class="store-title">${bundle.name}</h4>
+                <div class="store-price">${bundle.price} pts</div>
+            </div>
+            <div class="store-desc">${bundle.desc} <br><span style="color:var(--accent); font-size: 0.8rem;">(共 ${bundle.wordCount} 個項目)</span></div>
+            ${actionBtnHtml}
+        `;
+        container.appendChild(card);
+    });
+};
+
+window.purchaseBundle = function(bundleId, price, bundleName) {
+    if (window.myTotalScore < price) {
+        window.SilenModal.alert(`您的積分不足！\n\n此擴充包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。\n請多進行「綜合精通模式」賺取分數吧！`);
+        return;
+    }
+
+    window.SilenModal.confirm(`確定要花費 ${price} 積分下載「${bundleName}」嗎？`).then(agreed => {
+        if (agreed) {
+            // 1. 扣除積分
+            window.myTotalScore -= price;
+            document.getElementById('store-my-score').innerText = window.myTotalScore;
+            
+            if (typeof window.uploadScoreToCloud === 'function') {
+                // 扣分不上傳到賽季分，只扣總分
+                window.uploadScoreToCloud(window.myTotalScore, 0); 
+            }
+
+            // 2. 模擬從 Github 下載 JSON 資料
+            const bundleData = MOCK_BUNDLE_DATA[bundleId];
+            
+            if (!bundleData) {
+                window.SilenModal.alert("下載失敗：找不到該擴充包資料。");
+                return;
+            }
+
+            // 3. 建立一本新的「商城擴充庫」單字本
+            window.books.push({
+                id: Date.now(),
+                name: bundleName,
+                tag: "官方擴充",
+                isGSAT: false,
+                isPhrase: true, // 預設視為包含片語的綜合包
+                isStore: true,  // 🌟 這個標記非常重要，用來鎖定編輯與分類
+                bundleId: bundleId,
+                words: bundleData
+            });
+
+            window.saveData();
+            window.renderStoreCatalog(); // 重新渲染商城，把按鈕變成「已擁有」
+            
+            window.SilenModal.alert(`🎉 購買成功！\n\n「${bundleName}」已加入您的【商城擴充庫】中。`).then(() => {
+                // 幫使用者自動切換到商城擴充庫的檢視畫面
+                window.setLibMode('store', '商城擴充庫');
+                window.openBookSelect();
+            });
+        }
+    });
 };
