@@ -1,5 +1,5 @@
 // =====================================
-// 🌐 Firebase 模組引入 (版本統一至 10.12.2)
+// 🌐 Firebase 模組引入 (版本統一至 10.12.2，解決黑屏問題)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -52,7 +52,7 @@ onValue(presenceRef, (snap) => {
 });
 
 // =====================================
-// 🔐 帳號登入與登出邏輯 (🌟 雙軌機制實作)
+// 🔐 帳號登入與登出邏輯 
 // =====================================
 window.loginWithGoogle = () => {
     const isApp = typeof AndroidBridge !== 'undefined';
@@ -119,7 +119,6 @@ async function syncFromCloud(uid) {
 async function syncToCloud(uid, booksData) {
     if (!uid) return;
     try {
-        // 使用 merge: true 確保就算沒有建立過文檔也不會報錯
         await setDoc(doc(db, "users", uid), {
             books: booksData,
             lastUpdated: new Date().toISOString()
@@ -175,16 +174,25 @@ onAuthStateChanged(auth, (user) => {
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
-        // 當載入個人主頁時，連線抓取生涯總積分
-        const elTotal = document.getElementById('stat-total-score');
-        if (elTotal) {
-            get(ref(rtdb, `users/${user.uid}/totalScore`)).then(snap => {
-                if (snap.exists()) {
-                    window.myTotalScore = snap.val();
-                    elTotal.innerText = window.myTotalScore;
-                }
-            });
-        }
+        // 🌟 登入時載入雙軌分數：牌位積分與商城點數
+        const elRank = document.getElementById('stat-rank-score');
+        const elStore = document.getElementById('stat-store-points');
+        const elStoreMyScore = document.getElementById('store-my-score');
+
+        get(ref(rtdb, `users/${user.uid}/rankPoints`)).then(snap => {
+            if (snap.exists()) {
+                window.myRankPoints = snap.val();
+                if (elRank) elRank.innerText = window.myRankPoints;
+            }
+        });
+
+        get(ref(rtdb, `users/${user.uid}/storePoints`)).then(snap => {
+            if (snap.exists()) {
+                window.myStorePoints = snap.val();
+                if (elStore) elStore.innerText = window.myStorePoints;
+                if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+            }
+        });
 
         syncFromCloud(user.uid);
         if (!window.isGuestMode && !hasShareLink) {
@@ -232,45 +240,33 @@ window.downloadShareData = async (shareId) => {
 };
 
 // =====================================
-// 🏆 賽季排行榜與分數同步邏輯
+// 🏆 賽季排行榜與雙軌分數同步邏輯
 // =====================================
-window.uploadScoreToCloud = async function(totalScore, seasonPointsToAdd) {
+window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     if (!currentUser || typeof rtdb === 'undefined') return;
     const uid = currentUser.uid;
     
     try {
-        // 更新個人的生涯總分
-        await set(ref(rtdb, `users/${uid}/totalScore`), totalScore);
+        await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
+        await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
         
-        // 如果分數是被允許計入排位賽的 (seasonPointsToAdd > 0)
-        if (seasonPointsToAdd > 0) {
-            const weekId = window.getCurrentWeekId();
-            const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
+        // 排行榜現在只會反映純粹的「牌位積分」(Rank Points)
+        const weekId = window.getCurrentWeekId();
+        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-            // 讀取現在的本週積分，再加上去
-            const snapshot = await get(lbRef);
-            let currentSeasonScore = 0;
-            if (snapshot.exists()) {
-                currentSeasonScore = snapshot.val().score || 0;
-            }
-            
-            const newSeasonScore = currentSeasonScore + seasonPointsToAdd;
-            
-            // 更新本週排位
-            await set(lbRef, {
-                name: currentUser.displayName || '匿名者',
-                photo: currentUser.photoURL || '',
-                score: newSeasonScore,
-                timestamp: Date.now()
-            });
-        }
+        await set(lbRef, {
+            name: currentUser.displayName || '匿名者',
+            photo: currentUser.photoURL || '',
+            score: rankPoints,
+            timestamp: Date.now()
+        });
+        
     } catch(e) { console.error("上傳分數失敗", e); }
 };
 
 window.fetchLeaderboard = async function(weekId) {
     if (typeof rtdb === 'undefined') return;
     try {
-        // 🔥 只抓取本週分數最高的前 10 名
         const lbRef = query(ref(rtdb, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
         const snapshot = await get(lbRef);
         
@@ -284,12 +280,11 @@ window.fetchLeaderboard = async function(weekId) {
                 data.uid = childSnap.key;
                 list.push(data);
                 if (data.uid === myUid) {
-                    mySeasonScore = data.score; // 偷看自己的賽季分數
+                    mySeasonScore = data.score; 
                 }
             });
         }
         
-        // 分數由大到小排序
         list.reverse();
         
         if (window.renderLeaderboard) {
@@ -304,7 +299,6 @@ window.fetchLeaderboard = async function(weekId) {
 // 🌟 同步更新使用者名稱至 Firebase 雲端與排行榜
 // ==========================================
 window.updateCloudUserName = async function(newName) {
-    // 1. 確認使用者是否已登入
     const user = auth.currentUser;
     if (!user) {
         window.SilenModal.alert("請先登入帳號，才能將名稱同步至雲端排行榜！");
@@ -315,14 +309,10 @@ window.updateCloudUserName = async function(newName) {
     if (btn) btn.innerText = "同步中...";
 
     try {
-        // 2. 更新 Firebase Auth 帳號系統的顯示名稱
         await updateProfile(user, { displayName: newName });
-
-        // 3. 更新 Firestore 資料庫中的排行榜資料 (使用 setDoc + merge 確保文檔自動建立)
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, { name: newName }, { merge: true });
 
-        // 4. 同步更新 Realtime Database 本週排行榜上的名字
         if (typeof window.getCurrentWeekId === 'function') {
             const weekId = window.getCurrentWeekId();
             const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${user.uid}`);
@@ -332,11 +322,9 @@ window.updateCloudUserName = async function(newName) {
             }
         }
 
-        // 5. 成功提示並刷新排行榜
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert(`🎉 改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
         
-        // 幫它重新抓取最新資料
         if (typeof window.fetchLeaderboard === 'function' && typeof window.getCurrentWeekId === 'function') {
             window.fetchLeaderboard(window.getCurrentWeekId());
         }
