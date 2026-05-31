@@ -21,6 +21,36 @@
         "name": "Part 3: 海關與入境程序",
         "price": 200,
         "wordCount": 18
+      },
+      {
+        "id": "bundle_travel-4",
+        "name": "Part 4: 行李與交通",
+        "price": 200,
+        "wordCount": 11
+      },
+      {
+        "id": "bundle_travel-5",
+        "name": "Part 5: 住宿",
+        "price": 200,
+        "wordCount": 13
+      },
+      {
+        "id": "bundle_travel-6",
+        "name": "Part 6: 貨幣與購物",
+        "price": 200,
+        "wordCount": 10
+      },
+      {
+        "id": "bundle_travel-7",
+        "name": "Part 7: 健康與安全",
+        "price": 200,
+        "wordCount": 9
+      },
+      {
+        "id": "bundle_travel-8",
+        "name": "Part 8: 常用動詞、單字與片語",
+        "price": 300,
+        "wordCount": 31
       }
     ]
   }
