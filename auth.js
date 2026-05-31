@@ -174,29 +174,30 @@ onAuthStateChanged(auth, (user) => {
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
-        // 🌟 【重點修正】：無縫繼承舊版分數
+        // 🌟 【終極修復】：使用 Math.max 強制繼承最高分數！
         const elRank = document.getElementById('stat-rank-score');
         const elStore = document.getElementById('stat-store-points');
         const elStoreMyScore = document.getElementById('store-my-score');
 
-        // 同時抓取新版雙軌分數，以及舊版的 totalScore
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `users/${user.uid}/totalScore`))
         ]).then(([snapRank, snapStore, snapTotal]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
+            const currentRank = snapRank.exists() ? snapRank.val() : 0;
+            const currentStore = snapStore.exists() ? snapStore.val() : 0;
             
-            // 判斷邏輯：如果新欄位有值就用新的，如果是第一次轉移過來，就繼承舊版分數
-            window.myRankPoints = snapRank.exists() ? snapRank.val() : oldTotalScore;
-            window.myStorePoints = snapStore.exists() ? snapStore.val() : oldTotalScore;
+            // 🔥 暴力對決：誰的分數高就聽誰的！保證心血絕對不白費！
+            window.myRankPoints = Math.max(currentRank, oldTotalScore);
+            window.myStorePoints = Math.max(currentStore, oldTotalScore);
 
             if (elRank) elRank.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
             if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
 
-            // 寫回資料庫，幫老用戶正式開通雙軌欄位
-            if (!snapRank.exists() || !snapStore.exists()) {
+            // 如果發現新分數比資料庫裡存的還高，立刻寫回資料庫校正
+            if (window.myRankPoints > currentRank || window.myStorePoints > currentStore || !snapRank.exists() || !snapStore.exists()) {
                 set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
                 set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
             }
