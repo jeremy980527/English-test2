@@ -1,5 +1,5 @@
 // =====================================
-// 🌐 Firebase 模組引入  (版本統一至 10.12.2，解決黑屏問題)
+// 🌐 Firebase 模組引入 (版本統一至 10.12.2)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -174,23 +174,31 @@ onAuthStateChanged(auth, (user) => {
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
-        // 🌟 登入時載入雙軌分數：牌位積分與商城點數
+        // 🌟 【重點修正】：無縫繼承舊版分數
         const elRank = document.getElementById('stat-rank-score');
         const elStore = document.getElementById('stat-store-points');
         const elStoreMyScore = document.getElementById('store-my-score');
 
-        get(ref(rtdb, `users/${user.uid}/rankPoints`)).then(snap => {
-            if (snap.exists()) {
-                window.myRankPoints = snap.val();
-                if (elRank) elRank.innerText = window.myRankPoints;
-            }
-        });
+        // 同時抓取新版雙軌分數，以及舊版的 totalScore
+        Promise.all([
+            get(ref(rtdb, `users/${user.uid}/rankPoints`)),
+            get(ref(rtdb, `users/${user.uid}/storePoints`)),
+            get(ref(rtdb, `users/${user.uid}/totalScore`))
+        ]).then(([snapRank, snapStore, snapTotal]) => {
+            const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
+            
+            // 判斷邏輯：如果新欄位有值就用新的，如果是第一次轉移過來，就繼承舊版分數
+            window.myRankPoints = snapRank.exists() ? snapRank.val() : oldTotalScore;
+            window.myStorePoints = snapStore.exists() ? snapStore.val() : oldTotalScore;
 
-        get(ref(rtdb, `users/${user.uid}/storePoints`)).then(snap => {
-            if (snap.exists()) {
-                window.myStorePoints = snap.val();
-                if (elStore) elStore.innerText = window.myStorePoints;
-                if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+            if (elRank) elRank.innerText = window.myRankPoints;
+            if (elStore) elStore.innerText = window.myStorePoints;
+            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+
+            // 寫回資料庫，幫老用戶正式開通雙軌欄位
+            if (!snapRank.exists() || !snapStore.exists()) {
+                set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
+                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
             }
         });
 
