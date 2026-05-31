@@ -164,7 +164,6 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-// 🌟 註冊 'store' 畫面
 const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store'];
 
 window.switchView = function(viewName) {
@@ -334,7 +333,7 @@ window.shareCurrentQuiz = async function() {
         navigator.share({ title: 'SilenVocab 英文挑戰', text: '我建立了一個專屬單字測驗，快來挑戰看看吧！', url: shareUrl }).catch(() => {});
     } else if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(shareUrl).then(() => window.SilenModal.alert("短網址已成功複製到剪貼簿！\n\n" + shareUrl))
-        .catch(() => window.SilenModal.prompt("請手動複製以下短網址：", shareUrl));
+        .catch(() => window.SilenModal.prompt("請手手動複製以下短網址：", shareUrl));
     } else {
         window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
     }
@@ -505,7 +504,6 @@ window.renderBookList = function() {
                 wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
                 
                 if (book.isStore) {
-                    // 🌟 允許刪除商城包！
                     const actionContainer = document.createElement('div');
                     actionContainer.style.cssText = 'display: flex; align-items: center; gap: 10px;';
                     
@@ -861,7 +859,7 @@ window.getSelectedWordsPool = function() {
 };
 
 // =====================================
-// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算 (全新 5 階升級版)
+// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
@@ -896,7 +894,6 @@ window.finalizeMasterySession = function() {
     if (pendingMasteredWords.length === 0) return;
 
     let totalPoints = 0;
-    let totalSeasonPoints = 0;
 
     pendingMasteredWords.forEach(targetWord => {
         window.books.forEach(book => {
@@ -909,15 +906,15 @@ window.finalizeMasterySession = function() {
         let stepKey = (masteryModeType === 'comprehensive' || masteryModeType === 'phrase') ? 'Comp_Grad' : 'Conn_Grad';
         let rw = window.calculateReward(targetWord, stepKey);
         
-        totalPoints += rw.points;
-        if (rw.isSeasonEligible) totalSeasonPoints += rw.points;
+        if (rw.isSeasonEligible) totalPoints += rw.points;
     });
 
     if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
     if (typeof window.saveData === 'function') window.saveData(); 
 
-    if (typeof window.addScore === 'function' && totalPoints > 0) {
-        window.addScore(totalPoints, totalSeasonPoints, true);
+    // 🔥 綜合精通模式：只獲得「牌位積分」
+    if (typeof window.addRankPoints === 'function' && totalPoints > 0) {
+        window.addRankPoints(totalPoints, true);
     }
     pendingMasteredWords = [];
 };
@@ -1011,7 +1008,7 @@ window.showMasteryMCQ = function(word, mode, isDelayed) {
     setDisplayState('mastery-mcq-area', true); 
     
     let badgeText = "";
-    if (isDelayed) badgeText = "Lv 3: 延遲固化 (畢業評測)"; // 連結力模式用
+    if (isDelayed) badgeText = "Lv 3: 延遲固化 (畢業評測)"; 
     else if (mode === 'en-to-zh') badgeText = "Lv 1: 視覺辨識 (英選中)";
     else badgeText = masteryModeType === 'comprehensive' ? "Lv 2: 逆向回想 (中選英)" : "Lv 1: 視覺辨識 (中選英)";
     
@@ -1166,7 +1163,7 @@ window.masteryFeedbackNext = function() { window.nextMasteryTurn(); };
 window.replayMasteryAudio = function() { if (currentMasteryTarget) { window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); } };
 
 // =====================================
-// 🌟 7. 原版 8 大練習模式 (Original 8 Modes)
+// 🌟 7. 原版 8 大練習模式 (給予「商城點數」)
 // =====================================
 window.setupPractice = function(mode) { 
     practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
@@ -1194,7 +1191,8 @@ window.showHint = function() {
 window.checkAnswer = function() { 
     if (currentCardIndex >= practiceQueue.length) return; const v = document.getElementById('answer-input').value.trim(); const w = practiceQueue[currentCardIndex]; let c = false; 
     if (v !== '') { if (currentMode === 'zh-to-en') { c = (v.toLowerCase() === w.en.toLowerCase()); } else { c = w.zh.some(m => m.trim().includes(v) && v.length > 0); } } 
-    lastAnswerCorrect = c; if (c && !w.scored) { w.scored = true; if (typeof window.addScore === 'function') window.addScore(10, false); }
+    lastAnswerCorrect = c; 
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
     if (!c && !isSequentialMode) window.requeueWord(w); window.showFeedback(c, w); 
 };
 
@@ -1202,7 +1200,7 @@ window.showFeedback = function(c, w) {
     setDisplayState('interaction-area', false); setDisplayState('feedback-area', true, 'flex'); 
     const i = document.getElementById('feedback-icon'); const s = document.getElementById('feedback-status'); 
     document.getElementById('feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
-    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 分)'; s.className = 'result-status status-correct'; } 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
     else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
     window.forceSpeak = true; window.speakEnglishWord(w.en); 
 };
@@ -1239,11 +1237,11 @@ window.showMcqNextCard = function() {
 
 window.checkMcqAnswer = function(c) { 
     if (currentCardIndex >= practiceQueue.length) return; lastAnswerCorrect = c; const w = practiceQueue[currentCardIndex]; 
-    if (c && !w.scored) { w.scored = true; if (typeof window.addScore === 'function') window.addScore(10, false); }
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
     if (!c && !isSequentialMode) window.requeueWord(w); setDisplayState('mcq-interaction-area', false); setDisplayState('mcq-feedback-area', true, 'flex'); 
     const i = document.getElementById('mcq-feedback-icon'); const s = document.getElementById('mcq-feedback-status'); 
     document.getElementById('mcq-feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
-    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 分)'; s.className = 'result-status status-correct'; } 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
     else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
     window.forceSpeak = true; window.speakEnglishWord(w.en); 
 };
@@ -1278,10 +1276,10 @@ window.startSpeechRecognition = function() {
         const sd = document.getElementById('speaking-score'); const md = document.getElementById('speaking-feedback-msg'); const hd = document.getElementById('speaking-heard-text'); 
         if (h === t || h.includes(t) || t.includes(h)) { 
             lastAnswerCorrect = true; let fs = Math.round(c * 100); if (fs < 50) fs = 80; 
-            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; if (typeof window.addScore === 'function') window.addScore(fs, false); }
-            sd.innerText = `${fs} 分`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (+${fs} 分)`; hd.innerText = `捕獲音訊: "${h}"`; 
+            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(fs); }
+            sd.innerText = `${fs} 點數`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (+${fs} 點數)`; hd.innerText = `捕獲音訊: "${h}"`; 
         } else { 
-            lastAnswerCorrect = false; sd.innerText = '0 分'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
+            lastAnswerCorrect = false; sd.innerText = '0 點數'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
             if (!isSequentialMode) window.requeueWord(practiceQueue[currentCardIndex]); 
         } 
     }; 
@@ -1332,8 +1330,8 @@ window.checkPuzzleState = function(f) {
     if(!puzzleCurrentWord) return; let cs = puzzleUserAnswer.map(o => o.char).join(''); let ts = puzzleCurrentWord.en.toLowerCase(); let m = document.getElementById('puzzle-message'); 
     if (cs.length === ts.length || f === true) { 
         if (cs === ts) { 
-            m.className = 'result-msg result-correct'; m.innerText = '正確 (+10 分)'; 
-            if (!puzzleCurrentWord.scored) { puzzleCurrentWord.scored = true; if (typeof window.addScore === 'function') window.addScore(10, false); }
+            m.className = 'result-msg result-correct'; m.innerText = '正確 (+10 點數)'; 
+            if (!puzzleCurrentWord.scored) { puzzleCurrentWord.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
             window.forceSpeak = true; window.speakEnglishWord(ts); setTimeout(() => { currentCardIndex++; window.loadPuzzleLevel(); }, 800); 
         } else { 
             if (isSequentialMode) { 
@@ -1381,9 +1379,9 @@ window.checkMemoryMatch = function() {
     memoryLocked = true; let i1 = memoryFlipped[0]; let i2 = memoryFlipped[1]; let c1 = memoryCards[i1]; let c2 = memoryCards[i2]; let m = document.getElementById('memory-message'); 
     if (c1.id === c2.id) { 
         c1.matched = c2.matched = true; memoryMatchedCount += 2; 
-        if (typeof window.addScore === 'function') window.addScore(10, false);
+        if (typeof window.addStorePoints === 'function') window.addStorePoints(10);
         document.getElementById('memory-board').children[i1].classList.add('matched'); document.getElementById('memory-board').children[i2].classList.add('matched'); 
-        m.innerText = '矩陣配對成功 (+10 分)'; m.className = 'result-msg result-correct'; window.forceSpeak = true; window.speakEnglishWord(c1.id); 
+        m.innerText = '矩陣配對成功 (+10 點數)'; m.className = 'result-msg result-correct'; window.forceSpeak = true; window.speakEnglishWord(c1.id); 
         memoryFlipped = []; memoryLocked = false; if (memoryMatchedCount === memoryCards.length) setTimeout(() => window.endQuiz(), 500); 
     } else { 
         m.innerText = '不匹配'; m.className = 'result-msg result-wrong'; 
@@ -1491,24 +1489,25 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('load', () => {
     setTimeout(() => { 
         if (typeof window.checkShareUrl === 'function' && !window.checkShareUrl()) {
-            // 若無分享代碼，由 auth.js 負責接管登入或跳轉
         }
     }, 150); 
 });
 
 // =====================================
-// 🌟 10. 排行榜與計分系統 (Leaderboard & Scoring)
+// 🌟 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
-window.myTotalScore = 0;
-window.lastScoreTime = 0;
+window.myRankPoints = 0;
+window.myStorePoints = 0;
+window.lastRankScoreTime = 0;
+window.lastStoreScoreTime = 0;
 
 window.showScoringRules = function() {
     window.SilenModal.alert(
-        "🏆 賽季計分規則\n\n" +
-        "為了確保排位賽的公平性，系統設有以下防洗分機制：\n\n" +
-        "1. 只有在「精通模式」中將單字完全精通 (通過延遲評測畢業)，才能一口氣獲得 50 分的大獎勵，中間升級階段不給分。\n\n" +
-        "2. 自建的普通單字簿需包含「至少 15 個單字」才具備計分資格。\n\n" +
-        "3. 學測單字庫依據難度 (Lv1~Lv6) 享有額外的通關分數加成 (最高可達 3 倍)！"
+        "🏆 雙軌賽季計分規則\n\n" +
+        "【牌位積分】 (影響排行榜)\n" +
+        "只能透過「綜合精通模式」與「連結力訓練」獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
+        "【商城點數】 (用於商城擴充)\n" +
+        "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫血拼！"
     );
 };
 
@@ -1520,26 +1519,37 @@ window.getCurrentWeekId = function() {
     return Math.max(1, weeksPassed + 1); 
 };
 
-window.addScore = function(points, isSeasonEligible = false, force = false) {
+// 🌟 給予牌位分 (僅限精通模式)
+window.addRankPoints = function(points, force = false) {
     if (isGuestMode) return; 
-
     const now = Date.now();
-    if (!force && window.lastScoreTime && now - window.lastScoreTime < 500) return;
-    window.lastScoreTime = now;
+    if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
+    window.lastRankScoreTime = now;
 
-    window.myTotalScore += points;
-    const elTotal = document.getElementById('stat-total-score');
-    if (elTotal) elTotal.innerText = window.myTotalScore;
-
-    let seasonPoints = 0;
-    if (typeof isSeasonEligible === 'number') {
-        seasonPoints = isSeasonEligible; 
-    } else {
-        seasonPoints = isSeasonEligible ? points : 0; 
-    }
+    window.myRankPoints += points;
+    const elTotal = document.getElementById('stat-rank-score');
+    if (elTotal) elTotal.innerText = window.myRankPoints;
 
     if (typeof window.uploadScoreToCloud === 'function') {
-        window.uploadScoreToCloud(window.myTotalScore, seasonPoints);
+        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+    }
+};
+
+// 🌟 給予商城點數 (一般模式)
+window.addStorePoints = function(points, force = false) {
+    if (isGuestMode) return; 
+    const now = Date.now();
+    if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
+    window.lastStoreScoreTime = now;
+
+    window.myStorePoints += points;
+    const elStore = document.getElementById('stat-store-points');
+    const elStoreMyScore = document.getElementById('store-my-score');
+    if (elStore) elStore.innerText = window.myStorePoints;
+    if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+
+    if (typeof window.uploadScoreToCloud === 'function') {
+        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
     }
 };
 
@@ -1978,7 +1988,7 @@ window.checkPosAnswer = function(selectedPos) {
     lastAnswerCorrect = c; 
     if (c && !w.scored) { 
         w.scored = true; 
-        if (typeof window.addScore === 'function') window.addScore(10, false); 
+        if (typeof window.addStorePoints === 'function') window.addStorePoints(10); 
     }
     
     if (!c && !isSequentialMode) window.requeueWord(w); 
@@ -1991,7 +2001,7 @@ window.checkPosAnswer = function(selectedPos) {
     document.getElementById('pos-feedback-answer').innerText = w.pos; 
     
     if (c) { 
-        i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 分)'; s.className = 'result-status status-correct'; 
+        i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; 
     } else { 
         i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; 
     } 
@@ -2014,7 +2024,7 @@ let purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) 
 
 window.openStore = async function() {
     window.switchView('store');
-    document.getElementById('store-my-score').innerText = window.myTotalScore || 0;
+    document.getElementById('store-my-score').innerText = window.myStorePoints || 0;
     
     const container = document.getElementById('store-catalog-area');
     container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
@@ -2041,7 +2051,6 @@ window.renderStoreCatalog = function(catalogData) {
         const card = document.createElement('div');
         card.className = 'store-card';
         
-        // 計算這個大包底下的子包總數
         let totalSubBundles = bundle.subBundles ? bundle.subBundles.length : 0;
         
         card.innerHTML = `
@@ -2052,11 +2061,10 @@ window.renderStoreCatalog = function(catalogData) {
             <button class="btn" style="width: 100%; margin: 0; background: #222; color: #fff; border: 1px solid #444; font-weight: 500;" onclick="window.toggleSubBundles('${bundle.id}')">查看主題列表 ▾</button>
             
             <div id="sub-list-${bundle.id}" class="sub-bundle-container hidden">
-                </div>
+            </div>
         `;
         container.appendChild(card);
 
-        // 渲染底下的子主題清單
         const subContainer = document.getElementById(`sub-list-${bundle.id}`);
         if (bundle.subBundles) {
             bundle.subBundles.forEach(sub => {
@@ -2094,28 +2102,27 @@ window.toggleSubBundles = function(bundleId) {
 };
 
 window.purchaseBundle = function(subBundleId, price, subBundleName) {
-    if (window.myTotalScore < price) {
-        window.SilenModal.alert(`積分不足！\n\n解鎖此單字包需要 ${price} 積分，您目前只有 ${window.myTotalScore} 積分。`);
+    if (window.myStorePoints < price) {
+        window.SilenModal.alert(`點數不足！\n\n解鎖此單字包需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
         return;
     }
 
-    let confirmMsg = price > 0 ? `確定要花費 ${price} 積分解鎖「${subBundleName}」嗎？` : `確定要重新下載最新的「${subBundleName}」嗎？`;
+    let confirmMsg = price > 0 ? `確定要花費 ${price} 點數解鎖「${subBundleName}」嗎？` : `確定要重新下載最新的「${subBundleName}」嗎？`;
 
     window.SilenModal.confirm(confirmMsg).then(async agreed => {
         if (agreed) {
             window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
             try {
-                // 這裡會抓取例如 bundle_travel-1.json 的檔案
                 const res = await fetch(subBundleId + ".json?t=" + Date.now());
                 if (!res.ok) throw new Error("Bundle fetch failed");
                 const bundleData = await res.json();
                 
                 if (price > 0) {
-                    window.myTotalScore -= price;
-                    document.getElementById('store-my-score').innerText = window.myTotalScore;
+                    window.myStorePoints -= price;
+                    document.getElementById('store-my-score').innerText = window.myStorePoints;
                     if (typeof window.uploadScoreToCloud === 'function') {
-                        window.uploadScoreToCloud(window.myTotalScore, 0); 
+                        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints); 
                     }
                 }
 
@@ -2129,7 +2136,7 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
                     name: subBundleName,
                     tag: "官方擴充",
                     isGSAT: false,
-                    isPhrase: false, // 確保可以使用八大模式
+                    isPhrase: false, 
                     isStore: true,  
                     bundleId: subBundleId,
                     words: bundleData
@@ -2137,7 +2144,6 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
 
                 window.saveData();
                 window.renderStoreCatalog(window.currentCatalogData);
-                // 下載完保持清單展開
                 const parentBundleId = subBundleId.split('-')[0];
                 window.toggleSubBundles(parentBundleId);
                 
