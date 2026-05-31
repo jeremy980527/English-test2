@@ -1,5 +1,5 @@
 // =====================================
-// 🌐 Firebase 模組引入 (版本統一至 10.12.2，解決黑屏問題)
+// 🌐 Firebase 模組引入  (版本統一至 10.12.2，解決黑屏問題)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
