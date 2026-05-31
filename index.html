@@ -35,7 +35,6 @@
         input, textarea { user-select: auto; -webkit-user-select: auto; }
         button:focus, input:focus, textarea:focus { outline: none; }
 
-        /* 🌟 自訂下拉選單的專屬風格 */
         .custom-dropdown { position: relative; display: inline-block; user-select: none; }
         .dropdown-selected { font-size: 1.15rem; font-weight: 500; color: var(--text-main); cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.2s; display: flex; align-items: center; gap: 8px; }
         .dropdown-selected:hover { background: rgba(0,0,0,0.05); }
@@ -49,7 +48,6 @@
         .form-dropdown .dropdown-selected:hover { border-color: var(--primary); background: transparent; }
         .form-dropdown .dropdown-options { width: 100%; max-height: 250px; overflow-y: auto; }
 
-        /* 🌟 拖曳排序與片語專屬樣式 */
         .sort-toggle { padding: 4px 10px; border-radius: 6px; transition: 0.2s; font-size: 1.2rem; font-weight: bold; }
         .sort-toggle:hover { background: rgba(0,0,0,0.05); }
         .sort-toggle.active { background: var(--text-main); color: var(--bg-color); }
@@ -60,7 +58,6 @@
         .phrase-space { margin-right: 18px !important; border-right: 2px dashed rgba(255,255,255,0.2); padding-right: 18px !important; }
         .word-pos { color: #ff9800; font-weight: bold; margin-left: 8px; font-size: 0.85rem; letter-spacing: 0.5px; }
 
-        /* 🌟 側邊導覽列 Sidebar */
         .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .sidebar-overlay.show { opacity: 1; pointer-events: auto; }
         .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--card-bg); z-index: 2001; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
@@ -71,20 +68,20 @@
         .sidebar-item { padding: 16px 25px; font-size: 1.05rem; font-weight: 500; color: var(--text-main); cursor: pointer; transition: 0.2s; letter-spacing: 1px; }
         .sidebar-item:hover { background: rgba(0,0,0,0.04); color: var(--accent); padding-left: 30px; }
 
-        /* 🌟 個人主頁 Profile */
         .profile-header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
         .profile-avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .profile-placeholder { width: 110px; height: 110px; border-radius: 50%; background: #ccc; margin: 0 auto 15px auto; display: flex; justify-content: center; align-items: center; font-size: 3rem; color: white; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .stat-value { font-size: 2.2rem; font-weight: 600; color: var(--accent); margin-bottom: 5px; font-family: 'Courier New', Courier, monospace; }
-        .stat-label { font-size: 0.85rem; color: var(--text-sub); letter-spacing: 1px; font-weight: 500; }
+        
+        /* 🌟 雙軌點數系統：改為三格排版 */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .stat-value { font-size: 1.8rem; font-weight: 600; color: var(--accent); margin-bottom: 5px; font-family: 'Courier New', Courier, monospace; }
+        .stat-label { font-size: 0.75rem; color: var(--text-sub); letter-spacing: 1px; font-weight: 500; }
         
         .badge-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; padding: 20px 0; }
         .badge-slot { width: 70px; height: 70px; border-radius: 50%; border: 2px dashed #ddd; display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 0.8rem; background: var(--bg-color); letter-spacing: 1px; text-align: center; line-height: 1.2; position: relative; }
         .badge-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; position: absolute; top: 0; left: 0; }
 
-        /* 🌟 排行榜專屬樣式 */
         .lb-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border); background: var(--card-bg); transition: 0.2s; border-radius: 8px; margin-bottom: 10px; cursor: pointer; }
         .lb-item:hover { background: rgba(0,0,0,0.02); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .lb-rank { width: 35px; font-size: 1.2rem; font-weight: bold; color: var(--text-sub); text-align: center; margin-right: 15px; }
@@ -96,7 +93,6 @@
         .lb-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 3px; color: var(--text-main); }
         .lb-score { font-size: 1.1rem; font-weight: bold; color: var(--accent); font-family: 'Courier New', Courier, monospace; text-align: right; }
 
-        /* 🌟 商城擴充庫樣式 (支援子主題清單) */
         .store-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; transition: 0.2s; }
         .store-card:hover { border-color: #555; }
         .store-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
@@ -158,9 +154,9 @@
         </div>
 
         <div class="card" style="text-align: center; border-color: var(--border); background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
-            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用積分</div>
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
             <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="store-my-score">0</span></div>
-            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(完成精通挑戰以獲取積分)</p>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(進行一般測驗與挑戰即可獲取商城點數)</p>
         </div>
 
         <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">官方嚴選組合包</h3>
@@ -180,8 +176,8 @@
         <div class="card" style="text-align: center; border-color: var(--accent); background: var(--card-bg); padding: 30px 20px;">
             <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前賽季</div>
             <div id="lb-current-week" style="font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 15px; letter-spacing: 2px;">Week --</div>
-            <div style="font-size: 0.95rem; color: var(--text-main);">您的本週積分：<span id="lb-my-score" style="font-size: 1.8rem; font-weight: bold; margin-left: 8px; font-family: 'Courier New', Courier, monospace;">0</span> 分</div>
-            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; letter-spacing: 0.5px;">(為防洗分，系統設有嚴格計分標準，詳見右上角規則)</p>
+            <div style="font-size: 0.95rem; color: var(--text-main);">您的牌位積分：<span id="lb-my-score" style="font-size: 1.8rem; font-weight: bold; margin-left: 8px; font-family: 'Courier New', Courier, monospace;">0</span> 分</div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; letter-spacing: 0.5px;">(完成綜合精通模式可大幅提升牌位分數)</p>
         </div>
 
         <h3 style="margin-top: 35px; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">全伺服器 Top 10</h3>
@@ -211,12 +207,16 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value" id="stat-total-score">0</div>
-                <div class="stat-label">生涯總積分</div>
+                <div class="stat-value" id="stat-rank-score" style="color: #9c27b0;">0</div>
+                <div class="stat-label">牌位積分</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="stat-total-words">0</div>
-                <div class="stat-label">已精通單字/片語</div>
+                <div class="stat-value" id="stat-store-points" style="color: #4caf50;">0</div>
+                <div class="stat-label">商城點數</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total-words" style="color: #ff9800;">0</div>
+                <div class="stat-label">已精通</div>
             </div>
         </div>
 
@@ -249,12 +249,16 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value" id="public-stat-score">0</div>
-                <div class="stat-label">本賽季積分</div>
+                <div class="stat-value" id="public-stat-score" style="color: #9c27b0;">0</div>
+                <div class="stat-label">牌位積分</div>
             </div>
             <div class="stat-card" style="opacity: 0.6;">
-                <div class="stat-value" style="font-size: 1.2rem; margin-top: 10px;">機密</div>
-                <div class="stat-label">已精通單字</div>
+                <div class="stat-value" style="font-size: 1.2rem; margin-top: 10px; color: #4caf50;">機密</div>
+                <div class="stat-label">商城點數</div>
+            </div>
+            <div class="stat-card" style="opacity: 0.6;">
+                <div class="stat-value" style="font-size: 1.2rem; margin-top: 10px; color: #ff9800;">機密</div>
+                <div class="stat-label">已精通</div>
             </div>
         </div>
 
@@ -305,10 +309,10 @@
             <div id="word-practice-area">
                 <div class="flex-row" style="margin-bottom: 20px;">
                     <button class="btn mastery-btn-comp" style="flex: 1; padding: 16px; font-size: 0.95rem; margin-top: 0; letter-spacing: 1px;" onclick="window.setupMasteryMode('comprehensive')">
-                        綜合精通模式<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(含結構重組與盲打)</span>
+                        綜合精通模式<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(獲取牌位積分)</span>
                     </button>
                     <button class="btn mastery-btn-conn" style="flex: 1; padding: 16px; font-size: 0.95rem; margin-top: 0; letter-spacing: 1px;" onclick="window.setupMasteryMode('connection')">
-                        連結力訓練<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(純認字雙向配對)</span>
+                        連結力訓練<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(獲取牌位積分)</span>
                     </button>
                 </div>
                 
@@ -332,7 +336,7 @@
 
             <div id="phrase-practice-area" class="hidden">
                 <button class="btn mastery-btn-comp" style="width: 100%; padding: 20px; font-size: 1.1rem; letter-spacing: 1px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border-color: #1e3c72; margin-bottom: 15px;" onclick="window.setupPhraseMasteryMode()">
-                    片語綜合練習模式<br><span style="font-size: 0.8rem; font-weight: normal; opacity: 0.8; letter-spacing: 0px;">(含雙向選擇、斷點拼圖與盲打)</span>
+                    片語綜合練習模式<br><span style="font-size: 0.8rem; font-weight: normal; opacity: 0.8; letter-spacing: 0px;">(獲取牌位積分)</span>
                 </button>
                 <div style="text-align: center; color: var(--text-sub); font-size: 0.85rem; letter-spacing: 0.5px;">片語/商城庫模式已啟動，其他單字模式已隱藏。</div>
             </div>
@@ -771,7 +775,7 @@
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--accent); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
 
-<script src="app.js?v=1016"></script>
+<script src="app.js?v=1010"></script>
 <script type="module" src="auth.js?v=1010"></script>
 
 </body>
