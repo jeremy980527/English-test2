@@ -1,5 +1,5 @@
 // =====================================
-// 🌐 Firebase 模組引入  (版本統一至 10.12.2)
+// 🌐 Firebase 模組引入 (版本統一至 10.12.2)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -174,29 +174,32 @@ onAuthStateChanged(auth, (user) => {
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
-        // 🌟 【終極修復】：使用 Math.max 強制繼承最高分數！
         const elRank = document.getElementById('stat-rank-score');
         const elStore = document.getElementById('stat-store-points');
         const elStoreMyScore = document.getElementById('store-my-score');
 
+        const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
+
+        // 🔥 新增：連同排行榜上的分數一起抓下來比對
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
-            get(ref(rtdb, `users/${user.uid}/totalScore`))
-        ]).then(([snapRank, snapStore, snapTotal]) => {
+            get(ref(rtdb, `users/${user.uid}/totalScore`)),
+            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`))
+        ]).then(([snapRank, snapStore, snapTotal, snapLb]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
             const currentRank = snapRank.exists() ? snapRank.val() : 0;
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
+            const lbScore = snapLb.exists() ? snapLb.val() : 0; // 🌟 抓出排行榜的 3995 分
             
-            // 🔥 暴力對決：誰的分數高就聽誰的！保證心血絕對不白費！
-            window.myRankPoints = Math.max(currentRank, oldTotalScore);
-            window.myStorePoints = Math.max(currentStore, oldTotalScore);
+            // 🔥 取最大值：舊總分、現在牌位分、排行榜分數，誰高用誰！
+            window.myRankPoints = Math.max(currentRank, oldTotalScore, lbScore);
+            window.myStorePoints = Math.max(currentStore, oldTotalScore, lbScore);
 
             if (elRank) elRank.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
             if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
 
-            // 如果發現新分數比資料庫裡存的還高，立刻寫回資料庫校正
             if (window.myRankPoints > currentRank || window.myStorePoints > currentStore || !snapRank.exists() || !snapStore.exists()) {
                 set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
                 set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
@@ -259,7 +262,6 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
         await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
         await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
         
-        // 排行榜現在只會反映純粹的「牌位積分」(Rank Points)
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
