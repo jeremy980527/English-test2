@@ -1120,7 +1120,9 @@ window.checkMasteryTyping = function() {
 window.checkMasteryAnswer = function(isCorrect) {
     window.hideAllMasteryAreas(); setDisplayState('mastery-feedback-area', true, 'flex');
     const icon = document.getElementById('mastery-fb-icon'); const status = document.getElementById('mastery-fb-status'); const msg = document.getElementById('mastery-fb-msg');
-    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
+    
+    // 🔥 核心修正：同時顯示「英文 (中文)」，這樣不管是 Lv1 還是 Lv4 都能一目瞭然！
+    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en + " (" + currentMasteryTarget.zh.join(' / ') + ")";
     
     window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); window.tickMasteryDelays(); let lvl = currentMasteryTarget.level;
 
@@ -1158,6 +1160,7 @@ window.checkMasteryAnswer = function(isCorrect) {
         }
     }
 };
+
 
 window.masteryFeedbackNext = function() { window.nextMasteryTurn(); };
 window.replayMasteryAudio = function() { if (currentMasteryTarget) { window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); } };
