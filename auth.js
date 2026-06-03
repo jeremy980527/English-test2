@@ -1,5 +1,5 @@
 // =====================================
-// 🌐 Firebase 模組引入 (版本統一至 10.12.2)
+// Firebase 模組引入 (版本統一至 10.12.2)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -7,7 +7,7 @@ import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstati
 import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
-// 🔑 Firebase 專案配置
+// Firebase 專案配置
 // =====================================
 const firebaseConfig = {
     apiKey: "AIzaSyDwZ9dQlbx9oMRut4kuAkHpSL8rmfAGOvo",
@@ -29,7 +29,7 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // =====================================
-// 🟢 即時在線陪伴系統
+// 即時在線陪伴系統
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
@@ -52,7 +52,7 @@ onValue(presenceRef, (snap) => {
 });
 
 // =====================================
-// 🔐 帳號登入與登出邏輯 
+// 帳號登入與登出邏輯 
 // =====================================
 window.loginWithGoogle = () => {
     const isApp = typeof AndroidBridge !== 'undefined';
@@ -89,7 +89,7 @@ function executeSignOut() {
 }
 
 // =====================================
-// ☁️ 雲端與本地端資料備份同步引擎
+// 雲端與本地端資料備份同步引擎
 // =====================================
 async function syncFromCloud(uid) {
     try {
@@ -98,15 +98,24 @@ async function syncFromCloud(uid) {
 
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
+            
+            if (cloudData.isAdmin === true) {
+                window.isAdmin = true;
+                const adminBtn = document.getElementById('sidebar-admin-btn');
+                if (adminBtn) adminBtn.style.display = 'block';
+            } else {
+                window.isAdmin = false;
+            }
+
             if (cloudData && cloudData.books) {
                 window.books = cloudData.books;
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-                console.log("☁️ 雲端資料已成功同步。");
+                console.log("雲端資料已成功同步。");
             }
         } else {
-            console.log("🆕 偵測到新註冊帳戶，進行雲端檔案初始化...");
+            console.log("偵測到新註冊帳戶，進行雲端檔案初始化...");
             if (window.books && window.books.length > 0) {
                 syncToCloud(uid, window.books);
             }
@@ -123,7 +132,7 @@ async function syncToCloud(uid, booksData) {
             books: booksData,
             lastUpdated: new Date().toISOString()
         }, { merge: true });
-        console.log("💾 進度已備份至雲端。");
+        console.log("進度已備份至雲端。");
     } catch (error) {
         console.error("雲端備份錯誤:", error);
     }
@@ -140,7 +149,7 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// 👁️ 全站身份驗證狀態變更 (Auth State)
+// 全站身份驗證狀態變更 (Auth State)
 // =====================================
 onAuthStateChanged(auth, (user) => {
     const authContainer = document.getElementById('auth-container');
@@ -180,7 +189,6 @@ onAuthStateChanged(auth, (user) => {
 
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
-        // 🔥 新增：連同排行榜上的分數一起抓下來比對
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
@@ -190,9 +198,8 @@ onAuthStateChanged(auth, (user) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
             const currentRank = snapRank.exists() ? snapRank.val() : 0;
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
-            const lbScore = snapLb.exists() ? snapLb.val() : 0; // 🌟 抓出排行榜的 3995 分
+            const lbScore = snapLb.exists() ? snapLb.val() : 0;
             
-            // 🔥 取最大值：舊總分、現在牌位分、排行榜分數，誰高用誰！
             window.myRankPoints = Math.max(currentRank, oldTotalScore, lbScore);
             window.myStorePoints = Math.max(currentStore, oldTotalScore, lbScore);
 
@@ -223,7 +230,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =====================================
-// 🔗 雲端短網址分享機制核心
+// 雲端短網址分享機制核心
 // =====================================
 window.uploadShareData = async (shareData) => {
     try {
@@ -252,7 +259,7 @@ window.downloadShareData = async (shareId) => {
 };
 
 // =====================================
-// 🏆 賽季排行榜與雙軌分數同步邏輯
+// 賽季排行榜與雙軌分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     if (!currentUser || typeof rtdb === 'undefined') return;
@@ -307,7 +314,7 @@ window.fetchLeaderboard = async function(weekId) {
 };
 
 // ==========================================
-// 🌟 同步更新使用者名稱至 Firebase 雲端與排行榜
+// 同步更新使用者名稱至 Firebase 雲端與排行榜
 // ==========================================
 window.updateCloudUserName = async function(newName) {
     const user = auth.currentUser;
@@ -334,7 +341,7 @@ window.updateCloudUserName = async function(newName) {
         }
 
         if (btn) btn.innerText = "更改名稱";
-        window.SilenModal.alert(`🎉 改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
+        window.SilenModal.alert(`改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
         
         if (typeof window.fetchLeaderboard === 'function' && typeof window.getCurrentWeekId === 'function') {
             window.fetchLeaderboard(window.getCurrentWeekId());
@@ -345,4 +352,72 @@ window.updateCloudUserName = async function(newName) {
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert("雲端同步失敗，請檢查網路連線或資料庫權限。");
     }
+};
+
+// ==========================================
+// 系統全伺服器即時公告系統 (Admin & Global)
+// ==========================================
+const announcementRef = ref(rtdb, 'system/announcement');
+onValue(announcementRef, (snap) => {
+    const data = snap.val();
+    const card = document.getElementById('home-announcement-card');
+    
+    if (data && data.visible) {
+        if (card) {
+            card.classList.remove('hidden');
+            document.getElementById('announcement-title').innerText = '[系統公告] ' + data.title;
+            document.getElementById('announcement-content').innerText = data.content;
+            
+            const titleInput = document.getElementById('admin-announce-title');
+            const contentInput = document.getElementById('admin-announce-content');
+            if (titleInput && !titleInput.value) titleInput.value = data.title;
+            if (contentInput && !contentInput.value) contentInput.value = data.content;
+        }
+    } else {
+        if (card) card.classList.add('hidden');
+    }
+});
+
+window.publishAnnouncement = async function() {
+    if (!window.isAdmin) {
+        window.SilenModal.alert("您沒有權限執行此操作。");
+        return;
+    }
+    const title = document.getElementById('admin-announce-title').value.trim();
+    const content = document.getElementById('admin-announce-content').value.trim();
+    
+    if (!title || !content) {
+        window.SilenModal.alert("標題與內容皆不可為空！");
+        return;
+    }
+
+    try {
+        await set(ref(rtdb, 'system/announcement'), {
+            title: title,
+            content: content,
+            visible: true,
+            timestamp: Date.now()
+        });
+        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即看到此訊息。").then(() => window.goHome());
+    } catch (e) {
+        console.error("發布失敗", e);
+        window.SilenModal.alert("發布失敗，請檢查資料庫權限。");
+    }
+};
+
+window.revokeAnnouncement = async function() {
+    if (!window.isAdmin) return;
+    
+    window.SilenModal.confirm("確定要撤回當前公告嗎？\n(撤回後所有玩家首頁的公告將瞬間消失)").then(async agreed => {
+        if (agreed) {
+            try {
+                await set(ref(rtdb, 'system/announcement/visible'), false);
+                document.getElementById('admin-announce-title').value = '';
+                document.getElementById('admin-announce-content').value = '';
+                window.SilenModal.alert("公告已撤銷。");
+            } catch (e) {
+                console.error("撤回失敗", e);
+            }
+        }
+    });
 };
