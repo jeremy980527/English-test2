@@ -1,4 +1,4 @@
-// ====================================
+// =====================================
 // Firebase 模組引入 (版本統一至 10.12.2)
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -98,13 +98,12 @@ async function syncFromCloud(uid) {
 
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
-            
+
             if (cloudData && cloudData.books) {
                 window.books = cloudData.books;
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-                console.log("雲端資料已成功同步。");
             }
         } else {
             console.log("偵測到新註冊帳戶，進行雲端檔案初始化...");
@@ -181,13 +180,14 @@ onAuthStateChanged(auth, (user) => {
 
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
+        // 修復：正確使用 getDoc 獲取 Firestore 資料，並加入 catch 防呆機制
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `users/${user.uid}/totalScore`)),
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
-            get(doc(db, "users", user.uid))
+            getDoc(doc(db, "users", user.uid)) 
         ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
             const currentRank = snapRank.exists() ? snapRank.val() : 0;
@@ -217,12 +217,17 @@ onAuthStateChanged(auth, (user) => {
             } else {
                 window.isAdmin = false;
             }
+
+        }).catch(err => {
+            console.error("資料庫拉取分數或權限時發生錯誤，改為使用預設值:", err);
+        }).finally(() => {
+            // 確保無論 Promise 成功或失敗，這兩行都一定會執行，解除黑屏危機
+            syncFromCloud(user.uid);
+            if (!window.isGuestMode && !hasShareLink) {
+                if (typeof window.goHome === 'function') window.goHome();
+            }
         });
 
-        syncFromCloud(user.uid);
-        if (!window.isGuestMode && !hasShareLink) {
-            window.goHome();
-        }
     } else {
         currentUser = null;
         authContainer.innerHTML = ``;
@@ -230,7 +235,7 @@ onAuthStateChanged(auth, (user) => {
             mainHeader.classList.remove('hidden');
         } else {
             mainHeader.classList.add('hidden');
-            window.switchView('landing');
+            if (typeof window.switchView === 'function') window.switchView('landing');
         }
     }
 });
@@ -418,7 +423,9 @@ window.publishAnnouncement = async function() {
             visible: true,
             timestamp: Date.now()
         });
-        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即收到彈窗通知。").then(() => window.goHome());
+        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即收到彈窗通知。").then(() => {
+            if (typeof window.goHome === 'function') window.goHome();
+        });
     } catch (e) {
         console.error("發布失敗", e);
         window.SilenModal.alert("發布失敗，請檢查資料庫權限。");
