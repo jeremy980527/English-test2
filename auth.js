@@ -103,8 +103,6 @@ async function syncFromCloud(uid) {
                 window.isAdmin = true;
                 const adminBtn = document.getElementById('sidebar-admin-btn');
                 if (adminBtn) adminBtn.style.display = 'block';
-            } else {
-                window.isAdmin = false;
             }
 
             if (cloudData && cloudData.books) {
@@ -193,8 +191,9 @@ onAuthStateChanged(auth, (user) => {
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `users/${user.uid}/totalScore`)),
-            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`))
-        ]).then(([snapRank, snapStore, snapTotal, snapLb]) => {
+            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
+            get(ref(rtdb, `users/${user.uid}/isAdmin`))
+        ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdmin]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
             const currentRank = snapRank.exists() ? snapRank.val() : 0;
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
@@ -210,6 +209,12 @@ onAuthStateChanged(auth, (user) => {
             if (window.myRankPoints > currentRank || window.myStorePoints > currentStore || !snapRank.exists() || !snapStore.exists()) {
                 set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
                 set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+            }
+
+            if (snapAdmin.exists() && snapAdmin.val() === true) {
+                window.isAdmin = true;
+                const adminBtn = document.getElementById('sidebar-admin-btn');
+                if (adminBtn) adminBtn.style.display = 'block';
             }
         });
 
