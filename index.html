@@ -194,6 +194,9 @@
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 玩家交易市場 (Market View) -->
+    <!-- ========================================================= -->
     <div id="view-market" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -211,7 +214,7 @@
         <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">玩家創作大廳</h3>
         
         <div id="market-catalog-area" style="margin-top: 20px;">
-            <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">市場建置中... (Phase 1 僅開放上架功能)</div>
+            <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">市場載入中...</div>
         </div>
     </div>
 
@@ -826,6 +829,7 @@
 
 </div>
 
+<!-- 彈窗模組 -->
 <div id="silen-modal-overlay" class="hidden"><div class="silen-modal-box"><div id="silen-modal-msg" class="silen-modal-msg"></div><input type="text" id="silen-modal-input" class="hidden"><textarea id="silen-modal-textarea" class="hidden"></textarea><div class="silen-modal-actions"><button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden">取消</button><button id="silen-modal-btn-confirm" class="btn btn-small">確認</button></div></div></div>
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%; background: #fff; color: #000;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
@@ -853,7 +857,7 @@
 </div>
 
 <script src="app.js?v=1028"></script>
-<script type="module" src="auth.js?v=1026"></script>
+<script type="module" src="auth.js?v=1027"></script>
 
 </body>
 </html>
