@@ -541,13 +541,6 @@ window.renderBookList = function() {
                     const actionContainer = document.createElement('div');
                     actionContainer.style.cssText = 'display: flex; gap: 8px;';
                     
-                    const pubBtn = document.createElement('button');
-                    pubBtn.className = 'btn-icon edit-btn';
-                    pubBtn.innerHTML = '發布';
-                    pubBtn.style.color = '#ff9800';
-                    pubBtn.onclick = (e) => { e.stopPropagation(); window.openPublishModal(book.id); };
-                    actionContainer.appendChild(pubBtn);
-
                     const editBtn = document.createElement('button');
                     editBtn.className = 'btn-icon edit-btn';
                     editBtn.innerHTML = '編輯'; 
