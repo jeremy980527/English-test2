@@ -116,7 +116,8 @@
     <div class="sidebar-menu">
         <div class="sidebar-item" onclick="window.goHome(); window.toggleSidebar();">首頁 Dashboard</div>
         <div class="sidebar-item" onclick="window.openBookSelect(); window.toggleSidebar();">單字 / 片語庫</div>
-        <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();" style="border-left: 3px solid #fff;">擴充商城庫</div>
+        <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();">擴充商城庫</div>
+        <div class="sidebar-item" onclick="window.openMarket(); window.toggleSidebar();" style="border-left: 3px solid #ff9800; color: #ff9800;">玩家市場 (C2C)</div>
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
         
@@ -143,9 +144,6 @@
         </div>
     </header>
 
-    <!-- ========================================================= -->
-    <!-- 首頁 (Home View) -->
-    <!-- ========================================================= -->
     <div id="view-home" class="hidden">
         
         <div class="card" style="text-align: center; padding: 30px 20px; border-color: var(--border);">
@@ -196,9 +194,27 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 管理員專屬後台 (Admin View) -->
-    <!-- ========================================================= -->
+    <div id="view-market" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.goHome()">返回</button>
+            <div class="nav-bar-right">
+                <span style="font-weight: 500; letter-spacing: 1px; color: #ff9800;">玩家市場</span>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center; border-color: #ff9800; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="market-my-score">0</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(購買玩家上架商品將消耗您的商城點數)</p>
+        </div>
+
+        <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">玩家創作大廳</h3>
+        
+        <div id="market-catalog-area" style="margin-top: 20px;">
+            <div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">市場建置中... (Phase 1 僅開放上架功能)</div>
+        </div>
+    </div>
+
     <div id="view-admin" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -231,9 +247,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 擴充商城 (Store View) -->
-    <!-- ========================================================= -->
     <div id="view-store" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -255,9 +268,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 每週排行榜 (Leaderboard View) -->
-    <!-- ========================================================= -->
     <div id="view-leaderboard" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -280,9 +290,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 個人主頁 (Profile View) -->
-    <!-- ========================================================= -->
     <div id="view-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -329,9 +336,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 公開個人頁面 (Public Profile View) -->
-    <!-- ========================================================= -->
     <div id="view-public-profile" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.switchView('leaderboard')">返回排行榜</button>
@@ -368,9 +372,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 歡迎頁面 (Landing View) -->
-    <!-- ========================================================= -->
     <div id="view-landing" class="hidden">
         <div class="landing-hero" style="text-align: center; padding: 60px 0; animation: fadeIn 0.6s ease;">
             <h1 style="font-size: 2.8rem; font-weight: 200; letter-spacing: 8px; margin-bottom: 10px; color: var(--text-main);">SILENVOCAB</h1>
@@ -397,9 +398,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 單字/片語簿庫 -->
-    <!-- ========================================================= -->
     <div id="view-book-select" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回首頁</button>
@@ -417,7 +415,6 @@
             <div style="width: 60px;"></div>
         </div>
         
-        <!-- 單字簿區域 -->
         <div id="normal-book-area">
             <div id="normal-book-list"></div>
             
@@ -522,9 +519,6 @@
 
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 編輯視窗 -->
-    <!-- ========================================================= -->
     <div id="view-edit" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.switchView('book-select')">返回</button>
@@ -570,9 +564,6 @@
         <div id="word-list"></div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 詞性挑戰專屬測驗區域 -->
-    <!-- ========================================================= -->
     <div id="view-pos" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -611,9 +602,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 綜合精通與測驗區域 -->
-    <!-- ========================================================= -->
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -689,7 +677,6 @@
         </div>
     </div>
 
-    <!-- 其他八大模式區塊 -->
     <div id="view-practice" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
@@ -843,8 +830,30 @@
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%; background: #fff; color: #000;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
 
-<script src="app.js?v=1027"></script>
-<script type="module" src="auth.js?v=1025"></script>
+<div id="silen-publish-overlay" class="hidden">
+    <div class="silen-modal-box" style="max-width: 400px; text-align: left;">
+        <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">發布至玩家市場</h3>
+        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">目標題庫：<span id="pub-book-name" style="color:var(--text-main); font-weight:bold;"></span></p>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">市場定價 (最低 50，系統將抽成 20%)</label>
+            <input type="number" id="pub-price" value="100" min="50" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">商品介紹</label>
+            <textarea id="pub-desc" placeholder="請簡短介紹這本單字簿的特色..." style="width: 100%; height: 80px; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px; resize: vertical;"></textarea>
+        </div>
+        <div style="font-size: 0.8rem; color: #ff9800; margin-bottom: 20px; text-align: center;" id="pub-limit-text">
+            讀取上傳額度中...
+        </div>
+        <div class="flex-row">
+            <button class="btn btn-outline" style="flex: 1;" onclick="window.closePublishModal()">取消</button>
+            <button class="btn" style="flex: 1; background: #fff; color: #000;" id="btn-confirm-pub" onclick="window.confirmPublish()">確定上架</button>
+        </div>
+    </div>
+</div>
+
+<script src="app.js?v=1028"></script>
+<script type="module" src="auth.js?v=1026"></script>
 
 </body>
 </html>
