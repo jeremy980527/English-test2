@@ -198,6 +198,12 @@ window.goHome = function() {
     if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary(); 
     if (window.SilenSettings && typeof window.SilenSettings.render === 'function') window.SilenSettings.render(); 
     window.switchView('home'); 
+
+    if (window.pendingAnnouncement && typeof window.showAnnouncementModal === 'function') {
+        setTimeout(() => {
+            window.showAnnouncementModal(window.pendingAnnouncement);
+        }, 300);
+    }
 };
 
 window.openBookSelect = function() { 
