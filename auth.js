@@ -601,27 +601,20 @@ window.checkPublishLimit = async function() {
     }
 };
 
-window.openPublishModal = async function() {
-    const user = auth.currentUser;
-    if (!user) {
+window.openPublishModal = function(bookId) {
+    if (typeof window.checkPublishLimit !== 'function') {
         window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
     }
+    const book = window.books.find(b => b.id === bookId);
+    if (!book) return;
 
-    const eligibleBooks = window.books.filter(b => !b.isStore && b.words.length >= 10);
-    if (eligibleBooks.length === 0) {
-        window.SilenModal.alert("您目前沒有符合條件的單字簿可供上架！\n(為了維持市場品質，請確保題庫內至少包含 10 個單字)");
+    if (book.words.length < 10) {
+        window.SilenModal.alert("單字本數量太少！\n為了維持市場品質，請至少包含 10 個單字後再上架。");
         return;
     }
 
-    const selectEl = document.getElementById('pub-book-select');
-    selectEl.innerHTML = '';
-    eligibleBooks.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b.id;
-        opt.innerText = `${b.name} (${b.words.length} 詞)`;
-        selectEl.appendChild(opt);
-    });
-
+    window.currentPublishBookId = bookId;
+    document.getElementById('pub-book-name').innerText = book.name;
     document.getElementById('pub-price').value = 100;
     document.getElementById('pub-desc').value = '';
     document.getElementById('btn-confirm-pub').disabled = true;
@@ -632,16 +625,17 @@ window.openPublishModal = async function() {
     void overlay.offsetWidth;
     overlay.classList.add('show');
     
-    const res = await window.checkPublishLimit();
-    const txt = document.getElementById('pub-limit-text');
-    if (res.canUpload) {
-        txt.innerText = `今日上架額度剩餘: ${res.remaining} / 3`;
-        txt.style.color = '#4caf50';
-        document.getElementById('btn-confirm-pub').disabled = false;
-    } else {
-        txt.innerText = `今日上架額度已達上限 (3 / 3)，請明日再來！`;
-        txt.style.color = '#ff4444';
-    }
+    window.checkPublishLimit().then(res => {
+        const txt = document.getElementById('pub-limit-text');
+        if (res.canUpload) {
+            txt.innerText = `今日上架額度剩餘: ${res.remaining} / 3`;
+            txt.style.color = '#4caf50';
+            document.getElementById('btn-confirm-pub').disabled = false;
+        } else {
+            txt.innerText = `今日上架額度已達上限 (3 / 3)，請明日再來！`;
+            txt.style.color = '#ff4444';
+        }
+    });
 };
 
 window.closePublishModal = function() {
@@ -651,10 +645,8 @@ window.closePublishModal = function() {
 };
 
 window.confirmPublish = function() {
-    const bookId = parseInt(document.getElementById('pub-book-select').value);
     const price = parseInt(document.getElementById('pub-price').value);
     const desc = document.getElementById('pub-desc').value.trim();
-    
     if (isNaN(price) || price < 50) {
         window.SilenModal.alert("定價最低需為 50 點數。"); return;
     }
@@ -662,11 +654,7 @@ window.confirmPublish = function() {
         window.SilenModal.alert("請輸入簡單的商品介紹。"); return;
     }
     
-    const book = window.books.find(b => b.id === bookId);
-    if (!book) {
-        window.SilenModal.alert("找不到指定的單字簿。"); return;
-    }
-
+    const book = window.books.find(b => b.id === window.currentPublishBookId);
     window.closePublishModal();
     if (typeof window.executePublishToMarket === 'function') {
         window.executePublishToMarket(book, price, desc);
