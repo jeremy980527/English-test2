@@ -601,18 +601,42 @@ window.checkPublishLimit = async function() {
     }
 };
 
-window.openPublishModal = function(bookId) {
-    if (typeof window.checkPublishLimit !== 'function') {
+window.openPublishModal = function() {
+    if (!auth.currentUser) {
         window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
     }
-    const book = window.books.find(b => b.id === bookId);
-    if (!book) return;
 
-    if (book.words.length < 10) {
-        window.SilenModal.alert("單字本數量太少！\n為了維持市場品質，請至少包含 10 個單字後再上架。");
-        return;
+    const eligibleBooks = window.books.filter(b => !b.isStore && b.words.length >= 10);
+    const container = document.getElementById('pub-book-list-container');
+    container.innerHTML = '';
+    
+    if (eligibleBooks.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding:20px; line-height: 1.6;">您目前沒有符合條件的單字簿可供上架！<br>(為了維持市場品質，請確保題庫內至少包含 10 個單字)</div>';
+    } else {
+        eligibleBooks.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'card book-item';
+            div.style.cursor = 'pointer';
+            div.style.marginBottom = '0';
+            div.innerHTML = `<strong>${b.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${b.words.length} 詞)</span>`;
+            div.onclick = () => window.selectBookToPublish(b.id);
+            container.appendChild(div);
+        });
     }
 
+    document.getElementById('pub-step-1').classList.remove('hidden');
+    document.getElementById('pub-step-2').classList.add('hidden');
+    
+    const overlay = document.getElementById('silen-publish-overlay');
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.classList.add('show');
+};
+
+window.selectBookToPublish = function(bookId) {
+    const book = window.books.find(b => b.id === bookId);
+    if (!book) return;
+    
     window.currentPublishBookId = bookId;
     document.getElementById('pub-book-name').innerText = book.name;
     document.getElementById('pub-price').value = 100;
@@ -620,10 +644,8 @@ window.openPublishModal = function(bookId) {
     document.getElementById('btn-confirm-pub').disabled = true;
     document.getElementById('pub-limit-text').innerText = "正在檢查每日額度...";
     
-    const overlay = document.getElementById('silen-publish-overlay');
-    overlay.classList.remove('hidden');
-    void overlay.offsetWidth;
-    overlay.classList.add('show');
+    document.getElementById('pub-step-1').classList.add('hidden');
+    document.getElementById('pub-step-2').classList.remove('hidden');
     
     window.checkPublishLimit().then(res => {
         const txt = document.getElementById('pub-limit-text');
@@ -638,6 +660,11 @@ window.openPublishModal = function(bookId) {
     });
 };
 
+window.backToPublishList = function() {
+    document.getElementById('pub-step-2').classList.add('hidden');
+    document.getElementById('pub-step-1').classList.remove('hidden');
+};
+
 window.closePublishModal = function() {
     const overlay = document.getElementById('silen-publish-overlay');
     overlay.classList.remove('show');
@@ -647,6 +674,7 @@ window.closePublishModal = function() {
 window.confirmPublish = function() {
     const price = parseInt(document.getElementById('pub-price').value);
     const desc = document.getElementById('pub-desc').value.trim();
+    
     if (isNaN(price) || price < 50) {
         window.SilenModal.alert("定價最低需為 50 點數。"); return;
     }
@@ -655,6 +683,10 @@ window.confirmPublish = function() {
     }
     
     const book = window.books.find(b => b.id === window.currentPublishBookId);
+    if (!book) {
+        window.SilenModal.alert("找不到指定的單字簿。"); return;
+    }
+
     window.closePublishModal();
     if (typeof window.executePublishToMarket === 'function') {
         window.executePublishToMarket(book, price, desc);
