@@ -1,5 +1,5 @@
 // =====================================
-// 🌟 1. 自訂彈窗與設定引擎(Modal & Settings)
+// 1. 自訂彈窗與設定引擎(Modal & Settings)
 // =====================================
 window.SilenModal = {
     overlay: null, msg: null, input: null, textarea: null, btnCancel: null, btnConfirm: null, resolvePromise: null,
@@ -125,7 +125,7 @@ window.toggleSetting = function(type) {
 };
 
 // =====================================
-// 🌟 2. 全局變數與基礎邏輯 (Globals)
+// 2. 全局變數與基礎邏輯 (Globals)
 // =====================================
 window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
 let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
@@ -164,7 +164,7 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store'];
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -240,7 +240,7 @@ window.toggleSidebar = function() {
 };
 
 // =====================================
-// 🌟 3. 發聲核心
+// 3. 發聲核心
 // =====================================
 window.speakEnglishWord = function(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
@@ -296,7 +296,7 @@ window.endQuiz = function() {
 };
 
 // =====================================
-// 🌟 4. 分享與連網功能
+// 4. 分享與連網功能
 // =====================================
 window.shareCurrentQuiz = async function() {
     if (typeof window.uploadShareData !== 'function') {
@@ -333,7 +333,7 @@ window.shareCurrentQuiz = async function() {
         navigator.share({ title: 'SilenVocab 英文挑戰', text: '我建立了一個專屬單字測驗，快來挑戰看看吧！', url: shareUrl }).catch(() => {});
     } else if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(shareUrl).then(() => window.SilenModal.alert("短網址已成功複製到剪貼簿！\n\n" + shareUrl))
-        .catch(() => window.SilenModal.prompt("請手手動複製以下短網址：", shareUrl));
+        .catch(() => window.SilenModal.prompt("請手動複製以下短網址：", shareUrl));
     } else {
         window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
     }
@@ -397,7 +397,7 @@ window.startGuestMode = function(data) {
 };
 
 // =====================================
-// 🌟 5. 題庫管理與精通度計算 (支援商城庫隔離)
+// 5. 題庫管理與精通度計算 (支援商城庫隔離)
 // =====================================
 window.updateProfileStats = function() {
     let count = 0;
@@ -432,7 +432,7 @@ window.updateHomeSummary = function() {
         setDisplayState('phrase-practice-area', false);
     } else {
         let typeStr = isStoreSelected ? '商城組合' : (isPhraseSelected ? '片語' : '單字');
-        summaryEl.innerHTML = `已選取 <span style="color:var(--accent); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--accent); font-weight:500;">${wordCount}</span> 個項目`;
+        summaryEl.innerHTML = `已選取 <span style="color:var(--text-main); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--text-main); font-weight:500;">${wordCount}</span> 個項目`;
         
         if (isPhraseSelected) {
             setDisplayState('word-practice-area', false);
@@ -517,7 +517,7 @@ window.renderBookList = function() {
                     delBtn.style.color = '#ff4444';
                     delBtn.onclick = (e) => { 
                         e.stopPropagation(); 
-                        window.SilenModal.confirm('確定要刪除此擴充包嗎？\n(刪除後可至商城「免費重新下載」最新版本)').then(agreed => {
+                        window.SilenModal.confirm('確定要刪除此擴充包嗎？\n(刪除後可至商城重新下載最新版本)').then(agreed => {
                             if(agreed) {
                                 window.books = window.books.filter(b => b.id !== book.id);
                                 selectedBookIds.delete(book.id);
@@ -677,7 +677,11 @@ window.addPhraseBookWithImport = function() {
     window.toggleImportArea('phrase'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個片語。`);
 };
 
-window.toggleExportMenu = function() { document.getElementById('export-menu').classList.toggle('active'); };
+window.toggleExportMenu = function(event) { 
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.toggle('active'); 
+};
 
 window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
@@ -700,8 +704,10 @@ window.exportBook = function(type) {
 };
 
 document.addEventListener('click', (event) => {
-    const menu = document.getElementById('export-menu'); const exportBtn = document.querySelector('.nav-bar-right .btn-icon');
-    if (menu && menu.classList.contains('active') && !menu.contains(event.target) && event.target !== exportBtn) menu.classList.remove('active');
+    const menu = document.getElementById('export-menu'); 
+    if (menu && menu.classList.contains('active') && !menu.contains(event.target)) {
+        menu.classList.remove('active');
+    }
 });
 
 window.deleteCurrentBook = function() {
@@ -725,7 +731,6 @@ window.saveBookInfo = function() {
     book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
 };
 
-// 🌟 單字列表加上詞性標籤渲染 (支援實體按鈕點擊即時編輯)
 window.editingWordIndex = null;
 
 window.renderWordList = function() {
@@ -763,7 +768,7 @@ window.renderWordList = function() {
                 <input type="text" id="inline-zh-${actualIndex}" value="${safeZh}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
                 <div class="flex-row" style="justify-content: flex-end; margin-top: 5px;">
                     <button class="btn btn-outline btn-small" onclick="window.cancelEditWord()">取消</button>
-                    <button class="btn btn-small" onclick="window.saveEditWord(${actualIndex})">儲存</button>
+                    <button class="btn btn-small" style="background: #fff; color: #000;" onclick="window.saveEditWord(${actualIndex})">儲存</button>
                 </div>
             `;
         } else {
@@ -859,7 +864,7 @@ window.getSelectedWordsPool = function() {
 };
 
 // =====================================
-// 🚀 6. 雙軌精通模式 (Mastery Mode) + 延遲結算
+// 6. 雙軌精通模式 (Mastery Mode) + 延遲結算
 // =====================================
 let masteryPool = [];
 let currentMasteryTarget = null;
@@ -889,7 +894,6 @@ window.bufferWordAsMastered = function(targetWord) {
     if (!pendingMasteredWords.some(w => w.en === targetWord.en)) pendingMasteredWords.push({ ...targetWord });
 };
 
-// 🌟 打包加分與繞過防連點
 window.finalizeMasterySession = function() {
     if (pendingMasteredWords.length === 0) return;
 
@@ -912,7 +916,6 @@ window.finalizeMasterySession = function() {
     if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
     if (typeof window.saveData === 'function') window.saveData(); 
 
-    // 🔥 綜合精通模式：只獲得「牌位積分」
     if (typeof window.addRankPoints === 'function' && totalPoints > 0) {
         window.addRankPoints(totalPoints, true);
     }
@@ -946,7 +949,6 @@ window.updateMasteryProgress = function() {
     return mastered === masteryPool.length;
 };
 
-// 🌟 全新 5 階關卡推進邏輯
 window.nextMasteryTurn = function() {
     if (window.updateMasteryProgress()) {
         window.hideAllMasteryAreas(); document.getElementById('mastery-success-title').style.color = (masteryModeType === 'comprehensive') ? "#9c27b0" : "#009688";
@@ -1003,7 +1005,6 @@ window.showMasteryL0 = function(word) {
 };
 window.masteryL0Next = function() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); currentMasteryTarget.level = 1; window.nextMasteryTurn(); };
 
-// 🌟 升級版選擇題引擎：支援英選中(Lv1)與中選英(Lv2)
 window.showMasteryMCQ = function(word, mode, isDelayed) {
     setDisplayState('mastery-mcq-area', true); 
     
@@ -1116,12 +1117,10 @@ window.checkMasteryTyping = function() {
     const val = document.getElementById('mastery-typing-input').value.trim().toLowerCase(); const target = currentMasteryTarget.en.toLowerCase(); window.checkMasteryAnswer(val === target);
 };
 
-// 🌟 全新精通模式升級判定引擎
 window.checkMasteryAnswer = function(isCorrect) {
     window.hideAllMasteryAreas(); setDisplayState('mastery-feedback-area', true, 'flex');
     const icon = document.getElementById('mastery-fb-icon'); const status = document.getElementById('mastery-fb-status'); const msg = document.getElementById('mastery-fb-msg');
     
-    // 🔥 核心修正：同時顯示「英文 (中文)」，這樣不管是 Lv1 還是 Lv4 都能一目瞭然！
     document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en + " (" + currentMasteryTarget.zh.join(' / ') + ")";
     
     window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); window.tickMasteryDelays(); let lvl = currentMasteryTarget.level;
@@ -1135,7 +1134,7 @@ window.checkMasteryAnswer = function(isCorrect) {
             else if (lvl === 4) { currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
             else if (lvl === 4.9) { 
                 currentMasteryTarget.level = 5; let rw = window.calculateReward(currentMasteryTarget, 'Comp_Grad'); let extraMsg = "";
-                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
+                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
                 else { extraMsg = " (此單字已精通過，不再重複給予分數)"; }
                 msg.innerText = `通過延遲評測，該單字已完全精通！${extraMsg}`; 
             }
@@ -1150,7 +1149,7 @@ window.checkMasteryAnswer = function(isCorrect) {
             else if (lvl === 2) { currentMasteryTarget.level = 2.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; } 
             else if (lvl === 2.9) { 
                 currentMasteryTarget.level = 4; let rw = window.calculateReward(currentMasteryTarget, 'Conn_Grad'); let extraMsg = "";
-                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
+                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
                 else { extraMsg = " (此單字已精通過，不再重複給予分數)"; }
                 msg.innerText = `通過延遲評測，單字連接力建立完成！${extraMsg}`; 
             }
@@ -1161,12 +1160,11 @@ window.checkMasteryAnswer = function(isCorrect) {
     }
 };
 
-
 window.masteryFeedbackNext = function() { window.nextMasteryTurn(); };
 window.replayMasteryAudio = function() { if (currentMasteryTarget) { window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); } };
 
 // =====================================
-// 🌟 7. 原版 8 大練習模式 (給予「商城點數」)
+// 7. 原版 8 大練習模式 (給予「商城點數」)
 // =====================================
 window.setupPractice = function(mode) { 
     practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
@@ -1407,9 +1405,9 @@ window.loadYouglishCard = function() {
 window.nextYouglishCard = function() { if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; window.loadYouglishCard(); } else { window.endQuiz(); } };
 window.prevYouglishCard = function() { if (currentCardIndex > 0) { currentCardIndex--; window.loadYouglishCard(); } else { window.SilenModal.alert("已達佇列首端。"); } };
 
-// ==========================================================================
-// 🌟 8. 自訂下拉選單控制與學測抽卡系統
-// ==========================================================================
+// =====================================
+// 8. 自訂下拉選單控制與學測抽卡系統
+// =====================================
 window.toggleDropdown = function(id, event) {
     if(event) event.stopPropagation();
     document.querySelectorAll('.dropdown-options').forEach(el => { if (el.id !== id) el.classList.add('hidden'); });
@@ -1459,30 +1457,61 @@ window.fetchGSATVocab = async function(level) {
 
 window.claimGSATWords = async function() {
     const level = window.currentGsatLevel || 'lv1';
-    if (gsatVocabCache[level].length === 0) { await window.fetchGSATVocab(level); if (gsatVocabCache[level].length === 0) return; }
+    if (!gsatVocabCache[level] || gsatVocabCache[level].length === 0) { 
+        await window.fetchGSATVocab(level); 
+        if (!gsatVocabCache[level] || gsatVocabCache[level].length === 0) return; 
+    }
 
-    const amount = parseInt(document.getElementById('gsat-claim-amount').value) || 30;
-    const levelNum = level.replace('lv', ''); let defaultName = `學測 Lv${levelNum} 抽取`;
-    const nameInput = document.getElementById('gsat-claim-name').value.trim(); const bookName = nameInput === '' ? defaultName : nameInput; const bookTag = document.getElementById('gsat-claim-tag').value.trim();
+    const amountElement = document.getElementById('gsat-claim-amount');
+    const amount = amountElement ? (parseInt(amountElement.value) || 30) : 30;
+    const levelNum = level.replace('lv', ''); 
+    let defaultName = `學測 Lv${levelNum} 抽取`;
+    
+    const nameInputEl = document.getElementById('gsat-claim-name');
+    const nameInput = nameInputEl ? nameInputEl.value.trim() : ''; 
+    const bookName = nameInput === '' ? defaultName : nameInput; 
+    
+    const tagInputEl = document.getElementById('gsat-claim-tag');
+    const bookTag = tagInputEl ? tagInputEl.value.trim() : `學測 Lv${levelNum}`;
 
     let existingWords = new Set();
-    window.books.forEach(book => { if (book.tag.includes('學測') || book.isGSAT) { book.words.forEach(w => existingWords.add(w.en.toLowerCase())); } });
+    window.books.forEach(book => { 
+        const safeTag = (book.tag && typeof book.tag === 'string') ? book.tag : '';
+        if (safeTag.includes('學測') || book.isGSAT) { 
+            if (book.words && Array.isArray(book.words)) {
+                book.words.forEach(w => {
+                    if (w && w.en) existingWords.add(w.en.toLowerCase());
+                }); 
+            }
+        } 
+    });
+    
     let availableWords = gsatVocabCache[level].filter(w => !existingWords.has(w.en.toLowerCase()));
 
-    if (availableWords.length === 0) { window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被你全部抽完囉！`); return; }
+    if (availableWords.length === 0) { 
+        window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被您全部抽完囉！`); 
+        return; 
+    }
 
     let finalAmount = amount;
-    if (availableWords.length < amount) { window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`); finalAmount = availableWords.length; }
+    if (availableWords.length < amount) { 
+        window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`); 
+        finalAmount = availableWords.length; 
+    }
 
-    availableWords.sort(() => Math.random() - 0.5); let selectedWords = availableWords.slice(0, finalAmount);
-    window.books.push({ id: Date.now(), name: bookName, tag: bookTag, isGSAT: true, isPhrase: false, words: selectedWords });
+    availableWords.sort(() => Math.random() - 0.5); 
+    let selectedWords = availableWords.slice(0, finalAmount);
+    
+    window.books.push({ id: Date.now(), name: bookName, tag: bookTag, isGSAT: true, isPhrase: false, isStore: false, words: selectedWords });
 
     if (typeof window.saveData === 'function') window.saveData();
-    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => { if (typeof window.renderBookList === 'function') window.renderBookList(); });
+    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => { 
+        if (typeof window.renderBookList === 'function') window.renderBookList(); 
+    });
 };
 
 // =====================================
-// 🌟 9. 啟動與分享攔截初始化
+// 9. 啟動與分享攔截初始化
 // =====================================
 window.addEventListener('DOMContentLoaded', () => {
     window.SilenModal.init();
@@ -1497,7 +1526,7 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// 🌟 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
+// 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
 window.myRankPoints = 0;
 window.myStorePoints = 0;
@@ -1506,11 +1535,11 @@ window.lastStoreScoreTime = 0;
 
 window.showScoringRules = function() {
     window.SilenModal.alert(
-        "🏆 雙軌賽季計分規則\n\n" +
-        "【牌位積分】 (影響排行榜)\n" +
-        "只能透過「綜合精通模式」與「連結力訓練」獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
-        "【商城點數】 (用於商城擴充)\n" +
-        "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫血拼！"
+        "雙軌賽季計分規則\n\n" +
+        "[牌位積分] (影響排行榜)\n" +
+        "只能透過綜合精通模式與連結力訓練獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
+        "[商城點數] (用於商城擴充)\n" +
+        "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫選購！"
     );
 };
 
@@ -1522,7 +1551,6 @@ window.getCurrentWeekId = function() {
     return Math.max(1, weeksPassed + 1); 
 };
 
-// 🌟 給予牌位分 (僅限精通模式)
 window.addRankPoints = function(points, force = false) {
     if (isGuestMode) return; 
     const now = Date.now();
@@ -1538,7 +1566,6 @@ window.addRankPoints = function(points, force = false) {
     }
 };
 
-// 🌟 給予商城點數 (一般模式)
 window.addStorePoints = function(points, force = false) {
     if (isGuestMode) return; 
     const now = Date.now();
@@ -1574,16 +1601,16 @@ window.renderLeaderboard = function(listData, mySeasonScore) {
     container.innerHTML = '';
 
     if (!listData || listData.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">本週尚無排名紀錄，快去搶頭香！</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">本週尚無排名紀錄</div>';
         return;
     }
 
     listData.forEach((user, index) => {
         let rankClass = '';
         let rankText = index + 1;
-        if (index === 0) { rankClass = 'lb-rank-1'; rankText = '🥇'; }
-        else if (index === 1) { rankClass = 'lb-rank-2'; rankText = '🥈'; }
-        else if (index === 2) { rankClass = 'lb-rank-3'; rankText = '🥉'; }
+        if (index === 0) { rankClass = 'lb-rank-1'; rankText = '1'; }
+        else if (index === 1) { rankClass = 'lb-rank-2'; rankText = '2'; }
+        else if (index === 2) { rankClass = 'lb-rank-3'; rankText = '3'; }
 
         const div = document.createElement('div');
         div.className = 'lb-item';
@@ -1654,7 +1681,7 @@ window.editUserName = function() {
 };
 
 // ==========================================================================
-// 🌟 11. 片語專屬綜合練習模式
+// 11. 片語專屬綜合練習模式
 // ==========================================================================
 let phrasePuzzleSource = [];
 let phrasePuzzleTemplate = [];
@@ -1679,13 +1706,13 @@ window.setupPhraseMasteryMode = function() {
     const nextBtns = document.querySelectorAll('#view-mastery .btn:not(.btn-icon):not(.btn-outline)');
 
     headerTitle.innerText = "片語綜合練習"; 
-    headerTitle.style.color = "#1e3c72"; 
-    progressBar.style.background = "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)"; 
-    l0Card.style.borderColor = "#1e3c72";
+    headerTitle.style.color = "#fff"; 
+    progressBar.style.background = "#fff"; 
+    l0Card.style.borderColor = "#444";
     nextBtns.forEach(b => { 
-        b.style.background = "linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)";
-        b.style.borderColor = "#1e3c72";
-        b.style.color = "#fff";
+        b.style.background = "#fff";
+        b.style.borderColor = "#fff";
+        b.style.color = "#000";
         b.classList.add('btn-next-big');
     });
 
@@ -1712,7 +1739,7 @@ window.nextPhraseMasteryTurn = function() {
 
     if (mastered === masteryPool.length) {
         window.hideAllMasteryAreas(); 
-        document.getElementById('mastery-success-title').style.color = "#1e3c72";
+        document.getElementById('mastery-success-title').style.color = "#fff";
         setDisplayState('mastery-success-area', true); 
         window.finalizeMasterySession();
         return;
@@ -1906,7 +1933,8 @@ window.checkPhraseAnswer = function(isCorrect) {
     const icon = document.getElementById('mastery-fb-icon'); 
     const status = document.getElementById('mastery-fb-status'); 
     const msg = document.getElementById('mastery-fb-msg');
-    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en;
+    
+    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en + " (" + currentMasteryTarget.zh.join(' / ') + ")";
     
     window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); 
     window.tickMasteryDelays(); 
@@ -1926,7 +1954,7 @@ window.checkPhraseAnswer = function(isCorrect) {
             let extraMsg = "";
             if (!rw.isMastered) {
                 window.bufferWordAsMastered(currentMasteryTarget);
-                extraMsg = rw.points > 0 ? ` (🏆 結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+                extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
             } else { extraMsg = " (此片語已精通過，不再重複給予分數)"; }
             msg.innerText = `通過延遲評測，該片語已完全精通！${extraMsg}`; 
         }
@@ -1940,7 +1968,7 @@ window.checkPhraseAnswer = function(isCorrect) {
 };
 
 // ==========================================================================
-// 🌟 12. 詞性挑戰模式 (POS Challenge)
+// 12. 詞性挑戰模式 (POS Challenge)
 // ==========================================================================
 window.setupPosMode = function() { 
     let rawQueue = window.getPracticeWords(); 
@@ -1949,7 +1977,7 @@ window.setupPosMode = function() {
     practiceQueue = rawQueue.filter(w => w.pos && w.pos.trim() !== '');
     
     if (practiceQueue.length === 0) {
-        window.SilenModal.alert("目前選取的題庫中，沒有包含「詞性標記」的單字！\n\n💡 提示：請先到題庫編輯區，或重新匯入帶有詞性的單字格式。");
+        window.SilenModal.alert("目前選取的題庫中，沒有包含「詞性標記」的單字！\n\n提示：請先到題庫編輯區，或重新匯入帶有詞性的單字格式。");
         return;
     }
     
@@ -2021,7 +2049,7 @@ window.handlePosNextClick = function() {
 };
 
 // ==========================================================================
-// 🌟 13. 單字擴充商城系統 (子主題層級版 + 同專案相對路徑)
+// 13. 單字擴充商城系統 (子主題層級版 + 同專案相對路徑)
 // ==========================================================================
 let purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || [];
 
