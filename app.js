@@ -1,855 +1,2197 @@
 // =====================================
-// Firebase 模組引入 (版本統一至 10.12.2)
+// 1. 自訂彈窗與設定引擎(Modal & Settings)
 // =====================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+window.SilenModal = {
+    overlay: null, msg: null, input: null, textarea: null, btnCancel: null, btnConfirm: null, resolvePromise: null,
+    
+    init: function() {
+        this.overlay = document.getElementById('silen-modal-overlay');
+        this.msg = document.getElementById('silen-modal-msg');
+        this.input = document.getElementById('silen-modal-input');
+        this.textarea = document.getElementById('silen-modal-textarea');
+        this.btnCancel = document.getElementById('silen-modal-btn-cancel');
+        this.btnConfirm = document.getElementById('silen-modal-btn-confirm');
 
-// =====================================
-// Firebase 專案配置
-// =====================================
-const firebaseConfig = {
-    apiKey: "AIzaSyDwZ9dQlbx9oMRut4kuAkHpSL8rmfAGOvo",
-    authDomain: "silenvocab.firebaseapp.com",
-    projectId: "silenvocab",
-    storageBucket: "silenvocab.firebasestorage.app",
-    messagingSenderId: "307375326136",
-    appId: "1:307375326136:web:8e6c28182f29f8805c854d",
-    measurementId: "G-FPJ44BRH2N",
-    databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        this.btnConfirm.onclick = () => this.close(true);
+        this.btnCancel.onclick = () => this.close(false);
+    },
+    
+    open: function(type, message, defaultValue = '') {
+        return new Promise((resolve) => {
+            this.resolvePromise = resolve;
+            this.msg.innerText = message;
+            this.input.classList.add('hidden');
+            this.textarea.classList.add('hidden');
+            this.btnCancel.classList.add('hidden');
+
+            if (type === 'confirm') {
+                this.btnCancel.classList.remove('hidden');
+            } else if (type === 'prompt') {
+                this.btnCancel.classList.remove('hidden');
+                if (defaultValue.includes('\n') || defaultValue.length > 40) {
+                    this.textarea.classList.remove('hidden');
+                    this.textarea.value = defaultValue;
+                    setTimeout(() => { this.textarea.focus(); this.textarea.select(); }, 150);
+                } else {
+                    this.input.classList.remove('hidden');
+                    this.input.value = defaultValue;
+                    setTimeout(() => { this.input.focus(); this.input.select(); }, 150);
+                }
+            }
+
+            this.overlay.classList.remove('hidden');
+            void this.overlay.offsetWidth; 
+            this.overlay.classList.add('show');
+        });
+    },
+    
+    close: function(isConfirm) {
+        this.overlay.classList.remove('show');
+        setTimeout(() => {
+            this.overlay.classList.add('hidden');
+            if (this.resolvePromise) {
+                if (this.btnCancel.classList.contains('hidden')) {
+                    this.resolvePromise(true); 
+                } else if (this.input.classList.contains('hidden') && this.textarea.classList.contains('hidden')) {
+                    this.resolvePromise(isConfirm); 
+                } else {
+                    if (!isConfirm) {
+                        this.resolvePromise(null); 
+                    } else {
+                        let val = !this.textarea.classList.contains('hidden') ? this.textarea.value : this.input.value;
+                        this.resolvePromise(val); 
+                    }
+                }
+                this.resolvePromise = null;
+            }
+        }, 200);
+    },
+    
+    alert: function(message) { return this.open('alert', message); },
+    confirm: function(message) { return this.open('confirm', message); },
+    prompt: function(message, defaultValue) { return this.open('prompt', message, defaultValue); }
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const rtdb = getDatabase(app); 
-const provider = new GoogleAuthProvider();
-
-let currentUser = null;
-
-// =====================================
-// 即時在線陪伴系統
-// =====================================
-const connectedRef = ref(rtdb, '.info/connected');
-const presenceRef = ref(rtdb, 'online_users');
-let mySessionRef = null;
-
-onValue(connectedRef, (snap) => {
-    if (snap.val() === true) {
-        mySessionRef = push(presenceRef);
-        onDisconnect(mySessionRef).remove();
-        set(mySessionRef, true);
-    }
-});
-
-onValue(presenceRef, (snap) => {
-    const count = snap.size || 1; 
-    const countEl = document.getElementById('online-count');
-    if (countEl) {
-        countEl.innerText = count;
-    }
-});
-
-// =====================================
-// 帳號登入與登出邏輯 
-// =====================================
-window.loginWithGoogle = () => {
-    const isApp = typeof AndroidBridge !== 'undefined';
-
-    if (isApp) {
-        signInWithRedirect(auth, provider).catch((error) => {
-            if (window.SilenModal) window.SilenModal.alert("App 登入失敗：" + error.message);
-        });
-    } else {
-        signInWithPopup(auth, provider).catch((error) => {
-            if (window.SilenModal) window.SilenModal.alert("網頁登入失敗：" + error.message);
-        });
+window.SilenSettings = {
+    overlay: null,
+    
+    init: function() {
+        this.overlay = document.getElementById('silen-settings-overlay');
+        this.render();
+    },
+    
+    open: function() {
+        this.render();
+        this.overlay.classList.remove('hidden');
+        void this.overlay.offsetWidth;
+        this.overlay.classList.add('show');
+    },
+    
+    close: function() {
+        this.overlay.classList.remove('show');
+        setTimeout(() => this.overlay.classList.add('hidden'), 200);
+    },
+    
+    render: function() {
+        const elPronounce = document.getElementById('set-pronounce');
+        const elSequential = document.getElementById('set-sequential');
+        const elPresence = document.getElementById('set-presence');
+        
+        if (elPronounce) elPronounce.checked = autoPronounce;
+        if (elSequential) elSequential.checked = isSequentialMode;
+        if (elPresence) elPresence.checked = showPresence;
+        
+        const badge = document.getElementById('online-presence-badge');
+        if(badge) {
+            badge.style.display = showPresence ? 'flex' : 'none';
+        }
     }
 };
 
-window.logout = () => {
-    if (window.SilenModal) {
-        window.SilenModal.confirm("確定要登出嗎？\n登出後將切換回介紹頁面，本地快取將安全抹除。").then((agreed) => {
-            if (agreed) executeSignOut();
-        });
-    } else {
-        if (confirm("確定要登出嗎？")) executeSignOut();
+window.toggleSetting = function(type) {
+    if (type === 'pronounce') { 
+        autoPronounce = !autoPronounce; 
+        localStorage.setItem('sv_autoPronounce', autoPronounce); 
     }
+    if (type === 'sequential') { 
+        isSequentialMode = !isSequentialMode; 
+        localStorage.setItem('sv_sequential', isSequentialMode); 
+    }
+    if (type === 'presence') { 
+        showPresence = !showPresence; 
+        localStorage.setItem('sv_showPresence', showPresence); 
+    }
+    window.SilenSettings.render();
 };
 
-function executeSignOut() {
-    signOut(auth).then(() => {
-        localStorage.removeItem('sv_books');
-        window.books = [];
-        window.location.reload(); 
-    }).catch((error) => {
-        console.error("登出失敗:", error);
-    });
+// =====================================
+// 2. 全局變數與基礎邏輯 (Globals)
+// =====================================
+window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
+let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
+let isSequentialMode = JSON.parse(localStorage.getItem('sv_sequential')) ?? false;
+let showPresence = JSON.parse(localStorage.getItem('sv_showPresence')) ?? true;
+
+let currentBookId = null;
+let practiceQueue = [];
+let currentCardIndex = 0;
+let initialQueueLength = 0;
+let completedCount = 0;
+let currentMode = '';
+let selectedBookIds = new Set();
+let lastAnswerCorrect = false;
+
+let puzzleCurrentWord = null, puzzleUserAnswer = [], puzzleSourceLetters = [];
+let memoryCards = [], memoryFlipped = [], memoryLocked = false, memoryMatchedCount = 0;
+
+let isGuestMode = false;
+let guestWords = [];
+
+let recognition = null;
+try {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+    }
+} catch(e) {
+    console.error("語音 API 初始化失敗", e);
 }
 
-// =====================================
-// 雲端與本地端資料備份同步引擎
-// =====================================
-async function syncFromCloud(uid) {
-    try {
-        const docRef = doc(db, "users", uid);
-        const docSnap = await getDoc(docRef);
+window.saveData = function() { 
+    localStorage.setItem('sv_books', JSON.stringify(window.books)); 
+};
 
-        if (docSnap.exists()) {
-            const cloudData = docSnap.data();
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market'];
 
-            if (cloudData && cloudData.books) {
-                window.books = cloudData.books;
-                localStorage.setItem('sv_books', JSON.stringify(window.books));
-                if (typeof window.renderBookList === 'function') window.renderBookList();
-                if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-            }
-        } else {
-            if (window.books && window.books.length > 0) {
-                syncToCloud(uid, window.books);
+window.switchView = function(viewName) {
+    views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) {
+            if (v === viewName) { 
+                el.classList.remove('hidden'); 
+                el.style.setProperty('display', 'block', 'important'); 
+            } else { 
+                el.classList.add('hidden'); 
+                el.style.setProperty('display', 'none', 'important'); 
             }
         }
-    } catch (error) {
-        console.error("雲端同步連線中斷:", error);
+    });
+};
+
+function setDisplayState(id, isDisplay, displayType = 'block') {
+    const el = document.getElementById(id);
+    if (el) {
+        if (isDisplay) { 
+            el.classList.remove('hidden'); 
+            el.style.setProperty('display', displayType, 'important'); 
+        } else { 
+            el.classList.add('hidden'); 
+            el.style.setProperty('display', 'none', 'important'); 
+        }
     }
 }
 
-async function syncToCloud(uid, booksData) {
-    if (!uid) return;
-    try {
-        await setDoc(doc(db, "users", uid), {
-            books: booksData,
-            lastUpdated: new Date().toISOString()
-        }, { merge: true });
-    } catch (error) {
-        console.error("雲端備份錯誤:", error);
+window.goHome = function() { 
+    if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary(); 
+    if (window.SilenSettings && typeof window.SilenSettings.render === 'function') window.SilenSettings.render(); 
+    window.switchView('home'); 
+
+    if (window.pendingAnnouncement && typeof window.showAnnouncementModal === 'function') {
+        setTimeout(() => {
+            window.showAnnouncementModal(window.pendingAnnouncement);
+        }, 300);
     }
-}
+};
+
+window.openBookSelect = function() { 
+    if (typeof window.renderBookList === 'function') window.renderBookList(); 
+    window.switchView('book-select'); 
+};
+
+window.quitPractice = function() { 
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); 
+    }
+    
+    if (typeof window.finalizeMasterySession === 'function') {
+        window.finalizeMasterySession();
+    }
+    
+    if (isGuestMode) {
+        isGuestMode = false;
+        document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '結束');
+        document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'inline-block', 'important'));
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload();
+        return;
+    }
+    window.goHome(); 
+};
+
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+    }
+};
+
+// =====================================
+// 3. 發聲核心
+// =====================================
+window.speakEnglishWord = function(word) {
+    if (!autoPronounce && !window.forceSpeak) return; 
+    
+    if (window.AndroidBridge && typeof window.AndroidBridge.speak === 'function') {
+        try { window.AndroidBridge.speak(word); } catch (e) {}
+    } else if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US'; 
+        utterance.rate = 0.95; 
+        window.speechSynthesis.speak(utterance);
+    }
+    window.forceSpeak = false;
+};
+
+window.replayAudio = function() { 
+    window.forceSpeak = true; 
+    if (practiceQueue[currentCardIndex]) {
+        window.speakEnglishWord(practiceQueue[currentCardIndex].en); 
+    }
+};
+
+window.requeueWord = function(word) {
+    let remaining = practiceQueue.length - 1 - currentCardIndex;
+    if (remaining <= 0) {
+        practiceQueue.push(word);
+    } else {
+        let minIndex = currentCardIndex + 1;
+        if (remaining > 1) minIndex = currentCardIndex + 2; 
+        let maxIndex = practiceQueue.length;
+        let randomIndex = Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
+        practiceQueue.splice(randomIndex, 0, word);
+    }
+};
+
+window.endQuiz = function() {
+    if (isGuestMode) {
+        window.SilenModal.confirm("測驗結束。\n\n您要將這份分享的單字庫儲存到您的雲端帳戶中嗎？").then((agreed) => {
+            if (agreed) {
+                window.SilenModal.prompt("請為這份單字簿命名：", "分享引入的單字簿").then((newName) => {
+                    if (newName) {
+                        window.books.push({ id: Date.now(), name: newName, tag: "外部分享", words: guestWords });
+                        window.saveData();
+                        window.SilenModal.alert("已成功匯入單字庫中。").then(() => window.quitPractice());
+                    } else { window.quitPractice(); }
+                });
+            } else { window.quitPractice(); }
+        });
+    } else {
+        window.SilenModal.alert("測驗結束，做得好。").then(() => window.quitPractice());
+    }
+};
+
+// =====================================
+// 4. 分享與連網功能
+// =====================================
+window.shareCurrentQuiz = async function() {
+    if (typeof window.uploadShareData !== 'function') {
+        window.SilenModal.alert("系統雲端模組載入中，請稍候重試。"); return;
+    }
+    let wordsToShare = practiceQueue;
+    if (practiceQueue.length > 50) {
+        window.SilenModal.alert("提醒：為了最優化傳輸，系統將截取前 50 個單字作為測驗分享包。");
+        wordsToShare = practiceQueue.slice(0, 50);
+    }
+    
+    let view = 'practice';
+    if (!document.getElementById('view-mcq').classList.contains('hidden')) view = 'mcq';
+    else if (!document.getElementById('view-speaking').classList.contains('hidden')) view = 'speaking';
+    else if (!document.getElementById('view-puzzle').classList.contains('hidden')) view = 'puzzle';
+    else if (!document.getElementById('view-memory').classList.contains('hidden')) view = 'memory';
+    else if (!document.getElementById('view-youglish').classList.contains('hidden')) view = 'youglish';
+    else if (!document.getElementById('view-pos').classList.contains('hidden')) view = 'pos';
+
+    const minifiedWords = wordsToShare.map(w => [w.en, ...w.zh, w.pos || '']);
+    const shareData = [view, currentMode, isSequentialMode ? 1 : 0, minifiedWords];
+
+    const btn = document.querySelector('.export-quiz-btn');
+    let oldText = "分享測驗";
+    if (btn) { oldText = btn.innerText; btn.innerText = "產生中..."; btn.disabled = true; }
+
+    const shareId = await window.uploadShareData(shareData);
+    if (btn) { btn.innerText = oldText; btn.disabled = false; }
+    if (!shareId) { window.SilenModal.alert("產生失敗，請檢查網路連線。"); return; }
+
+    const shareUrl = window.location.origin + window.location.pathname + '?q=' + shareId;
+
+    if (navigator.share) {
+        navigator.share({ title: 'SilenVocab 英文挑戰', text: '我建立了一個專屬單字測驗，快來挑戰看看吧！', url: shareUrl }).catch(() => {});
+    } else if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(shareUrl).then(() => window.SilenModal.alert("短網址已成功複製到剪貼簿！\n\n" + shareUrl))
+        .catch(() => window.SilenModal.prompt("請手動複製以下短網址：", shareUrl));
+    } else {
+        window.SilenModal.prompt("請手動複製以下短網址：", shareUrl);
+    }
+};
+
+window.checkShareUrl = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const qId = urlParams.get('q');
+    if (qId) {
+        const tryDownload = () => {
+            if (typeof window.downloadShareData === 'function') {
+                window.downloadShareData(qId).then(decoded => {
+                    if (decoded) {
+                        const finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1, arr.length - 1), pos: arr[arr.length - 1] })) };
+                        window.startGuestMode(finalData);
+                    } else {
+                        window.SilenModal.alert("這份分享測驗已失效或不存在。").then(() => {
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            window.location.reload();
+                        });
+                    }
+                });
+            } else { setTimeout(tryDownload, 100); }
+        };
+        tryDownload(); return true; 
+    }
+    
+    const lzCode = urlParams.get('lz');
+    if (lzCode) {
+        try {
+            if (typeof LZString === 'undefined') { setTimeout(window.checkShareUrl, 100); return true; }
+            const jsonStr = LZString.decompressFromEncodedURIComponent(lzCode);
+            if (!jsonStr) throw new Error("解壓縮失敗");
+            const decoded = JSON.parse(jsonStr);
+            const finalData = { v: decoded[0], m: decoded[1], s: decoded[2] === 1, w: decoded[3].map(arr => ({ en: arr[0], zh: arr.slice(1, arr.length - 1), pos: arr[arr.length - 1] })) };
+            window.startGuestMode(finalData); return true;
+        } catch(e) { window.SilenModal.alert("無效的分享連結。"); return false; }
+    }
+    return false;
+};
+
+window.startGuestMode = function(data) {
+    isGuestMode = true; guestWords = data.w; practiceQueue = [...data.w]; currentMode = data.m; isSequentialMode = data.s;
+    initialQueueLength = practiceQueue.length; completedCount = 0; currentCardIndex = 0;
+    document.querySelectorAll('.export-quiz-btn').forEach(btn => btn.style.setProperty('display', 'none', 'important'));
+    document.querySelectorAll('.btn-quit').forEach(btn => btn.innerText = '離開');
+
+    if (data.v === 'mcq') {
+        document.getElementById('mcq-mode-display').innerText = (currentMode === 'zh-to-en' ? '中選英' : '英選中') + ' (分享對戰)';
+        setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); window.switchView('mcq'); window.showMcqNextCard();
+    } else if (data.v === 'speaking') { window.switchView('speaking'); window.showNextSpeakingCard();
+    } else if (data.v === 'puzzle') { setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); window.switchView('puzzle'); window.loadPuzzleLevel();
+    } else if (data.v === 'memory') { window.setupMemoryModeGuest();
+    } else if (data.v === 'youglish') { window.switchView('youglish'); window.loadYouglishCard();
+    } else if (data.v === 'pos') { setDisplayState('pos-seq-badge', isSequentialMode, 'inline-block'); window.switchView('pos'); window.showPosNextCard();
+    } else {
+        document.getElementById('mode-display').innerText = (currentMode === 'zh-to-en' ? '中翻英' : '英翻中') + ' (分享對戰)';
+        setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', currentMode === 'zh-to-en', 'inline-block');
+        window.switchView('practice'); window.showNextCard();
+    }
+};
+
+// =====================================
+// 5. 題庫管理與精通度計算
+// =====================================
+window.updateProfileStats = function() {
+    let count = 0;
+    window.books.forEach(b => { b.words.forEach(w => { if (w.mastered) count++; }); });
+    const el = document.getElementById('stat-total-words');
+    if (el) el.innerText = count;
+};
+
+window.updateHomeSummary = function() {
+    window.updateProfileStats();
+    const summaryEl = document.getElementById('home-book-summary');
+    if (!summaryEl) return;
+    
+    let selectedCount = 0, wordCount = 0;
+    let isPhraseSelected = false;
+    let isStoreSelected = false;
+    
+    window.books.forEach(b => { 
+        if (b.isStore) b.isPhrase = false;
+
+        if (selectedBookIds.has(b.id)) { 
+            selectedCount++; 
+            wordCount += b.words.length; 
+            if (b.isPhrase && !b.isStore) isPhraseSelected = true;
+            if (b.isStore) isStoreSelected = true;
+        } 
+    });
+    
+    if (selectedCount === 0) {
+        summaryEl.innerHTML = '<span style="color:var(--text-sub);">尚未勾選範圍。請進入控制區選取題庫。</span>';
+        setDisplayState('word-practice-area', true);
+        setDisplayState('phrase-practice-area', false);
+    } else {
+        let typeStr = isStoreSelected ? '商城組合' : (isPhraseSelected ? '片語' : '單字');
+        summaryEl.innerHTML = `已選取 <span style="color:var(--text-main); font-weight:500;">${selectedCount}</span> 本${typeStr}簿，共計 <span style="color:var(--text-main); font-weight:500;">${wordCount}</span> 個項目`;
+        
+        if (isPhraseSelected) {
+            setDisplayState('word-practice-area', false);
+            setDisplayState('phrase-practice-area', true);
+        } else {
+            setDisplayState('word-practice-area', true);
+            setDisplayState('phrase-practice-area', false);
+        }
+    }
+};
+
+window.renderBookList = function() {
+    const normalList = document.getElementById('normal-book-list');
+    const gsatList = document.getElementById('gsat-book-list');
+    const phraseList = document.getElementById('phrase-book-list');
+    const storeList = document.getElementById('store-book-list');
+    
+    if (normalList) normalList.innerHTML = '';
+    if (gsatList) gsatList.innerHTML = '';
+    if (phraseList) phraseList.innerHTML = '';
+    if (storeList) storeList.innerHTML = '';
+
+    const renderGroup = (booksToRender, container, emptyMsg, type) => {
+        if (!container) return;
+        if (booksToRender.length === 0) { container.innerHTML = `<div style="color:var(--text-sub); text-align:center; padding: 20px;">${emptyMsg}</div>`; return; }
+        
+        const groups = {};
+        booksToRender.forEach(book => {
+            const t = (book.tag && book.tag.trim() !== '') ? book.tag.trim() : '未分類';
+            if (!groups[t]) groups[t] = []; groups[t].push(book);
+        });
+
+        const keys = Object.keys(groups).sort((a, b) => {
+            if (a === '未分類') return 1; if (b === '未分類') return -1; return a.localeCompare(b);
+        });
+
+        keys.forEach(k => {
+            const headerWrap = document.createElement('div');
+            headerWrap.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:15px; margin-bottom:10px;';
+            const header = document.createElement('div'); header.className = 'group-title'; header.innerText = k; header.style.margin = '0';
+            const sortBtn = document.createElement('button'); sortBtn.className = 'btn-icon sort-toggle'; sortBtn.innerHTML = '⋮'; 
+
+            headerWrap.appendChild(header); headerWrap.appendChild(sortBtn); container.appendChild(headerWrap);
+
+            const listContainer = document.createElement('div');
+            listContainer.className = 'sortable-group'; listContainer.dataset.tag = k;
+
+            sortBtn.onclick = (e) => {
+                const isActive = listContainer.classList.toggle('sorting-active');
+                e.currentTarget.classList.toggle('active', isActive);
+                listContainer.querySelectorAll('.drag-handle').forEach(el => el.classList.toggle('hidden', !isActive));
+                listContainer.querySelectorAll('.book-checkbox').forEach(el => el.classList.toggle('hidden', isActive));
+                listContainer.querySelectorAll('.edit-btn').forEach(el => el.classList.toggle('hidden', isActive));
+            };
+
+            groups[k].forEach(book => {
+                const div = document.createElement('div');
+                div.className = `card book-item ${selectedBookIds.has(book.id) ? 'selected' : ''}`;
+                div.dataset.id = book.id; 
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-wrapper'; wrapper.style.cssText = 'flex:1; display:flex; align-items:center;';
+
+                const dragHandle = document.createElement('span'); dragHandle.className = 'drag-handle hidden'; dragHandle.innerHTML = '☰';
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'book-checkbox'; checkbox.checked = selectedBookIds.has(book.id); checkbox.style.pointerEvents = 'none';
+                const info = document.createElement('div'); info.style.cssText = 'flex:1; margin-left:15px;';
+                info.innerHTML = `<strong>${book.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${book.words.length} 項)</span>`;
+                
+                wrapper.appendChild(dragHandle); wrapper.appendChild(checkbox); wrapper.appendChild(info);
+                
+                if (book.isStore) {
+                    const actionContainer = document.createElement('div');
+                    actionContainer.style.cssText = 'display: flex; align-items: center; gap: 10px;';
+                    
+                    const lockIcon = document.createElement('div');
+                    lockIcon.style.cssText = 'color: var(--text-sub); font-size: 0.85rem;';
+                    lockIcon.innerText = "官方組合包";
+                    
+                    const delBtn = document.createElement('button'); 
+                    delBtn.className = 'btn-icon edit-btn'; 
+                    delBtn.innerHTML = '刪除'; 
+                    delBtn.style.color = '#ff4444';
+                    delBtn.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        window.SilenModal.confirm('確定要刪除此擴充包嗎？\n(刪除後可至商城重新下載最新版本)').then(agreed => {
+                            if(agreed) {
+                                window.books = window.books.filter(b => b.id !== book.id);
+                                selectedBookIds.delete(book.id);
+                                window.saveData();
+                                window.renderBookList();
+                            }
+                        });
+                    };
+                    
+                    actionContainer.appendChild(lockIcon);
+                    actionContainer.appendChild(delBtn);
+                    div.appendChild(wrapper); 
+                    div.appendChild(actionContainer);
+                } else {
+                    const actionContainer = document.createElement('div');
+                    actionContainer.style.cssText = 'display: flex; gap: 8px;';
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-icon edit-btn';
+                    editBtn.innerHTML = '編輯'; 
+                    editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
+                    actionContainer.appendChild(editBtn);
+
+                    div.appendChild(wrapper);
+                    div.appendChild(actionContainer);
+                }
+                
+                div.onclick = () => {
+                    if (listContainer.classList.contains('sorting-active')) return;
+                    
+                    if (!selectedBookIds.has(book.id)) {
+                        let currentType = book.isStore ? 'store' : (book.isPhrase ? 'phrase' : 'word');
+                        let hasConflict = false;
+                        window.books.forEach(b => {
+                            if (selectedBookIds.has(b.id)) {
+                                let bType = b.isStore ? 'store' : (b.isPhrase ? 'phrase' : 'word');
+                                if (bType !== currentType) hasConflict = true;
+                            }
+                        });
+                        
+                        if (hasConflict) selectedBookIds.clear(); 
+                        selectedBookIds.add(book.id);
+                    } else {
+                        selectedBookIds.delete(book.id);
+                    }
+                    window.renderBookList();
+                };
+                listContainer.appendChild(div);
+            });
+
+            container.appendChild(listContainer);
+            if (typeof Sortable !== 'undefined') {
+                new Sortable(listContainer, { handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost', touchStartThreshold: 3, onEnd: () => window.handleSortEnd(k, listContainer, type) });
+            }
+        });
+    };
+
+    renderGroup(window.books.filter(b => !b.isGSAT && !b.isPhrase && !b.isStore), normalList, '資料庫無單字簿，請在下方建立。', 'normal');
+    renderGroup(window.books.filter(b => b.isGSAT && !b.isPhrase && !b.isStore), gsatList, '尚無學測單字簿，請在下方抽取。', 'gsat');
+    renderGroup(window.books.filter(b => b.isPhrase && !b.isStore), phraseList, '尚無片語簿，請在下方建立。', 'phrase');
+    renderGroup(window.books.filter(b => b.isStore), storeList, '您尚未下載任何擴充組合包。', 'store');
+    window.updateHomeSummary();
+};
+
+window.handleSortEnd = function(tag, listContainer, type) {
+    const newOrderIds = Array.from(listContainer.children).map(el => Number(el.dataset.id));
+    let indices = [];
+    window.books.forEach((b, index) => {
+        const t = (b.tag && b.tag.trim() !== '') ? b.tag.trim() : '未分類';
+        let bType = b.isStore ? 'store' : (b.isPhrase ? 'phrase' : (b.isGSAT ? 'gsat' : 'normal'));
+        if (t === tag && bType === type) indices.push(index);
+    });
+    if (indices.length !== newOrderIds.length) return;
+    let bookMap = {}; window.books.forEach(b => bookMap[b.id] = b);
+    indices.forEach((globalIndex, i) => { window.books[globalIndex] = bookMap[newOrderIds[i]]; });
+    window.saveData();
+};
+
+window.handleFileUpload = function(event, type) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) { 
+        if(type === 'phrase') document.getElementById('import-content-phrase').value = e.target.result;
+        else document.getElementById('import-content').value = e.target.result; 
+        event.target.value = ''; 
+    };
+    reader.readAsText(file);
+};
+
+window.toggleImportArea = function(type) {
+    if(type === 'phrase') {
+        const area = document.getElementById('import-area-phrase');
+        if (area.classList.contains('hidden')) { setDisplayState('import-area-phrase', true); setDisplayState('btn-create-simple-phrase', false); } 
+        else { setDisplayState('import-area-phrase', false); setDisplayState('btn-create-simple-phrase', true); }
+    } else {
+        const area = document.getElementById('import-area');
+        if (area.classList.contains('hidden')) { setDisplayState('import-area', true); setDisplayState('btn-create-simple', false); } 
+        else { setDisplayState('import-area', false); setDisplayState('btn-create-simple', true); }
+    }
+};
+
+window.addBookSimple = function() {
+    const name = document.getElementById('new-book-name').value.trim();
+    const tag = document.getElementById('new-book-tag').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入單字簿名稱"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: false, isStore: false }); 
+    window.saveData(); document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; window.renderBookList();
+};
+
+window.addPhraseBookSimple = function() {
+    const name = document.getElementById('new-phrase-name').value.trim();
+    const tag = document.getElementById('new-phrase-tag').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入片語簿名稱"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: [], isGSAT: false, isPhrase: true, isStore: false }); 
+    window.saveData(); document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; window.renderBookList();
+};
+
+window.addBookWithImport = function() {
+    const name = document.getElementById('new-book-name').value.trim();
+    const tag = document.getElementById('new-book-tag').value.trim();
+    const rawText = document.getElementById('import-content').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入單字簿名稱"); return; } 
+    if (!rawText) { window.SilenModal.alert("請輸入轉換內容"); return; }
+    
+    const lines = rawText.split('\n'); const newWords = [];
+    lines.forEach(line => {
+        let sep1 = line.indexOf('-'); if (sep1 === -1) sep1 = line.indexOf('–'); 
+        if (sep1 > 0) {
+            const en = line.substring(0, sep1).trim();
+            let remainder = line.substring(sep1 + 1).trim();
+            
+            let sep2 = remainder.indexOf('-'); if (sep2 === -1) sep2 = remainder.indexOf('–');
+            let zhStr = remainder; let pos = '';
+            if (sep2 > 0) { zhStr = remainder.substring(0, sep2).trim(); pos = remainder.substring(sep2 + 1).trim(); }
+            if (en && zhStr) { newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s), pos: pos }); }
+        }
+    });
+    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文 - 中文 - 詞性(選填)」結構"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: false, isStore: false }); 
+    window.saveData();
+    document.getElementById('new-book-name').value = ''; document.getElementById('new-book-tag').value = ''; document.getElementById('import-content').value = ''; 
+    window.toggleImportArea('word'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個單字。`);
+};
+
+window.addPhraseBookWithImport = function() {
+    const name = document.getElementById('new-phrase-name').value.trim();
+    const tag = document.getElementById('new-phrase-tag').value.trim();
+    const rawText = document.getElementById('import-content-phrase').value.trim();
+    if (!name) { window.SilenModal.alert("請輸入片語簿名稱"); return; } 
+    if (!rawText) { window.SilenModal.alert("請輸入轉換內容"); return; }
+    
+    const lines = rawText.split('\n'); const newWords = [];
+    lines.forEach(line => {
+        let sep1 = line.indexOf('-'); if (sep1 === -1) sep1 = line.indexOf('–'); 
+        if (sep1 > 0) {
+            const en = line.substring(0, sep1).trim();
+            const zhStr = line.substring(sep1 + 1).trim();
+            if (en && zhStr) newWords.push({ en: en, zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s), pos: '' });
+        }
+    });
+    if (newWords.length === 0) { window.SilenModal.alert("格式解析失敗，請採用「英文片語 - 中文」結構"); return; }
+    window.books.push({ id: Date.now(), name: name, tag: tag, words: newWords, isGSAT: false, isPhrase: true, isStore: false }); 
+    window.saveData();
+    document.getElementById('new-phrase-name').value = ''; document.getElementById('new-phrase-tag').value = ''; document.getElementById('import-content-phrase').value = ''; 
+    window.toggleImportArea('phrase'); window.renderBookList(); window.SilenModal.alert(`成功匯入 ${newWords.length} 個片語。`);
+};
+
+window.toggleExportMenu = function(event) { 
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.classList.toggle('active'); 
+};
+
+window.exportBook = function(type) {
+    const book = window.books.find(b => b.id === currentBookId);
+    if (!book || book.words.length === 0) { window.SilenModal.alert("無可用數據匯出。"); window.toggleExportMenu(); return; }
+    
+    const content = book.words.map(w => {
+        if (w.pos && w.pos.trim() !== '') return `${w.en} - ${w.zh.join(' / ')} - ${w.pos}`;
+        return `${w.en} - ${w.zh.join(' / ')}`;
+    }).join('\n');
+    
+    if (type === 'copy') {
+        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(content).then(() => window.SilenModal.alert("已複製到剪貼簿。")).catch(() => window.SilenModal.prompt("請複製以下內容：", content)); } 
+        else { window.SilenModal.prompt("請複製以下內容：", content); }
+    } else if (type === 'download') {
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${book.name || 'Export'}.txt`; 
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    window.toggleExportMenu();
+};
+
+document.addEventListener('click', (event) => {
+    const menu = document.getElementById('export-menu'); 
+    if (menu && menu.classList.contains('active') && !menu.contains(event.target)) {
+        menu.classList.remove('active');
+    }
+});
+
+window.deleteCurrentBook = function() {
+    window.SilenModal.confirm('確定要永久刪除此題庫嗎？').then((agreed) => {
+        if(agreed) { window.books = window.books.filter(b => b.id !== currentBookId); selectedBookIds.delete(currentBookId); window.saveData(); window.openBookSelect(); }
+    });
+};
+
+window.openEditBook = function(id) { 
+    currentBookId = id; const book = window.books.find(b => b.id === id);
+    document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
+    document.getElementById('export-menu').classList.remove('active'); 
+    window.editingWordIndex = null;
+    window.renderWordList(); window.switchView('edit'); 
+};
+
+window.saveBookInfo = function() {
+    const book = window.books.find(b => b.id === currentBookId); if(!book) return;
+    const newName = document.getElementById('edit-book-name-input').value.trim(); const newTag = document.getElementById('edit-book-tag-input').value.trim();
+    if(!newName) { window.SilenModal.alert('名稱不能為空。'); return; }
+    book.name = newName; book.tag = newTag; window.saveData(); window.SilenModal.alert('資訊已更新。');
+};
+
+window.editingWordIndex = null;
+
+window.renderWordList = function() {
+    const book = window.books.find(b => b.id === currentBookId); 
+    const list = document.getElementById('word-list'); 
+    list.innerHTML = '';
+    
+    [...book.words].reverse().forEach((word, index) => {
+        const actualIndex = book.words.length - 1 - index;
+        const div = document.createElement('div'); 
+        div.className = 'word-item';
+        
+        if (window.editingWordIndex === actualIndex) {
+            div.style.flexDirection = 'column';
+            div.style.alignItems = 'stretch';
+            
+            const safeEn = word.en.replace(/"/g, '&quot;');
+            const safeZh = word.zh.join(', ').replace(/"/g, '&quot;');
+            
+            div.innerHTML = `
+                <div class="flex-row" style="margin-bottom: 10px;">
+                    <input type="text" id="inline-en-${actualIndex}" value="${safeEn}" style="flex: 2; padding: 8px; font-size: 1rem;">
+                    <select id="inline-pos-${actualIndex}" style="flex: 1; padding: 8px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); border-radius: 8px; outline: none; font-size: 1rem;">
+                        <option value="" ${word.pos===''?'selected':''}>無</option>
+                        <option value="n." ${word.pos==='n.'?'selected':''}>n. (名詞)</option>
+                        <option value="v." ${word.pos==='v.'?'selected':''}>v. (動詞)</option>
+                        <option value="vt." ${word.pos==='vt.'?'selected':''}>vt. (及物)</option>
+                        <option value="vi." ${word.pos==='vi.'?'selected':''}>vi. (不及物)</option>
+                        <option value="adj." ${word.pos==='adj.'?'selected':''}>adj. (形容)</option>
+                        <option value="adv." ${word.pos==='adv.'?'selected':''}>adv. (副詞)</option>
+                        <option value="prep." ${word.pos==='prep.'?'selected':''}>prep. (介係)</option>
+                        <option value="conj." ${word.pos==='conj.'?'selected':''}>conj. (連接)</option>
+                    </select>
+                </div>
+                <input type="text" id="inline-zh-${actualIndex}" value="${safeZh}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
+                <div class="flex-row" style="justify-content: flex-end; margin-top: 5px;">
+                    <button class="btn btn-outline btn-small" onclick="window.cancelEditWord()">取消</button>
+                    <button class="btn btn-small" style="background: #fff; color: #000;" onclick="window.saveEditWord(${actualIndex})">儲存</button>
+                </div>
+            `;
+        } else {
+            let posHtml = (word.pos && word.pos.trim() !== '') ? `<span class="word-pos">[${word.pos}]</span>` : '';
+            div.innerHTML = `
+                <div style="flex: 1; padding-right: 15px;">
+                    <div class="word-en">${word.en} ${posHtml}</div>
+                    <div class="word-zh">${word.zh.join(', ')}</div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn btn-small" style="margin: 0; padding: 4px 12px; background: #222; color: #fff; border: 1px solid #444; font-size: 0.85rem;" onclick="window.startEditWord(${actualIndex})">修改</button>
+                    <button class="btn-icon btn-delete" style="border:none; padding: 5px; margin: 0;" onclick="window.deleteWord(${actualIndex})" title="刪除單字">✕</button>
+                </div>
+            `;
+        }
+        list.appendChild(div);
+    });
+};
+
+window.startEditWord = function(index) {
+    window.editingWordIndex = index;
+    window.renderWordList();
+};
+
+window.cancelEditWord = function() {
+    window.editingWordIndex = null;
+    window.renderWordList();
+};
+
+window.saveEditWord = function(index) {
+    const en = document.getElementById(`inline-en-${index}`).value.trim();
+    const pos = document.getElementById(`inline-pos-${index}`).value.trim();
+    const zhStr = document.getElementById(`inline-zh-${index}`).value.trim();
+    
+    if(!en || !zhStr) { window.SilenModal.alert("英文與中文不可為空"); return; }
+    
+    const book = window.books.find(b => b.id === currentBookId);
+    book.words[index].en = en;
+    book.words[index].pos = pos;
+    book.words[index].zh = zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s);
+    
+    window.saveData();
+    window.editingWordIndex = null;
+    window.renderWordList();
+};
+
+window.addWord = function() {
+    const en = document.getElementById('input-en').value.trim(); 
+    const pos = document.getElementById('input-pos').value.trim(); 
+    const zhStr = document.getElementById('input-zh').value.trim();
+    if(!en || !zhStr) { window.SilenModal.alert("英文與中文欄位不可為空"); return; }
+    
+    window.books.find(b => b.id === currentBookId).words.push({ 
+        en: en, 
+        pos: pos,
+        zh: zhStr.split(/[;；,，\/]/).map(s => s.trim()).filter(s => s) 
+    }); 
+    window.saveData(); 
+    document.getElementById('input-en').value = ''; 
+    document.getElementById('input-pos').value = ''; 
+    document.getElementById('input-zh').value = ''; 
+    document.getElementById('input-en').focus(); 
+    window.renderWordList();
+};
+
+window.deleteWord = function(index) { 
+    window.books.find(b => b.id === currentBookId).words.splice(index, 1); 
+    window.saveData(); 
+    window.renderWordList(); 
+};
+
+window.getPracticeWords = function() {
+    if (selectedBookIds.size === 0) { window.SilenModal.alert("請先選取題庫範圍。"); return []; }
+    let queue = []; 
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            book.words.forEach(w => queue.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, scored: false, pos: w.pos || '' }));
+        }
+    });
+    if (queue.length === 0) { window.SilenModal.alert("範圍內不含數據。"); return []; } 
+    return queue;
+};
+
+window.getSelectedWordsPool = function() {
+    if (isGuestMode) return guestWords;
+    let pool = []; 
+    window.books.forEach(book => { 
+        if (selectedBookIds.has(book.id)) {
+            book.words.forEach(w => pool.push({ ...w, bookId: book.id, isGSAT: book.isGSAT, isPhrase: book.isPhrase, bookTag: book.tag || '', bookLength: book.words.length, mastered: w.mastered || false, pos: w.pos || '' }));
+        }
+    }); 
+    return pool;
+};
+
+// =====================================
+// 6. 雙軌精通模式 (Mastery Mode) + 延遲結算
+// =====================================
+let masteryPool = [];
+let currentMasteryTarget = null;
+let masteryModeType = 'comprehensive';
+let delayWaitTurns = 4;
+let pendingMasteredWords = [];
+
+window.calculateReward = function(word, stepKey) {
+    let isGsat = word.isGSAT === true;
+    let bookTag = word.bookTag || '';
+    let bookLength = word.bookLength || 0;
+    let isMastered = word.mastered === true;
+    
+    let multiplier = 1;
+    if (isGsat) {
+        if (bookTag.includes('Lv2')) multiplier = 1.2; else if (bookTag.includes('Lv3')) multiplier = 1.5; else if (bookTag.includes('Lv4')) multiplier = 2.0; else if (bookTag.includes('Lv5')) multiplier = 2.5; else if (bookTag.includes('Lv6')) multiplier = 3.0;
+    }
+    let isSeasonEligible = isGsat || bookLength >= 15; let points = 0;
+    if (stepKey === 'Comp_Grad' || stepKey === 'Conn_Grad') {
+        if (isMastered) points = 0; else { if (isGsat) points = Math.round(50 * multiplier); else if (isSeasonEligible) points = 50; }
+    }
+    return { points, isSeasonEligible, isMastered };
+};
+
+window.bufferWordAsMastered = function(targetWord) {
+    if (targetWord.mastered) return;
+    if (!pendingMasteredWords.some(w => w.en === targetWord.en)) pendingMasteredWords.push({ ...targetWord });
+};
+
+window.finalizeMasterySession = function() {
+    if (pendingMasteredWords.length === 0) return;
+
+    let totalPoints = 0;
+
+    pendingMasteredWords.forEach(targetWord => {
+        window.books.forEach(book => {
+            if (book.id === targetWord.bookId) {
+                let w = book.words.find(x => x.en === targetWord.en);
+                if (w && !w.mastered) w.mastered = true;
+            }
+        });
+        
+        let stepKey = (masteryModeType === 'comprehensive' || masteryModeType === 'phrase') ? 'Comp_Grad' : 'Conn_Grad';
+        let rw = window.calculateReward(targetWord, stepKey);
+        
+        if (rw.isSeasonEligible) totalPoints += rw.points;
+    });
+
+    if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
+    if (typeof window.saveData === 'function') window.saveData(); 
+
+    if (typeof window.addRankPoints === 'function' && totalPoints > 0) {
+        window.addRankPoints(totalPoints, true);
+    }
+    pendingMasteredWords = [];
+};
+
+window.setupMasteryMode = function(type) {
+    let words = window.getPracticeWords(); if(!words || words.length === 0) return;
+    masteryModeType = type; pendingMasteredWords = []; 
+    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered })); 
+    masteryPool.sort(() => Math.random() - 0.5);
+    
+    const headerTitle = document.getElementById('mastery-header-title'); const progressBar = document.getElementById('mastery-progress-bar');
+    const l0Card = document.getElementById('mastery-l0-card'); const nextBtns = document.querySelectorAll('#view-mastery .btn:not(.btn-icon):not(.btn-outline)');
+
+    if (masteryModeType === 'comprehensive') {
+        headerTitle.innerText = "綜合精通模式"; headerTitle.style.color = "#9c27b0"; progressBar.style.background = "#9c27b0"; l0Card.style.borderColor = "#9c27b0";
+        nextBtns.forEach(b => { b.className = "btn mastery-btn-comp btn-next-big"; if (['mastery-btn-l0', 'mastery-btn-puzzle', 'mastery-btn-typing', 'mastery-btn-finish'].includes(b.id)) b.classList.remove('btn-next-big'); });
+    } else {
+        headerTitle.innerText = "連結力訓練模式"; headerTitle.style.color = "#009688"; progressBar.style.background = "#009688"; l0Card.style.borderColor = "#009688";
+        nextBtns.forEach(b => { b.className = "btn mastery-btn-conn btn-next-big"; if (['mastery-btn-l0', 'mastery-btn-puzzle', 'mastery-btn-typing', 'mastery-btn-finish'].includes(b.id)) b.classList.remove('btn-next-big'); });
+    }
+    window.switchView('mastery'); window.updateMasteryProgress(); window.nextMasteryTurn();
+};
+
+window.updateMasteryProgress = function() {
+    let targetLevel = (masteryModeType === 'comprehensive') ? 5 : 4;
+    let mastered = masteryPool.filter(w => w.level === targetLevel).length;
+    document.getElementById('mastery-progress-bar').style.width = ((mastered / masteryPool.length) * 100) + '%';
+    document.getElementById('mastery-status-text').innerText = `精通進度: ${mastered} / ${masteryPool.length}`;
+    return mastered === masteryPool.length;
+};
+
+window.nextMasteryTurn = function() {
+    if (window.updateMasteryProgress()) {
+        window.hideAllMasteryAreas(); document.getElementById('mastery-success-title').style.color = (masteryModeType === 'comprehensive') ? "#9c27b0" : "#009688";
+        setDisplayState('mastery-success-area', true); window.finalizeMasterySession(); return;
+    }
+    window.hideAllMasteryAreas();
+    let l0 = masteryPool.filter(w => w.level === 0);
+    if (l0.length > 0) { currentMasteryTarget = l0[0]; window.showMasteryL0(currentMasteryTarget); return; }
+
+    let delayReady = masteryPool.filter(w => w.level === 4.9 || w.level === 2.9);
+    if (delayReady.length > 0) {
+        currentMasteryTarget = delayReady.sort(() => Math.random() - 0.5)[0];
+        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); 
+        else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', true); 
+        return;
+    }
+
+    let active = masteryPool.filter(w => w.level >= 1 && w.level <= 4 && Number.isInteger(w.level));
+    if (active.length > 0) {
+        currentMasteryTarget = active.sort(() => Math.random() - 0.5)[0];
+        
+        if (currentMasteryTarget.level === 1) {
+            if (masteryModeType === 'comprehensive') window.showMasteryMCQ(currentMasteryTarget, 'en-to-zh', false);
+            else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', false);
+        }
+        else if (currentMasteryTarget.level === 2) { 
+            if (masteryModeType === 'comprehensive') window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', false); 
+            else window.showMasteryMatch(currentMasteryTarget); 
+        }
+        else if (currentMasteryTarget.level === 3) { 
+            if (masteryModeType === 'comprehensive') window.showMasteryPuzzle(currentMasteryTarget); 
+        }
+        else if (currentMasteryTarget.level === 4) {
+            if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, false);
+        }
+        return;
+    }
+
+    let waiting = masteryPool.filter(w => w.level === 4.5 || w.level === 2.5);
+    if (waiting.length > 0) {
+        let forceTarget = waiting[0]; forceTarget.level = forceTarget.level === 4.5 ? 4.9 : 2.9; currentMasteryTarget = forceTarget;
+        if (masteryModeType === 'comprehensive') window.showMasteryTyping(currentMasteryTarget, true); 
+        else window.showMasteryMCQ(currentMasteryTarget, 'zh-to-en', true); 
+        return;
+    }
+};
+
+window.tickMasteryDelays = function() { masteryPool.forEach(w => { if (w.level === 4.5 || w.level === 2.5) { w.delay--; if (w.delay <= 0) { w.level = (w.level === 4.5) ? 4.9 : 2.9; } } }); };
+window.hideAllMasteryAreas = function() { ['mastery-l0-area', 'mastery-mcq-area', 'mastery-match-area', 'mastery-puzzle-area', 'mastery-typing-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => { setDisplayState(id, false); }); };
+
+window.showMasteryL0 = function(word) {
+    setDisplayState('mastery-l0-area', true); document.getElementById('mastery-l0-en').innerText = word.en; document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
+    window.forceSpeak = true; window.speakEnglishWord(word.en); 
+};
+window.masteryL0Next = function() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); currentMasteryTarget.level = 1; window.nextMasteryTurn(); };
+
+window.showMasteryMCQ = function(word, mode, isDelayed) {
+    setDisplayState('mastery-mcq-area', true); 
+    
+    let badgeText = "";
+    if (isDelayed) badgeText = "Lv 3: 延遲固化 (畢業評測)"; 
+    else if (mode === 'en-to-zh') badgeText = "Lv 1: 視覺辨識 (英選中)";
+    else badgeText = masteryModeType === 'comprehensive' ? "Lv 2: 逆向回想 (中選英)" : "Lv 1: 視覺辨識 (中選英)";
+    
+    document.getElementById('mastery-mcq-badge').innerText = badgeText;
+    document.getElementById('mastery-mcq-q').innerText = (mode === 'zh-to-en') ? word.zh.join(' / ') : word.en;
+    
+    let options = [word]; let distractors = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...distractors.slice(0, 3));
+    if (options.length < 4) { let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...fallback.slice(0, 4 - options.length)); }
+    options = options.slice(0, 4).sort(() => Math.random() - 0.5);
+    
+    const optArea = document.getElementById('mastery-mcq-options'); optArea.innerHTML = '';
+    options.forEach(opt => { 
+        let btn = document.createElement('button'); btn.className = 'btn-mcq'; 
+        btn.innerText = (mode === 'zh-to-en') ? opt.en : opt.zh[0]; 
+        btn.onclick = () => window.checkMasteryAnswer(opt.en === word.en); 
+        optArea.appendChild(btn); 
+    });
+};
+
+let matchEnSelected = null, matchZhSelected = null, matchMistake = false, matchPairsLeft = 4;
+window.showMasteryMatch = function(word) {
+    setDisplayState('mastery-match-area', true); matchMistake = false;
+    let pool = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); let selectedDistractors = pool.slice(0, 3);
+    if (selectedDistractors.length < 3) { let globalPool = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); selectedDistractors.push(...globalPool.slice(0, 3 - selectedDistractors.length)); }
+    let currentMatchPairs = [word, ...selectedDistractors].slice(0, 4); matchPairsLeft = currentMatchPairs.length;
+    window.renderMatchColumns(currentMatchPairs.map(w => ({ text: w.en, ref: w })).sort(() => Math.random() - 0.5), currentMatchPairs.map(w => ({ text: w.zh[0], ref: w })).sort(() => Math.random() - 0.5));
+};
+
+window.renderMatchColumns = function(enList, zhList) {
+    const enCol = document.getElementById('match-col-en'); const zhCol = document.getElementById('match-col-zh'); enCol.innerHTML = ''; zhCol.innerHTML = ''; matchEnSelected = null; matchZhSelected = null;
+    enList.forEach((item) => { let btn = document.createElement('button'); btn.className = 'match-btn'; btn.innerText = item.text; btn.onclick = () => window.handleMatchClick('en', item, btn); enCol.appendChild(btn); });
+    zhList.forEach((item) => { let btn = document.createElement('button'); btn.className = 'match-btn'; btn.innerText = item.text; btn.onclick = () => window.handleMatchClick('zh', item, btn); zhCol.appendChild(btn); });
+};
+
+window.handleMatchClick = function(type, item, btnElement) {
+    if (btnElement.classList.contains('matched')) return;
+    if (type === 'en') {
+        if (matchEnSelected) matchEnSelected.btn.classList.remove('selected'); matchEnSelected = { item, btn: btnElement }; btnElement.classList.add('selected');
+        window.forceSpeak = true; window.speakEnglishWord(item.text); 
+    } else {
+        if (matchZhSelected) matchZhSelected.btn.classList.remove('selected'); matchZhSelected = { item, btn: btnElement }; btnElement.classList.add('selected');
+    }
+    if (matchEnSelected && matchZhSelected) window.checkMatchPair();
+};
+
+window.checkMatchPair = function() {
+    let en = matchEnSelected, zh = matchZhSelected;
+    if (en.item.ref.en === zh.item.ref.en) { 
+        en.btn.classList.remove('selected'); zh.btn.classList.remove('selected'); en.btn.classList.add('matched'); zh.btn.classList.add('matched');
+        matchEnSelected = null; matchZhSelected = null; matchPairsLeft--;
+        if (matchPairsLeft === 0) setTimeout(() => window.checkMasteryAnswer(!matchMistake), 400);
+    } else { 
+        matchMistake = true; en.btn.classList.add('wrong'); zh.btn.classList.add('wrong');
+        setTimeout(() => { en.btn.classList.remove('wrong', 'selected'); zh.btn.classList.remove('wrong', 'selected'); matchEnSelected = null; matchZhSelected = null; }, 500);
+    }
+};
+
+window.showMasteryPuzzle = function(word) {
+    setDisplayState('mastery-puzzle-area', true); 
+    document.getElementById('mastery-puzzle-badge').innerText = "Lv 3: 結構重組"; 
+    document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / '); 
+    document.getElementById('mastery-puzzle-hint-display').innerText = ''; 
+    puzzleUserAnswer = []; let letters = word.en.toLowerCase().split('');
+    for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; }
+    puzzleSourceLetters = letters.map((l, i) => ({ id: i, char: l, used: false })); window.renderMasteryPuzzleBoard();
+};
+
+window.showMasteryPuzzleHint = function() {
+    if(!currentMasteryTarget) return;
+    const word = currentMasteryTarget.en; 
+    document.getElementById('mastery-puzzle-hint-display').innerText = (word.length <= 2) ? word : `${word.charAt(0)}${'_'.repeat(word.length - 2)}${word.charAt(word.length - 1)}`;
+};
+
+window.renderMasteryPuzzleBoard = function() {
+    const ansArea = document.getElementById('mastery-puzzle-ans'); const poolArea = document.getElementById('mastery-puzzle-pool'); ansArea.innerHTML = ''; poolArea.innerHTML = '';
+    puzzleUserAnswer.forEach((letterObj, idx) => { 
+        const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
+        tile.onclick = () => { puzzleUserAnswer[idx].used = false; puzzleUserAnswer.splice(idx, 1); window.renderMasteryPuzzleBoard(); }; ansArea.appendChild(tile); 
+    });
+    if (puzzleUserAnswer.length < currentMasteryTarget.en.length) { const placeholder = document.createElement('div'); placeholder.className = 'letter-tile empty'; placeholder.innerText = '_'; ansArea.appendChild(placeholder); }
+    puzzleSourceLetters.forEach(letterObj => { 
+        if (!letterObj.used) { 
+            const tile = document.createElement('div'); tile.className = 'letter-tile'; tile.innerText = letterObj.char; 
+            tile.onclick = () => { letterObj.used = true; puzzleUserAnswer.push(letterObj); window.renderMasteryPuzzleBoard(); window.checkMasteryPuzzle(false); }; poolArea.appendChild(tile); 
+        } 
+    });
+};
+
+window.checkMasteryPuzzle = function(forced = false) {
+    if(!currentMasteryTarget) return;
+    const currentString = puzzleUserAnswer.map(o => o.char).join(''); const targetString = currentMasteryTarget.en.toLowerCase();
+    if (puzzleUserAnswer.length === targetString.length || forced) window.checkMasteryAnswer(currentString === targetString);
+};
+
+window.showMasteryTyping = function(word, isDelayed) {
+    setDisplayState('mastery-typing-area', true); 
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 4: 主動輸出";
+    document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
+    const input = document.getElementById('mastery-typing-input'); input.value = ''; setTimeout(() => input.focus(), 50); 
+    input.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); window.checkMasteryTyping(); } };
+};
+
+window.checkMasteryTyping = function() {
+    if(!currentMasteryTarget) return;
+    const val = document.getElementById('mastery-typing-input').value.trim().toLowerCase(); const target = currentMasteryTarget.en.toLowerCase(); window.checkMasteryAnswer(val === target);
+};
+
+window.checkMasteryAnswer = function(isCorrect) {
+    window.hideAllMasteryAreas(); setDisplayState('mastery-feedback-area', true, 'flex');
+    const icon = document.getElementById('mastery-fb-icon'); const status = document.getElementById('mastery-fb-status'); const msg = document.getElementById('mastery-fb-msg');
+    
+    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en + " (" + currentMasteryTarget.zh.join(' / ') + ")";
+    
+    window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); window.tickMasteryDelays(); let lvl = currentMasteryTarget.level;
+
+    if (masteryModeType === 'comprehensive') {
+        if (isCorrect) {
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確'; status.className = 'result-status status-correct';
+            if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 逆向回想。`; } 
+            else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = `升級至 Level 3 結構重組。`; } 
+            else if (lvl === 3) { currentMasteryTarget.level = 4; msg.innerText = `升級至 Level 4 主動輸出。`; } 
+            else if (lvl === 4) { currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
+            else if (lvl === 4.9) { 
+                currentMasteryTarget.level = 5; let rw = window.calculateReward(currentMasteryTarget, 'Comp_Grad'); let extraMsg = "";
+                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
+                else { extraMsg = " (此單字已精通過，不再重複給予分數)"; }
+                msg.innerText = `通過延遲評測，該單字已完全精通！${extraMsg}`; 
+            }
+        } else {
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+            currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 視覺辨識。";
+        }
+    } else {
+        if (isCorrect) {
+            icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確'; status.className = 'result-status status-correct';
+            if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 雙向連接。`; } 
+            else if (lvl === 2) { currentMasteryTarget.level = 2.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = "進入記憶固化潛伏期，系統稍後將觸發延遲評測。"; } 
+            else if (lvl === 2.9) { 
+                currentMasteryTarget.level = 4; let rw = window.calculateReward(currentMasteryTarget, 'Conn_Grad'); let extraMsg = "";
+                if (!rw.isMastered) { window.bufferWordAsMastered(currentMasteryTarget); extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)"; } 
+                else { extraMsg = " (此單字已精通過，不再重複給予分數)"; }
+                msg.innerText = `通過延遲評測，單字連接力建立完成！${extraMsg}`; 
+            }
+        } else {
+            icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+            currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 視覺辨識。";
+        }
+    }
+};
+
+window.masteryFeedbackNext = function() { window.nextMasteryTurn(); };
+window.replayMasteryAudio = function() { if (currentMasteryTarget) { window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); } };
+
+// =====================================
+// 7. 原版 8 大練習模式 (給予「商城點數」)
+// =====================================
+window.setupPractice = function(mode) { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; 
+    document.getElementById('mode-display').innerText = (mode === 'zh-to-en') ? '中翻英' : '英翻中'; 
+    setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', (mode === 'zh-to-en'), 'inline-block'); 
+    window.switchView('practice'); window.showNextCard(); 
+};
+
+window.showNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('interaction-area', true, 'block'); setDisplayState('feedback-area', false); 
+    const inputEl = document.getElementById('answer-input'); if (inputEl) { inputEl.value = ''; setTimeout(() => inputEl.focus(), 50); }
+    document.getElementById('hint-display').innerText = ''; document.getElementById('progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    const q = (currentMode === 'zh-to-en') ? w.zh.join(' / ') : w.en; document.getElementById('question-display').innerText = q; document.getElementById('feedback-question-copy').innerText = q; 
+};
+
+window.showHint = function() { 
+    if (!practiceQueue[currentCardIndex]) return; let w = practiceQueue[currentCardIndex].en; 
+    document.getElementById('hint-display').innerText = (w.length <= 2) ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
+};
+
+window.checkAnswer = function() { 
+    if (currentCardIndex >= practiceQueue.length) return; const v = document.getElementById('answer-input').value.trim(); const w = practiceQueue[currentCardIndex]; let c = false; 
+    if (v !== '') { if (currentMode === 'zh-to-en') { c = (v.toLowerCase() === w.en.toLowerCase()); } else { c = w.zh.some(m => m.trim().includes(v) && v.length > 0); } } 
+    lastAnswerCorrect = c; 
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+    if (!c && !isSequentialMode) window.requeueWord(w); window.showFeedback(c, w); 
+};
+
+window.showFeedback = function(c, w) { 
+    setDisplayState('interaction-area', false); setDisplayState('feedback-area', true, 'flex'); 
+    const i = document.getElementById('feedback-icon'); const s = document.getElementById('feedback-status'); 
+    document.getElementById('feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
+    else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handleNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showNextCard(); }); } 
+    else { currentCardIndex++; window.showNextCard(); }
+};
+
+const answerInputEl = document.getElementById('answer-input');
+if (answerInputEl) { answerInputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); window.checkAnswer(); } }); }
+
+window.setupMultipleChoice = function(mode) { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    let pool = window.getSelectedWordsPool(); let uniqueWords = new Set(); pool.forEach(w => uniqueWords.add(w.en));
+    if (uniqueWords.size < 4) { window.SilenModal.alert("單字簿數量不足以生成干擾項選項。"); return; }
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; 
+    document.getElementById('mcq-mode-display').innerText = (mode === 'zh-to-en') ? '中選英' : '英選中'; 
+    setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); window.switchView('mcq'); window.showMcqNextCard(); 
+};
+
+window.showMcqNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    const w = practiceQueue[currentCardIndex]; setDisplayState('mcq-interaction-area', true, 'block'); setDisplayState('mcq-feedback-area', false); 
+    document.getElementById('mcq-progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    const q = (currentMode === 'zh-to-en') ? w.zh.join(' / ') : w.en; document.getElementById('mcq-question-display').innerText = q; document.getElementById('mcq-feedback-question-copy').innerText = q; 
+    let opts = [w]; let pool = window.getSelectedWordsPool(); let dis = pool.filter(x => x.en !== w.en).sort(() => Math.random() - 0.5);
+    opts = opts.concat(dis.slice(0, 3)); opts.sort(() => Math.random() - 0.5); 
+    const a = document.getElementById('mcq-options-area'); a.innerHTML = ''; 
+    opts.forEach(o => { let b = document.createElement('button'); b.className = 'btn-mcq'; b.innerText = (currentMode === 'zh-to-en') ? o.en : o.zh.join(' / '); b.onclick = () => window.checkMcqAnswer(o.en === w.en); a.appendChild(b); }); 
+};
+
+window.checkMcqAnswer = function(c) { 
+    if (currentCardIndex >= practiceQueue.length) return; lastAnswerCorrect = c; const w = practiceQueue[currentCardIndex]; 
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+    if (!c && !isSequentialMode) window.requeueWord(w); setDisplayState('mcq-interaction-area', false); setDisplayState('mcq-feedback-area', true, 'flex'); 
+    const i = document.getElementById('mcq-feedback-icon'); const s = document.getElementById('mcq-feedback-status'); 
+    document.getElementById('mcq-feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
+    else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handleMcqNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showMcqNextCard(); }); } 
+    else { currentCardIndex++; window.showMcqNextCard(); }
+};
+
+window.setupSpeakingMode = function() { 
+    if (!recognition) { window.SilenModal.alert("當前核心環境不支援語音介面。"); return; }
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; window.switchView('speaking'); window.showNextSpeakingCard(); 
+};
+
+window.showNextSpeakingCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('speaking-interaction-area', true, 'block'); setDisplayState('speaking-feedback-area', false); 
+    document.getElementById('speaking-word-display').innerText = w.en; document.getElementById('speaking-zh-display').innerText = w.zh.join(' / '); 
+    document.getElementById('speaking-status').innerText = '準備就緒'; document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.startSpeechRecognition = function() { 
+    if (!recognition) return; const b = document.getElementById('mic-btn'); const s = document.getElementById('speaking-status'); 
+    try { recognition.start(); b.classList.add('listening'); s.innerText = '正在語音錄製與分析...'; } catch(e) { console.error(e); } 
+    recognition.onresult = (e) => { 
+        const h = e.results[0][0].transcript.toLowerCase().replace(/[.,?!]/g, "").trim(); const c = e.results[0][0].confidence; const t = practiceQueue[currentCardIndex].en.toLowerCase().trim(); 
+        b.classList.remove('listening'); setDisplayState('speaking-interaction-area', false); setDisplayState('speaking-feedback-area', true, 'flex'); 
+        const sd = document.getElementById('speaking-score'); const md = document.getElementById('speaking-feedback-msg'); const hd = document.getElementById('speaking-heard-text'); 
+        if (h === t || h.includes(t) || t.includes(h)) { 
+            lastAnswerCorrect = true; let fs = Math.round(c * 100); if (fs < 50) fs = 80; 
+            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(fs); }
+            sd.innerText = `${fs} 點數`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (+${fs} 點數)`; hd.innerText = `捕獲音訊: "${h}"`; 
+        } else { 
+            lastAnswerCorrect = false; sd.innerText = '0 點數'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
+            if (!isSequentialMode) window.requeueWord(practiceQueue[currentCardIndex]); 
+        } 
+    }; 
+    recognition.onerror = () => { b.classList.remove('listening'); s.innerText = '音訊解碼失敗。'; }; 
+    recognition.onspeechend = () => { recognition.stop(); b.classList.remove('listening'); }; 
+};
+
+window.handleSpeakingNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert('重頭開始。').then(() => { currentCardIndex = 0; completedCount = 0; window.showNextSpeakingCard(); }); } 
+    else { currentCardIndex++; window.showNextSpeakingCard(); }
+};
+
+window.setupPuzzleMode = function() { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentCardIndex = 0; setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); window.switchView('puzzle'); window.loadPuzzleLevel(); 
+};
+
+window.loadPuzzleLevel = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); puzzleCurrentWord = practiceQueue[currentCardIndex]; puzzleUserAnswer = []; 
+    let ls = puzzleCurrentWord.en.toLowerCase().split(''); for (let i = ls.length - 1; i > 0; i--) { let j = Math.floor(Math.random() * (i + 1)); let temp = ls[i]; ls[i] = ls[j]; ls[j] = temp; } 
+    puzzleSourceLetters = ls.map((l, i) => ({ id: i, char: l, used: false })); document.getElementById('puzzle-hint-display').innerText = ''; 
+    document.getElementById('puzzle-question').innerText = puzzleCurrentWord.zh.join(' / '); document.getElementById('puzzle-message').innerText = ''; 
+    document.getElementById('puzzle-progress').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${currentCardIndex+1}/${practiceQueue.length}`; window.renderPuzzleBoard(); 
+};
+
+window.showPuzzleHint = function() { 
+    if(!puzzleCurrentWord) return; let w = puzzleCurrentWord.en; let hintStr = (w.length <= 2) ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; document.getElementById('puzzle-hint-display').innerText = hintStr; 
+};
+
+window.renderPuzzleBoard = function() { 
+    const a = document.getElementById('puzzle-answer-area'); const p = document.getElementById('puzzle-pool-area'); a.innerHTML = ''; p.innerHTML = ''; 
+    puzzleUserAnswer.forEach((o, i) => { 
+        let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+        t.onclick = () => { puzzleUserAnswer[i].used = false; puzzleUserAnswer.splice(i, 1); window.renderPuzzleBoard(); }; a.appendChild(t); 
+    }); 
+    if (puzzleUserAnswer.length < puzzleCurrentWord.en.length) { let ph = document.createElement('div'); ph.className = 'letter-tile empty'; ph.innerText = '_'; a.appendChild(ph); } 
+    puzzleSourceLetters.forEach(o => { 
+        if (!o.used) { 
+            let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+            t.onclick = () => { o.used = true; puzzleUserAnswer.push(o); window.renderPuzzleBoard(); window.checkPuzzleState(false); }; p.appendChild(t); 
+        } 
+    }); 
+};
+
+window.checkPuzzleState = function(f) { 
+    if(!puzzleCurrentWord) return; let cs = puzzleUserAnswer.map(o => o.char).join(''); let ts = puzzleCurrentWord.en.toLowerCase(); let m = document.getElementById('puzzle-message'); 
+    if (cs.length === ts.length || f === true) { 
+        if (cs === ts) { 
+            m.className = 'result-msg result-correct'; m.innerText = '正確 (+10 點數)'; 
+            if (!puzzleCurrentWord.scored) { puzzleCurrentWord.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+            window.forceSpeak = true; window.speakEnglishWord(ts); setTimeout(() => { currentCardIndex++; window.loadPuzzleLevel(); }, 800); 
+        } else { 
+            if (isSequentialMode) { 
+                m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}。`; window.forceSpeak = true; window.speakEnglishWord(ts); setTimeout(() => { currentCardIndex = 0; window.loadPuzzleLevel(); }, 2000); 
+            } else { 
+                if (f === true) { m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}`; window.forceSpeak = true; window.speakEnglishWord(ts); window.requeueWord(puzzleCurrentWord); setTimeout(() => { currentCardIndex++; window.loadPuzzleLevel(); }, 2000); } 
+                else { m.className = 'result-msg result-wrong'; m.innerText = '比對不符'; } 
+            } 
+        } 
+    } 
+};
+
+window.setupMemoryMode = function() { 
+    let p = window.getPracticeWords(); if (!p || p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); memoryCards = []; 
+    sw.forEach(w => { memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); }); 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); window.renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
+};
+
+window.setupMemoryModeGuest = function() { 
+    let p = [...practiceQueue]; if (!p || p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); memoryCards = []; 
+    sw.forEach(w => { memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); }); 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); window.renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
+};
+
+window.renderMemoryBoard = function() { 
+    const b = document.getElementById('memory-board'); b.innerHTML = ''; 
+    memoryCards.forEach((c, i) => { 
+        let d = document.createElement('div'); d.className = `memory-card ${c.matched ? 'matched' : ''}`; 
+        d.innerHTML = `<div class="memory-inner"><div class="memory-front">${c.content}</div><div class="memory-back">?</div></div>`; 
+        d.onclick = () => window.flipCard(i); b.appendChild(d); 
+    }); 
+};
+
+window.flipCard = function(i) { 
+    if (memoryLocked || memoryCards[i].matched || memoryFlipped.includes(i)) return; 
+    document.getElementById('memory-board').children[i].classList.add('flipped'); memoryFlipped.push(i); 
+    if (memoryFlipped.length === 2) window.checkMemoryMatch(); 
+};
+
+window.checkMemoryMatch = function() { 
+    memoryLocked = true; let i1 = memoryFlipped[0]; let i2 = memoryFlipped[1]; let c1 = memoryCards[i1]; let c2 = memoryCards[i2]; let m = document.getElementById('memory-message'); 
+    if (c1.id === c2.id) { 
+        c1.matched = c2.matched = true; memoryMatchedCount += 2; 
+        if (typeof window.addStorePoints === 'function') window.addStorePoints(10);
+        document.getElementById('memory-board').children[i1].classList.add('matched'); document.getElementById('memory-board').children[i2].classList.add('matched'); 
+        m.innerText = '矩陣配對成功 (+10 點數)'; m.className = 'result-msg result-correct'; window.forceSpeak = true; window.speakEnglishWord(c1.id); 
+        memoryFlipped = []; memoryLocked = false; if (memoryMatchedCount === memoryCards.length) setTimeout(() => window.endQuiz(), 500); 
+    } else { 
+        m.innerText = '不匹配'; m.className = 'result-msg result-wrong'; 
+        setTimeout(() => { document.getElementById('memory-board').children[i1].classList.remove('flipped'); document.getElementById('memory-board').children[i2].classList.remove('flipped'); memoryFlipped = []; memoryLocked = false; m.innerText = ''; }, 1000); 
+    } 
+};
+
+window.setupYouglishMode = function() { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    practiceQueue.sort(() => Math.random() - 0.5); currentCardIndex = 0; window.switchView('youglish'); window.loadYouglishCard(); 
+};
+
+window.loadYouglishCard = function() { 
+    if (!practiceQueue[currentCardIndex]) return; const w = practiceQueue[currentCardIndex]; 
+    document.getElementById('yg-word').innerText = w.en; document.getElementById('yg-zh').innerText = w.zh.join(' / '); 
+    document.getElementById('yg-progress').innerText = `${currentCardIndex+1}/${practiceQueue.length}`; document.getElementById('yg-link-word').innerText = w.en; 
+    document.getElementById('yg-link').href = `https://youglish.com/pronounce/${encodeURIComponent(w.en)}/english`; 
+};
+
+window.nextYouglishCard = function() { if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; window.loadYouglishCard(); } else { window.endQuiz(); } };
+window.prevYouglishCard = function() { if (currentCardIndex > 0) { currentCardIndex--; window.loadYouglishCard(); } else { window.SilenModal.alert("已達佇列首端。"); } };
+
+// =====================================
+// 8. 自訂下拉選單控制與學測抽卡系統
+// =====================================
+window.toggleDropdown = function(id, event) {
+    if(event) event.stopPropagation();
+    document.querySelectorAll('.dropdown-options').forEach(el => { if (el.id !== id) el.classList.add('hidden'); });
+    document.getElementById(id).classList.toggle('hidden');
+};
+
+document.addEventListener('click', () => { document.querySelectorAll('.dropdown-options').forEach(el => el.classList.add('hidden')); });
+
+window.setLibMode = function(mode, text) {
+    document.querySelector('#lib-dropdown .dropdown-selected').innerHTML = text + ' ▾';
+    document.getElementById('lib-options').classList.add('hidden');
+    
+    if (mode === 'normal') { 
+        setDisplayState('normal-book-area', true); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', false);
+    } else if (mode === 'gsat') { 
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', true); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', false);
+        const currentLevel = window.currentGsatLevel || 'lv1'; 
+        if (gsatVocabCache[currentLevel].length === 0) { window.fetchGSATVocab(currentLevel); }
+    } else if (mode === 'phrase') { 
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', true); setDisplayState('store-book-area', false);
+    } else if (mode === 'store') {
+        setDisplayState('normal-book-area', false); setDisplayState('gsat-book-area', false); setDisplayState('phrase-book-area', false); setDisplayState('store-book-area', true);
+    }
+};
+
+window.currentGsatLevel = 'lv1';
+window.setGsatLevel = function(level, text) {
+    window.currentGsatLevel = level; document.querySelector('#level-dropdown .dropdown-selected').innerHTML = text + ' ▾'; document.getElementById('level-options').classList.add('hidden');
+    const levelNum = level.replace('lv', ''); document.getElementById('gsat-claim-tag').value = `學測 Lv${levelNum}`;
+    const nameInput = document.getElementById('gsat-claim-name'); if (nameInput.value.includes('抽取') || nameInput.value.trim() === '') { nameInput.value = `學測 Lv${levelNum} 抽取`; }
+    if (gsatVocabCache[level].length === 0) { window.fetchGSATVocab(level); }
+};
+
+let gsatVocabCache = { lv1: [], lv2: [], lv3: [], lv4: [], lv5: [], lv6: [] };
+
+window.fetchGSATVocab = async function(level) {
+    const btn = document.getElementById('btn-claim-gsat'); if (btn) { btn.innerText = "資料庫載入中..."; btn.disabled = true; }
+    try {
+        const fileName = `vocabulary${level}.json`; const response = await fetch(fileName); if (!response.ok) throw new Error("網路請求失敗");
+        const rawData = await response.json(); gsatVocabCache[level] = rawData.map(item => ({ en: item.word.trim(), zh: item.chinese.split(/[;；,，/、]/).map(s => s.trim()).filter(s => s) }));
+        if (btn) { btn.innerText = "開始抽取"; btn.disabled = false; }
+    } catch (error) {
+        console.error(`載入 ${level} 失敗:`, error); if (window.SilenModal) window.SilenModal.alert(`載入失敗，請確認 vocabulary${level}.json 是否存在。`);
+        if (btn) { btn.innerText = "載入失敗"; btn.disabled = false; }
+    }
+};
+
+window.claimGSATWords = async function() {
+    const level = window.currentGsatLevel || 'lv1';
+    if (!gsatVocabCache[level] || gsatVocabCache[level].length === 0) { 
+        await window.fetchGSATVocab(level); 
+        if (!gsatVocabCache[level] || gsatVocabCache[level].length === 0) return; 
+    }
+
+    const amountElement = document.getElementById('gsat-claim-amount');
+    const amount = amountElement ? (parseInt(amountElement.value) || 30) : 30;
+    const levelNum = level.replace('lv', ''); 
+    let defaultName = `學測 Lv${levelNum} 抽取`;
+    
+    const nameInputEl = document.getElementById('gsat-claim-name');
+    const nameInput = nameInputEl ? nameInputEl.value.trim() : ''; 
+    const bookName = nameInput === '' ? defaultName : nameInput; 
+    
+    const tagInputEl = document.getElementById('gsat-claim-tag');
+    const bookTag = tagInputEl ? tagInputEl.value.trim() : `學測 Lv${levelNum}`;
+
+    let existingWords = new Set();
+    window.books.forEach(book => { 
+        const safeTag = (book.tag && typeof book.tag === 'string') ? book.tag : '';
+        if (safeTag.includes('學測') || book.isGSAT) { 
+            if (book.words && Array.isArray(book.words)) {
+                book.words.forEach(w => {
+                    if (w && w.en) existingWords.add(w.en.toLowerCase());
+                }); 
+            }
+        } 
+    });
+    
+    let availableWords = gsatVocabCache[level].filter(w => !existingWords.has(w.en.toLowerCase()));
+
+    if (availableWords.length === 0) { 
+        window.SilenModal.alert(`太厲害了！學測 Lv${levelNum} 的單字已經被您全部抽完囉！`); 
+        return; 
+    }
+
+    let finalAmount = amount;
+    if (availableWords.length < amount) { 
+        window.SilenModal.alert(`單字庫即將見底！只剩下最後 ${availableWords.length} 個全新單字，將為您全數抽出。`); 
+        finalAmount = availableWords.length; 
+    }
+
+    availableWords.sort(() => Math.random() - 0.5); 
+    let selectedWords = availableWords.slice(0, finalAmount);
+    
+    window.books.push({ id: Date.now(), name: bookName, tag: bookTag, isGSAT: true, isPhrase: false, isStore: false, words: selectedWords });
+
+    if (typeof window.saveData === 'function') window.saveData();
+    window.SilenModal.alert(`成功抽取 ${selectedWords.length} 個學測單字！\n已為您建立單字簿：「${bookName}」`).then(() => { 
+        if (typeof window.renderBookList === 'function') window.renderBookList(); 
+    });
+};
+
+// =====================================
+// 9. 啟動與分享攔截初始化
+// =====================================
+window.addEventListener('DOMContentLoaded', () => {
+    window.SilenModal.init();
+    window.SilenSettings.init();
+});
 
 window.addEventListener('load', () => {
-    const originalSaveData = window.saveData;
-    window.saveData = function() {
-        if (typeof originalSaveData === 'function') originalSaveData();
-        if (currentUser) {
-            syncToCloud(currentUser.uid, window.books);
+    setTimeout(() => { 
+        if (typeof window.checkShareUrl === 'function' && !window.checkShareUrl()) {
         }
-    };
+    }, 150); 
 });
 
 // =====================================
-// 全站身份驗證狀態變更 (Auth State)
+// 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
-onAuthStateChanged(auth, (user) => {
-    const authContainer = document.getElementById('auth-container');
-    const mainHeader = document.getElementById('main-header');
-    if (!authContainer || !mainHeader) return;
+window.myRankPoints = 0;
+window.myStorePoints = 0;
+window.lastRankScoreTime = 0;
+window.lastStoreScoreTime = 0;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasShareLink = urlParams.get('lz') || urlParams.get('s') || urlParams.get('share') || urlParams.get('q');
+window.showScoringRules = function() {
+    window.SilenModal.alert(
+        "雙軌賽季計分規則\n\n" +
+        "[牌位積分] (影響排行榜)\n" +
+        "只能透過綜合精通模式與連結力訓練獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
+        "[商城點數] (用於商城擴充)\n" +
+        "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫選購！"
+    );
+};
 
-    if (user) {
-        currentUser = user;
-        mainHeader.classList.remove('hidden');
-        
-        authContainer.innerHTML = `
-            <img src="${user.photoURL}" alt="avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer;" onclick="window.toggleSidebar()">
+window.getCurrentWeekId = function() {
+    const launchDate = new Date("2026-05-28T00:00:00+08:00").getTime();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const weeksPassed = Math.floor((now - launchDate) / ONE_WEEK_MS);
+    return Math.max(1, weeksPassed + 1); 
+};
+
+window.addRankPoints = function(points, force = false) {
+    if (isGuestMode) return; 
+    const now = Date.now();
+    if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
+    window.lastRankScoreTime = now;
+
+    window.myRankPoints += points;
+    const elTotal = document.getElementById('stat-rank-score');
+    if (elTotal) elTotal.innerText = window.myRankPoints;
+
+    if (typeof window.uploadScoreToCloud === 'function') {
+        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+    }
+};
+
+window.addStorePoints = function(points, force = false) {
+    if (isGuestMode) return; 
+    const now = Date.now();
+    if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
+    window.lastStoreScoreTime = now;
+
+    window.myStorePoints += points;
+    const elStore = document.getElementById('stat-store-points');
+    const elStoreMyScore = document.getElementById('store-my-score');
+    if (elStore) elStore.innerText = window.myStorePoints;
+    if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+
+    if (typeof window.uploadScoreToCloud === 'function') {
+        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+    }
+};
+
+window.openLeaderboard = function() {
+    window.switchView('leaderboard');
+    const currentWeek = window.getCurrentWeekId();
+    document.getElementById('lb-current-week').innerText = `第 ${currentWeek} 賽季`;
+    
+    if (typeof window.fetchLeaderboard === 'function') {
+        window.fetchLeaderboard(currentWeek);
+    } else {
+        document.getElementById('leaderboard-list').innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">連線錯誤：找不到雲端模組</div>';
+    }
+};
+
+window.renderLeaderboard = function(listData, mySeasonScore) {
+    document.getElementById('lb-my-score').innerText = mySeasonScore || 0;
+    const container = document.getElementById('leaderboard-list');
+    container.innerHTML = '';
+
+    if (!listData || listData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub);">本週尚無排名紀錄</div>';
+        return;
+    }
+
+    listData.forEach((user, index) => {
+        let rankClass = '';
+        let rankText = index + 1;
+        if (index === 0) { rankClass = 'lb-rank-1'; rankText = '1'; }
+        else if (index === 1) { rankClass = 'lb-rank-2'; rankText = '2'; }
+        else if (index === 2) { rankClass = 'lb-rank-3'; rankText = '3'; }
+
+        const div = document.createElement('div');
+        div.className = 'lb-item';
+        div.onclick = () => window.openPublicProfile(user); 
+        div.innerHTML = `
+            <div class="lb-rank ${rankClass}">${rankText}</div>
+            <img src="${user.photo || 'https://via.placeholder.com/45'}" class="lb-avatar">
+            <div class="lb-info">
+                <div class="lb-name">${user.name}</div>
+            </div>
+            <div class="lb-score">${user.score} pts</div>
         `;
-        
-        const sbPlaceholder = document.getElementById('sb-avatar-placeholder');
-        const sbImg = document.getElementById('sb-avatar-img');
-        const sbName = document.getElementById('sb-user-name');
-        if(sbPlaceholder) sbPlaceholder.style.display = 'none';
-        if(sbImg) { sbImg.src = user.photoURL; sbImg.style.display = 'block'; }
-        if(sbName) sbName.innerText = user.displayName;
-
-        const pfPlaceholder = document.getElementById('profile-avatar-placeholder');
-        const pfImg = document.getElementById('profile-avatar-img');
-        const pfName = document.getElementById('profile-name');
-        const pfEmail = document.getElementById('profile-email');
-        if(pfPlaceholder) pfPlaceholder.style.display = 'none';
-        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'inline-block'; }
-        if(pfName) pfName.innerText = user.displayName;
-        if(pfEmail) pfEmail.innerText = user.email;
-
-        const elRank = document.getElementById('stat-rank-score');
-        const elStore = document.getElementById('stat-store-points');
-        const elStoreMyScore = document.getElementById('store-my-score');
-
-        const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
-
-        Promise.all([
-            get(ref(rtdb, `users/${user.uid}/rankPoints`)),
-            get(ref(rtdb, `users/${user.uid}/storePoints`)),
-            get(ref(rtdb, `users/${user.uid}/totalScore`)),
-            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
-            get(ref(rtdb, `users/${user.uid}/isAdmin`)),
-            getDoc(doc(db, "users", user.uid)) 
-        ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
-            const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
-            const currentRank = snapRank.exists() ? snapRank.val() : 0;
-            const currentStore = snapStore.exists() ? snapStore.val() : 0;
-            const lbScore = snapLb.exists() ? snapLb.val() : 0;
-            
-            window.myRankPoints = Math.max(currentRank, oldTotalScore, lbScore);
-            window.myStorePoints = Math.max(currentStore, oldTotalScore, lbScore);
-
-            if (elRank) elRank.innerText = window.myRankPoints;
-            if (elStore) elStore.innerText = window.myStorePoints;
-            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
-
-            if (window.myRankPoints > currentRank || window.myStorePoints > currentStore || !snapRank.exists() || !snapStore.exists()) {
-                set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
-                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
-            }
-
-            let hasAdminPrivilege = false;
-            if (snapAdminRtdb.exists() && snapAdminRtdb.val() === true) hasAdminPrivilege = true;
-            if (docSnapAdminDb.exists() && docSnapAdminDb.data().isAdmin === true) hasAdminPrivilege = true;
-
-            if (hasAdminPrivilege) {
-                window.isAdmin = true;
-                const adminBtn = document.getElementById('sidebar-admin-btn');
-                if (adminBtn) adminBtn.style.display = 'block';
-            } else {
-                window.isAdmin = false;
-            }
-
-        }).catch(err => {
-            console.error("資料庫讀取異常", err);
-        }).finally(() => {
-            get(ref(rtdb, `users/${user.uid}/badges`)).then(snap => {
-                window.renderMyBadges(snap.exists() ? snap.val() : []);
-            });
-
-            syncFromCloud(user.uid);
-            if (!window.isGuestMode && !hasShareLink) {
-                if (typeof window.goHome === 'function') window.goHome();
-            }
-        });
-
-    } else {
-        currentUser = null;
-        authContainer.innerHTML = ``;
-        if (hasShareLink) {
-            mainHeader.classList.remove('hidden');
-        } else {
-            mainHeader.classList.add('hidden');
-            if (typeof window.switchView === 'function') window.switchView('landing');
-        }
-    }
-});
-
-// =====================================
-// 個人主頁與公有主頁的徽章渲染引擎
-// =====================================
-window.renderMyBadges = function(badges) {
-    const container = document.getElementById('profile-badges-container');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    if (!badges || badges.length === 0) {
-        container.innerHTML = '<div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div>';
-        return;
-    }
-    
-    badges.forEach(b => {
-        const slot = document.createElement('div');
-        slot.className = 'badge-slot';
-        slot.style.border = `2px solid ${b.color}`;
-        slot.style.color = b.color;
-        slot.style.fontWeight = 'bold';
-        slot.style.fontSize = '0.8rem';
-        slot.style.display = 'flex';
-        slot.style.flexDirection = 'column';
-        slot.style.lineHeight = '1.4';
-        
-        const lines = b.name.split(' ');
-        slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
-        container.appendChild(slot);
+        container.appendChild(div);
     });
 };
 
-window.fetchPublicBadges = async function(uid) {
+window.openPublicProfile = function(user) {
+    document.getElementById('public-profile-name').innerText = user.name;
+    document.getElementById('public-stat-score').innerText = user.score;
+    
+    const avatarImg = document.getElementById('public-avatar-img');
+    const avatarPlaceholder = document.getElementById('public-avatar-placeholder');
+    
+    if (user.photo) {
+        avatarImg.src = user.photo;
+        avatarImg.style.display = 'block';
+        avatarPlaceholder.style.display = 'none';
+    } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'flex';
+        avatarPlaceholder.innerText = user.name ? user.name.charAt(0).toUpperCase() : '?';
+    }
+    
     const badgeContainer = document.getElementById('public-badges-container');
-    try {
-        const snap = await get(ref(rtdb, `users/${uid}/badges`));
-        badgeContainer.innerHTML = '';
-        if (snap.exists() && snap.val().length > 0) {
-            const badges = snap.val();
-            badges.forEach(b => {
-                const slot = document.createElement('div');
-                slot.className = 'badge-slot';
-                slot.style.border = `2px solid ${b.color}`;
-                slot.style.color = b.color;
-                slot.style.fontWeight = 'bold';
-                slot.style.fontSize = '0.8rem';
-                slot.style.display = 'flex';
-                slot.style.flexDirection = 'column';
-                slot.style.lineHeight = '1.4';
-                
-                const lines = b.name.split(' ');
-                slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
-                badgeContainer.appendChild(slot);
-            });
-        } else {
-            badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
-        }
-    } catch(e) {
-        badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>';
+    badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">載入徽章中...</div>';
+
+    if (typeof window.fetchPublicBadges === 'function') {
+        window.fetchPublicBadges(user.uid);
     }
+
+    window.switchView('public-profile');
 };
 
-// =====================================
-// 雲端短網址分享機制核心
-// =====================================
-window.uploadShareData = async (shareData) => {
-    try {
-        const shareRef = push(ref(rtdb, 'shared_quizzes'));
-        await set(shareRef, {
-            data: JSON.stringify(shareData),
-            timestamp: Date.now()
-        });
-        return shareRef.key; 
-    } catch(error) {
-        console.error("上傳分享資料失敗:", error);
-        return null;
-    }
-};
-
-window.downloadShareData = async (shareId) => {
-    try {
-        const snapshot = await get(child(ref(rtdb), `shared_quizzes/${shareId}`));
-        if (snapshot.exists()) {
-            return JSON.parse(snapshot.val().data);
-        }
-    } catch(error) {
-        console.error("下載分享資料失敗:", error);
-    }
-    return null;
-};
-
-// =====================================
-// 賽季排行榜與雙軌分數同步邏輯
-// =====================================
-window.uploadScoreToCloud = async function(rankPoints, storePoints) {
-    if (!currentUser || typeof rtdb === 'undefined') return;
-    const uid = currentUser.uid;
-    
-    try {
-        await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
-        await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
-        
-        const weekId = window.getCurrentWeekId();
-        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
+window.editUserName = function() {
+    const currentName = document.getElementById('profile-name').innerText;
+    window.SilenModal.prompt("請輸入新的顯示名稱：", currentName).then(newName => {
+        if (newName && newName.trim() !== '') {
+            const finalName = newName.trim();
+            document.getElementById('profile-name').innerText = finalName;
+            document.getElementById('sb-user-name').innerText = finalName;
             
-        await set(lbRef, {
-            name: currentUser.displayName || '匿名者',
-            photo: currentUser.photoURL || '',
-            score: rankPoints,
-            timestamp: Date.now()
-        });
-        
-    } catch(e) { console.error("上傳分數失敗", e); }
-};
-
-window.fetchLeaderboard = async function(weekId) {
-    if (typeof rtdb === 'undefined') return;
-    try {
-        const lbRef = query(ref(rtdb, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
-        const snapshot = await get(lbRef);
-        
-        let list = [];
-        let mySeasonScore = 0;
-        const myUid = currentUser ? currentUser.uid : null;
-
-        if (snapshot.exists()) {
-            snapshot.forEach((childSnap) => {
-                const data = childSnap.val();
-                data.uid = childSnap.key;
-                list.push(data);
-                if (data.uid === myUid) {
-                    mySeasonScore = data.score; 
-                }
-            });
-        }
-        
-        list.reverse();
-        
-        if (window.renderLeaderboard) {
-            window.renderLeaderboard(list, mySeasonScore);
-        }
-    } catch(e) {
-        console.error("抓取排行榜失敗", e);
-    }
-};
-
-// ==========================================
-// 同步更新使用者名稱至 Firebase 雲端與排行榜
-// ==========================================
-window.updateCloudUserName = async function(newName) {
-    const user = auth.currentUser;
-    if (!user) {
-        window.SilenModal.alert("請先登入帳號，才能將名稱同步至雲端排行榜！");
-        return;
-    }
-
-    const btn = document.querySelector('.profile-header .btn');
-    if (btn) btn.innerText = "同步中...";
-
-    try {
-        await updateProfile(user, { displayName: newName });
-        const userRef = doc(db, "users", user.uid);
-        await setDoc(userRef, { name: newName }, { merge: true });
-
-        if (typeof window.getCurrentWeekId === 'function') {
-            const weekId = window.getCurrentWeekId();
-            const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${user.uid}`);
-            const snap = await get(lbRef);
-            if (snap.exists()) {
-                await set(lbRef, { ...snap.val(), name: newName });
-            }
-        }
-
-        if (btn) btn.innerText = "更改名稱";
-        window.SilenModal.alert(`改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
-        
-        if (typeof window.fetchLeaderboard === 'function' && typeof window.getCurrentWeekId === 'function') {
-            window.fetchLeaderboard(window.getCurrentWeekId());
-        }
-
-    } catch (error) {
-        console.error("雲端名稱同步失敗:", error);
-        if (btn) btn.innerText = "更改名稱";
-        window.SilenModal.alert("雲端同步失敗，請檢查網路連線或資料庫權限。");
-    }
-};
-
-// ==========================================
-// 系統全伺服器即時彈窗公告系統 (Admin & Global)
-// ==========================================
-window.pendingAnnouncement = null;
-
-window.showAnnouncementModal = function(data) {
-    localStorage.setItem('sv_last_seen_announcement', data.timestamp);
-    window.pendingAnnouncement = null;
-    window.SilenModal.alert(`[系統公告] ${data.title}\n\n${data.content}`);
-};
-
-const announcementRef = ref(rtdb, 'system/announcement');
-onValue(announcementRef, (snap) => {
-    const data = snap.val();
-    
-    if (data && data.visible) {
-        const lastSeen = parseInt(localStorage.getItem('sv_last_seen_announcement')) || 0;
-        
-        if (data.timestamp > lastSeen) {
-            const homeView = document.getElementById('view-home');
-            const isHome = homeView && !homeView.classList.contains('hidden');
-
-            if (isHome) {
-                window.showAnnouncementModal(data);
+            if (typeof window.updateCloudUserName === 'function') {
+                window.updateCloudUserName(finalName);
             } else {
-                window.pendingAnnouncement = data;
-            }
-        }
-        
-        const titleInput = document.getElementById('admin-announce-title');
-        const contentInput = document.getElementById('admin-announce-content');
-        if (titleInput && !titleInput.value) titleInput.value = data.title;
-        if (contentInput && !contentInput.value) contentInput.value = data.content;
-    } else {
-        window.pendingAnnouncement = null;
-    }
-});
-
-window.publishAnnouncement = async function() {
-    if (!window.isAdmin) {
-        window.SilenModal.alert("您沒有權限執行此操作。");
-        return;
-    }
-    const title = document.getElementById('admin-announce-title').value.trim();
-    const content = document.getElementById('admin-announce-content').value.trim();
-    
-    if (!title || !content) {
-        window.SilenModal.alert("標題與內容皆不可為空！");
-        return;
-    }
-
-    try {
-        await set(ref(rtdb, 'system/announcement'), {
-            title: title,
-            content: content,
-            visible: true,
-            timestamp: Date.now()
-        });
-        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即收到彈窗通知。").then(() => {
-            if (typeof window.goHome === 'function') window.goHome();
-        });
-    } catch (e) {
-        console.error("發布失敗", e);
-        window.SilenModal.alert("發布失敗，請檢查資料庫權限。");
-    }
-};
-
-window.revokeAnnouncement = async function() {
-    if (!window.isAdmin) return;
-    
-    window.SilenModal.confirm("確定要撤回當前公告嗎？\n(撤回後未讀玩家將不會再收到彈窗)").then(async agreed => {
-        if (agreed) {
-            try {
-                await set(ref(rtdb, 'system/announcement/visible'), false);
-                document.getElementById('admin-announce-title').value = '';
-                document.getElementById('admin-announce-content').value = '';
-                window.SilenModal.alert("公告已撤銷。");
-            } catch (e) {
-                console.error("撤回失敗", e);
+                localStorage.setItem('sv_custom_name', finalName);
+                window.SilenModal.alert("名稱已暫存於本機。 (提醒：若要同步至雲端排行榜，需確保 auth.js 雲端模組已串接)");
             }
         }
     });
 };
 
-// ==========================================
-// 賽季結算與徽章發放引擎 (Admin)
-// ==========================================
-window.settleLastSeason = function() {
-    if (!window.isAdmin) return;
-    window.SilenModal.prompt("請輸入要結算的賽季 (例如: 1) \n系統將為該賽季前三名發放徽章。", window.getCurrentWeekId().toString()).then(async input => {
-        if (!input) return;
-        const targetWeek = parseInt(input.trim());
-        if (isNaN(targetWeek) || targetWeek < 1) {
-            window.SilenModal.alert("請輸入有效的賽季數字。"); return;
-        }
+// ==========================================================================
+// 11. 片語專屬綜合練習模式
+// ==========================================================================
+let phrasePuzzleSource = [];
+let phrasePuzzleTemplate = [];
 
-        const settleRef = ref(rtdb, `system/settlement/week_${targetWeek}`);
-        const settleSnap = await get(settleRef);
-        if (settleSnap.exists() && settleSnap.val() === true) {
-            window.SilenModal.alert(`第 ${targetWeek} 賽季已經結算並發放過徽章了！`);
-            return;
-        }
+window.setupPhraseMasteryMode = function() {
+    let words = window.getPracticeWords(); 
+    if(!words || words.length === 0) return;
+    
+    masteryModeType = 'phrase'; 
+    pendingMasteredWords = []; 
+    
+    masteryPool = words.map(w => ({ 
+        en: w.en, zh: w.zh, level: 0, delay: 0, 
+        isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength,
+        bookId: w.bookId, mastered: w.mastered
+    })); 
+    masteryPool.sort(() => Math.random() - 0.5);
+    
+    const headerTitle = document.getElementById('mastery-header-title'); 
+    const progressBar = document.getElementById('mastery-progress-bar');
+    const l0Card = document.getElementById('mastery-l0-card'); 
+    const nextBtns = document.querySelectorAll('#view-mastery .btn:not(.btn-icon):not(.btn-outline)');
 
-        const lbRef = query(ref(rtdb, `leaderboard/week_${targetWeek}`), orderByChild('score'), limitToLast(3));
-        const snap = await get(lbRef);
-
-        if (!snap.exists()) {
-            window.SilenModal.alert(`第 ${targetWeek} 賽季無人參與。`);
-            return;
-        }
-
-        let winners = [];
-        snap.forEach(childSnap => {
-            winners.push({ uid: childSnap.key, ...childSnap.val() });
-        });
-        winners.reverse();
-
-        for (let i = 0; i < winners.length; i++) {
-            const winner = winners[i];
-            let rankText = (i === 0) ? '冠軍' : (i === 1) ? '亞軍' : '季軍';
-            let badgeColor = (i === 0) ? '#FFD700' : (i === 1) ? '#C0C0C0' : '#CD7F32';
-
-            const userBadgesRef = ref(rtdb, `users/${winner.uid}/badges`);
-            const ubSnap = await get(userBadgesRef);
-            let badges = ubSnap.exists() ? ubSnap.val() : [];
-            badges.push({
-                season: targetWeek,
-                name: `S${targetWeek} ${rankText}`,
-                color: badgeColor
-            });
-            await set(userBadgesRef, badges);
-        }
-
-        await set(settleRef, true);
-        
-        if (auth.currentUser) {
-            const myBadgeSnap = await get(ref(rtdb, `users/${auth.currentUser.uid}/badges`));
-            if (myBadgeSnap.exists() && window.renderMyBadges) {
-                window.renderMyBadges(myBadgeSnap.val());
-            }
-        }
-
-        window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！\n徽章已自動掛載至玩家個人主頁。`);
+    headerTitle.innerText = "片語綜合練習"; 
+    headerTitle.style.color = "#fff"; 
+    progressBar.style.background = "#fff"; 
+    l0Card.style.borderColor = "#444";
+    nextBtns.forEach(b => { 
+        b.style.background = "#fff";
+        b.style.borderColor = "#fff";
+        b.style.color = "#000";
+        b.classList.add('btn-next-big');
     });
+
+    const l0Btn = document.getElementById('mastery-btn-l0');
+    l0Btn.onclick = () => {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel(); 
+        currentMasteryTarget.level = 1; 
+        window.nextPhraseMasteryTurn();
+    };
+
+    const submitBtn = document.getElementById('mastery-btn-puzzle');
+    submitBtn.onclick = () => window.checkPhrasePuzzle(true);
+
+    window.switchView('mastery'); 
+    window.updateMasteryProgress(); 
+    window.nextPhraseMasteryTurn();
 };
 
-// ==========================================
-// 14. 玩家市場系統 (Player Market) Phase 2
-// ==========================================
+window.nextPhraseMasteryTurn = function() {
+    let targetLevel = 5; 
+    let mastered = masteryPool.filter(w => w.level === targetLevel).length;
+    document.getElementById('mastery-progress-bar').style.width = ((mastered / masteryPool.length) * 100) + '%';
+    document.getElementById('mastery-status-text').innerText = `精通進度: ${mastered} / ${masteryPool.length}`;
 
-window.currentPublishBookId = null;
-
-window.checkPublishLimit = async function() {
-    const user = auth.currentUser;
-    if (!user) return { canUpload: false, remaining: 0 };
-    try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-            let count = data.dailyUploadCount || 0;
-            let lastDate = data.lastUploadDate || '';
-            
-            if (lastDate !== today) {
-                count = 0;
-            }
-            return { canUpload: count < 3, remaining: 3 - count };
-        }
-        return { canUpload: true, remaining: 3 };
-    } catch(e) {
-        console.error("讀取額度失敗", e);
-        return { canUpload: false, remaining: 0 };
-    }
-};
-
-window.openPublishModal = function(bookId) {
-    if (typeof window.checkPublishLimit !== 'function') {
-        window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
-    }
-    const book = window.books.find(b => b.id === bookId);
-    if (!book) return;
-
-    if (book.words.length < 10) {
-        window.SilenModal.alert("單字本數量太少！\n為了維持市場品質，請至少包含 10 個單字後再上架。");
+    if (mastered === masteryPool.length) {
+        window.hideAllMasteryAreas(); 
+        document.getElementById('mastery-success-title').style.color = "#fff";
+        setDisplayState('mastery-success-area', true); 
+        window.finalizeMasterySession();
         return;
     }
 
-    window.currentPublishBookId = bookId;
-    document.getElementById('pub-book-name').innerText = book.name;
-    document.getElementById('pub-price').value = 100;
-    document.getElementById('pub-desc').value = '';
-    document.getElementById('btn-confirm-pub').disabled = true;
-    document.getElementById('pub-limit-text').innerText = "正在檢查每日額度...";
+    window.hideAllMasteryAreas();
     
-    const overlay = document.getElementById('silen-publish-overlay');
-    overlay.classList.remove('hidden');
-    void overlay.offsetWidth;
-    overlay.classList.add('show');
+    let l0 = masteryPool.filter(w => w.level === 0);
+    if (l0.length > 0) { 
+        currentMasteryTarget = l0[0]; 
+        window.showMasteryL0(currentMasteryTarget); 
+        return; 
+    }
+
+    let delayReady = masteryPool.filter(w => w.level === 4.9 || w.level === 3.9);
+    if (delayReady.length > 0) {
+        currentMasteryTarget = delayReady.sort(() => Math.random() - 0.5)[0];
+        window.showPhraseTyping(currentMasteryTarget, currentMasteryTarget.level === 4.9);
+        return;
+    }
+
+    let active = masteryPool.filter(w => w.level >= 1 && w.level <= 4 && Number.isInteger(w.level));
+    if (active.length > 0) {
+        currentMasteryTarget = active.sort(() => Math.random() - 0.5)[0];
+        if (currentMasteryTarget.level === 1) {
+            window.showPhraseMCQ(currentMasteryTarget, 'zh-to-en');
+        } else if (currentMasteryTarget.level === 2) {
+            window.showPhraseMCQ(currentMasteryTarget, 'en-to-zh');
+        } else if (currentMasteryTarget.level === 3) {
+            window.showPhrasePuzzle(currentMasteryTarget);
+        } else if (currentMasteryTarget.level === 4) {
+            window.showPhraseTyping(currentMasteryTarget, false);
+        }
+        return;
+    }
+
+    let waiting = masteryPool.filter(w => w.level === 4.5 || w.level === 3.5);
+    if (waiting.length > 0) {
+        let forceTarget = waiting[0]; 
+        forceTarget.level = forceTarget.level === 4.5 ? 4.9 : 3.9; 
+        currentMasteryTarget = forceTarget;
+        window.showPhraseTyping(currentMasteryTarget, true);
+        return;
+    }
+};
+
+window.showPhraseMCQ = function(word, mode) {
+    setDisplayState('mastery-mcq-area', true);
+    document.getElementById('mastery-mcq-badge').innerText = mode === 'zh-to-en' ? "Lv 1: 視覺辨識 (中選英)" : "Lv 2: 雙向語意 (英選中)";
+    document.getElementById('mastery-mcq-q').innerText = mode === 'zh-to-en' ? word.zh.join(' / ') : word.en;
     
-    window.checkPublishLimit().then(res => {
-        const txt = document.getElementById('pub-limit-text');
-        if (res.canUpload) {
-            txt.innerText = `今日上架額度剩餘: ${res.remaining} / 3`;
-            txt.style.color = '#4caf50';
-            document.getElementById('btn-confirm-pub').disabled = false;
+    let options = [word]; 
+    let distractors = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); 
+    options.push(...distractors.slice(0, 3));
+    
+    if (options.length < 4) { 
+        let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); 
+        options.push(...fallback.slice(0, 4 - options.length)); 
+    }
+    options = options.slice(0, 4).sort(() => Math.random() - 0.5);
+    
+    const optArea = document.getElementById('mastery-mcq-options'); 
+    optArea.innerHTML = '';
+    
+    options.forEach(opt => { 
+        let btn = document.createElement('button'); 
+        btn.className = 'btn-mcq'; 
+        btn.innerText = mode === 'zh-to-en' ? opt.en : opt.zh.join(' / '); 
+        btn.onclick = () => window.checkPhraseAnswer(opt.en === word.en); 
+        optArea.appendChild(btn); 
+    });
+};
+
+window.showPhrasePuzzle = function(word) {
+    setDisplayState('mastery-puzzle-area', true); 
+    document.getElementById('mastery-puzzle-badge').innerText = "Lv 3: 斷點拼圖";
+    document.getElementById('mastery-puzzle-q').innerText = word.zh.join(' / '); 
+    document.getElementById('mastery-puzzle-hint-display').innerText = ''; 
+    
+    puzzleUserAnswer = []; 
+    let enStr = word.en.toLowerCase();
+    let sourceTokens = [];
+    let ansTemplate = [];
+    
+    let i = 0;
+    let tokenIndex = 0;
+    while(i < enStr.length) {
+        if (enStr.slice(i, i+3) === '...') {
+            sourceTokens.push({ id: tokenIndex, char: '...', used: false });
+            ansTemplate.push({ isSpace: false, addSpaceAfter: false, char: '...' });
+            tokenIndex++; i += 3;
+        } else if (enStr[i] === ' ') {
+            if (ansTemplate.length > 0) ansTemplate[ansTemplate.length - 1].addSpaceAfter = true;
+            i++;
         } else {
-            txt.innerText = `今日上架額度已達上限 (3 / 3)，請明日再來！`;
-            txt.style.color = '#ff4444';
+            sourceTokens.push({ id: tokenIndex, char: enStr[i], used: false });
+            ansTemplate.push({ isSpace: false, addSpaceAfter: false, char: enStr[i] });
+            tokenIndex++; i++;
         }
+    }
+    
+    phrasePuzzleTemplate = ansTemplate;
+    for (let j = sourceTokens.length - 1; j > 0; j--) { 
+        const k = Math.floor(Math.random() * (j + 1)); 
+        [sourceTokens[j], sourceTokens[k]] = [sourceTokens[k], sourceTokens[j]]; 
+    }
+    phrasePuzzleSource = sourceTokens;
+    window.renderPhrasePuzzleBoard();
+};
+
+window.renderPhrasePuzzleBoard = function() {
+    const ansArea = document.getElementById('mastery-puzzle-ans'); 
+    const poolArea = document.getElementById('mastery-puzzle-pool');
+    ansArea.innerHTML = ''; poolArea.innerHTML = '';
+    
+    puzzleUserAnswer.forEach((letterObj, idx) => { 
+        const tile = document.createElement('div'); 
+        tile.className = 'letter-tile'; 
+        if (phrasePuzzleTemplate[idx] && phrasePuzzleTemplate[idx].addSpaceAfter) tile.classList.add('phrase-space');
+        tile.innerText = letterObj.char; 
+        tile.onclick = () => { 
+            puzzleUserAnswer[idx].used = false; 
+            puzzleUserAnswer.splice(idx, 1); 
+            window.renderPhrasePuzzleBoard(); 
+        }; 
+        ansArea.appendChild(tile); 
+    });
+    
+    if (puzzleUserAnswer.length < phrasePuzzleTemplate.length) { 
+        const placeholder = document.createElement('div'); 
+        placeholder.className = 'letter-tile empty'; 
+        if (phrasePuzzleTemplate[puzzleUserAnswer.length] && phrasePuzzleTemplate[puzzleUserAnswer.length].addSpaceAfter) {
+            placeholder.classList.add('phrase-space');
+        }
+        placeholder.innerText = '_'; 
+        ansArea.appendChild(placeholder); 
+    }
+    
+    phrasePuzzleSource.forEach(letterObj => { 
+        if (!letterObj.used) { 
+            const tile = document.createElement('div'); 
+            tile.className = 'letter-tile'; 
+            tile.innerText = letterObj.char; 
+            tile.onclick = () => { 
+                letterObj.used = true; 
+                puzzleUserAnswer.push(letterObj); 
+                window.renderPhrasePuzzleBoard(); 
+                window.checkPhrasePuzzle(false);
+            }; 
+            poolArea.appendChild(tile); 
+        } 
     });
 };
 
-window.closePublishModal = function() {
-    const overlay = document.getElementById('silen-publish-overlay');
-    overlay.classList.remove('show');
-    setTimeout(() => overlay.classList.add('hidden'), 200);
+window.checkPhrasePuzzle = function(forced = false) {
+    if(!currentMasteryTarget) return;
+    const currentString = puzzleUserAnswer.map(o => o.char).join('');
+    const targetString = phrasePuzzleTemplate.map(o => o.char).join('');
+    if (puzzleUserAnswer.length === phrasePuzzleTemplate.length || forced) {
+        window.checkPhraseAnswer(currentString === targetString);
+    }
 };
 
-window.confirmPublish = function() {
-    const price = parseInt(document.getElementById('pub-price').value);
-    const desc = document.getElementById('pub-desc').value.trim();
-    if (isNaN(price) || price < 50) {
-        window.SilenModal.alert("定價最低需為 50 點數。"); return;
-    }
-    if (!desc) {
-        window.SilenModal.alert("請輸入簡單的商品介紹。"); return;
+window.showPhraseTyping = function(word, isDelayed) {
+    setDisplayState('mastery-typing-area', true); 
+    document.getElementById('mastery-typing-badge').innerText = isDelayed ? "Lv 5: 延遲固化 (畢業評測)" : "Lv 4: 高容錯輸出";
+    document.getElementById('mastery-typing-q').innerText = word.zh.join(' / ');
+    
+    const input = document.getElementById('mastery-typing-input'); 
+    input.value = ''; 
+    setTimeout(() => input.focus(), 50); 
+    
+    input.onkeypress = (e) => { 
+        if(e.key === 'Enter') { 
+            e.preventDefault(); 
+            const val = input.value.trim().toLowerCase(); 
+            const target = word.en.toLowerCase(); 
+            
+            const normVal = val.replace(/\.{1,}/g, '...').replace(/\s+/g, ' ').trim();
+            const normTarget = target.replace(/\.{1,}/g, '...').replace(/\s+/g, ' ').trim();
+            
+            window.checkPhraseAnswer(normVal === normTarget);
+        } 
+    };
+};
+
+window.checkPhraseAnswer = function(isCorrect) {
+    window.hideAllMasteryAreas(); 
+    setDisplayState('mastery-feedback-area', true, 'flex');
+    
+    const icon = document.getElementById('mastery-fb-icon'); 
+    const status = document.getElementById('mastery-fb-status'); 
+    const msg = document.getElementById('mastery-fb-msg');
+    
+    document.getElementById('mastery-fb-ans').innerText = currentMasteryTarget.en + " (" + currentMasteryTarget.zh.join(' / ') + ")";
+    
+    window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); 
+    window.tickMasteryDelays(); 
+    
+    let lvl = currentMasteryTarget.level;
+
+    if (isCorrect) {
+        icon.innerText = '✔'; icon.className = 'big-icon icon-correct'; status.innerText = '正確'; status.className = 'result-status status-correct';
+        if (lvl === 0) { currentMasteryTarget.level = 1; msg.innerText = `升級至 Level 1 中選英。`; }
+        else if (lvl === 1) { currentMasteryTarget.level = 2; msg.innerText = `升級至 Level 2 英選中。`; } 
+        else if (lvl === 2) { currentMasteryTarget.level = 3; msg.innerText = `升級至 Level 3 斷點拼圖。`; } 
+        else if (lvl === 3) { currentMasteryTarget.level = 4; msg.innerText = `升級至 Level 4 高容錯輸出。`; } 
+        else if (lvl === 4) { currentMasteryTarget.level = 4.5; currentMasteryTarget.delay = delayWaitTurns; msg.innerText = `進入記憶固化潛伏期，系統稍後將觸發延遲評測。`; } 
+        else if (lvl === 4.9) { 
+            currentMasteryTarget.level = 5; 
+            let rw = window.calculateReward(currentMasteryTarget, 'Comp_Grad');
+            let extraMsg = "";
+            if (!rw.isMastered) {
+                window.bufferWordAsMastered(currentMasteryTarget);
+                extraMsg = rw.points > 0 ? ` (結算時將獲得 ${rw.points} 分)` : " (解鎖成就：已精通)";
+            } else { extraMsg = " (此片語已精通過，不再重複給予分數)"; }
+            msg.innerText = `通過延遲評測，該片語已完全精通！${extraMsg}`; 
+        }
+    } else {
+        icon.innerText = '✘'; icon.className = 'big-icon icon-wrong'; status.innerText = '錯誤'; status.className = 'result-status status-wrong';
+        currentMasteryTarget.level = 1; msg.innerText = "降級重回 Level 1 中選英。";
     }
     
-    const book = window.books.find(b => b.id === window.currentPublishBookId);
-    window.closePublishModal();
-    if (typeof window.executePublishToMarket === 'function') {
-        window.executePublishToMarket(book, price, desc);
-    }
+    const nextBtn = document.getElementById('mastery-btn-next');
+    nextBtn.onclick = () => window.nextPhraseMasteryTurn();
 };
 
-window.executePublishToMarket = async function(book, price, desc) {
-    const user = auth.currentUser;
-    if (!user) return;
+// ==========================================================================
+// 12. 詞性挑戰模式 (POS Challenge)
+// ==========================================================================
+window.setupPosMode = function() { 
+    let rawQueue = window.getPracticeWords(); 
+    if (!rawQueue || rawQueue.length === 0) return; 
     
-    window.SilenModal.alert("上架處理中，請稍候...");
-    try {
-        const userRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userRef);
-        let data = docSnap.exists() ? docSnap.data() : {};
-        const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-        
-        let count = data.dailyUploadCount || 0;
-        let lastDate = data.lastUploadDate || '';
-        
-        if (lastDate !== today) {
-            count = 0;
-        }
-        
-        if (count >= 3) {
-            window.SilenModal.alert("您今日的上架額度已用盡，請明日再來！");
-            return;
-        }
-        
-        const cleanWords = book.words.map(w => ({
-            en: w.en,
-            zh: w.zh,
-            pos: w.pos || ''
-        }));
+    practiceQueue = rawQueue.filter(w => w.pos && w.pos.trim() !== '');
+    
+    if (practiceQueue.length === 0) {
+        window.SilenModal.alert("目前選取的題庫中，沒有包含「詞性標記」的單字！\n\n提示：請先到題庫編輯區，或重新匯入帶有詞性的單字格式。");
+        return;
+    }
+    
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    
+    currentMode = 'pos'; 
+    currentCardIndex = 0; 
+    initialQueueLength = practiceQueue.length; 
+    completedCount = 0; 
+    
+    setDisplayState('pos-seq-badge', isSequentialMode, 'inline-block'); 
+    window.switchView('pos'); 
+    window.showPosNextCard(); 
+};
 
-        const marketRef = collection(db, "market_books");
-        await addDoc(marketRef, {
-            authorUid: user.uid,
-            authorName: user.displayName || '匿名玩家',
-            bookName: book.name,
-            description: desc,
-            price: price,
-            wordCount: cleanWords.length,
-            words: cleanWords,
-            salesCount: 0,
-            timestamp: Date.now()
-        });
-        
-        await updateDoc(userRef, {
-            dailyUploadCount: count + 1,
-            lastUploadDate: today
-        });
-        
-        window.SilenModal.alert("上架成功！\n您的單字簿已發布至玩家交易市場。").then(() => {
-            window.openMarket();
-        });
-        
-    } catch(e) {
-        console.error("上架失敗", e);
-        window.SilenModal.alert("上架失敗，請檢查網路連線。");
+window.showPosNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    
+    const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('pos-interaction-area', true, 'block'); 
+    setDisplayState('pos-feedback-area', false); 
+    
+    document.getElementById('pos-progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    
+    document.getElementById('pos-word-display').innerText = w.en; 
+    document.getElementById('pos-zh-display').innerText = w.zh.join(' / '); 
+    document.getElementById('pos-feedback-question-copy').innerText = w.en; 
+};
+
+window.checkPosAnswer = function(selectedPos) {
+    if (currentCardIndex >= practiceQueue.length) return;
+    const w = practiceQueue[currentCardIndex]; 
+    
+    const ans = selectedPos.toLowerCase().replace(/\./g, '').trim();
+    const correctPosArr = w.pos.toLowerCase().split(/[\/,;，；\s]+/).map(x => x.replace(/\./g, '').trim());
+    
+    let c = correctPosArr.includes(ans);
+    
+    lastAnswerCorrect = c; 
+    if (c && !w.scored) { 
+        w.scored = true; 
+        if (typeof window.addStorePoints === 'function') window.addStorePoints(10); 
+    }
+    
+    if (!c && !isSequentialMode) window.requeueWord(w); 
+    
+    setDisplayState('pos-interaction-area', false); 
+    setDisplayState('pos-feedback-area', true, 'flex'); 
+    
+    const i = document.getElementById('pos-feedback-icon'); 
+    const s = document.getElementById('pos-feedback-status'); 
+    document.getElementById('pos-feedback-answer').innerText = w.pos; 
+    
+    if (c) { 
+        i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; 
+    } else { 
+        i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; 
+    } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handlePosNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { 
+        window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showPosNextCard(); }); 
+    } else { 
+        currentCardIndex++; window.showPosNextCard(); 
     }
 };
 
-window.openMarket = async function() {
-    window.switchView('market');
-    const el = document.getElementById('market-my-score');
-    if(el) el.innerText = window.myStorePoints || 0;
+// ==========================================================================
+// 13. 單字擴充商城系統
+// ==========================================================================
+let purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || [];
 
-    const container = document.getElementById('market-catalog-area');
-    container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在從伺服器載入市場資料...</div>';
-
+window.openStore = async function() {
+    window.switchView('store');
+    document.getElementById('store-my-score').innerText = window.myStorePoints || 0;
+    
+    const container = document.getElementById('store-catalog-area');
+    container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至商城伺服器...</div>';
+    
     try {
-        const marketRef = collection(db, "market_books");
-        const q = fsQuery(marketRef, fsOrderBy("timestamp", "desc"), fsLimit(50));
-        const querySnapshot = await getDocs(q);
-
-        let books = [];
-        querySnapshot.forEach((docSnap) => {
-            books.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        window.renderMarketCatalog(books);
+        const res = await fetch("store_catalog.json?t=" + Date.now());
+        if (!res.ok) throw new Error("Catalog fetch failed");
+        const catalogData = await res.json();
+        window.renderStoreCatalog(catalogData);
     } catch (e) {
-        console.error("載入市場失敗", e);
-        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: #ff4444; letter-spacing: 1px;">載入失敗，請檢查網路連線或資料庫權限。</div>';
+        console.error(e);
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--error); letter-spacing: 1px;">載入失敗，請確認 store_catalog.json 是否已放在專案目錄中。</div>';
     }
 };
 
-window.renderMarketCatalog = function(marketBooks) {
-    const container = document.getElementById('market-catalog-area');
+window.currentCatalogData = [];
+
+window.renderStoreCatalog = function(catalogData) {
+    window.currentCatalogData = catalogData;
+    const container = document.getElementById('store-catalog-area');
     container.innerHTML = '';
 
-    if (marketBooks.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">目前市場上還沒有任何商品，快去上架第一本吧！</div>';
-        return;
-    }
-
-    marketBooks.forEach(book => {
+    catalogData.forEach(bundle => {
         const card = document.createElement('div');
         card.className = 'store-card';
         
-        const isOwned = window.books.some(b => b.marketId === book.id);
-        const myUid = auth.currentUser ? auth.currentUser.uid : '';
-
-        let btnHtml = '';
-        if (isOwned) {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>已擁有</button>`;
-        } else if (book.authorUid === myUid) {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>您的商品</button>`;
-        } else {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`;
-        }
-
-        const safeBookName = book.bookName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const safeAuthorName = book.authorName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const safeDesc = book.description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
+        let totalSubBundles = bundle.subBundles ? bundle.subBundles.length : 0;
+        
         card.innerHTML = `
             <div class="store-header">
-                <h4 class="store-title">${safeBookName}</h4>
-                <div style="font-size: 0.8rem; color: #ff9800; border: 1px solid #ff9800; padding: 2px 6px; border-radius: 4px;">銷量: ${book.salesCount || 0}</div>
+                <h4 class="store-title">${bundle.name}</h4>
             </div>
-            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px; display:flex; align-items:center; gap:5px;">
-                <span style="background:#222; padding:2px 8px; border-radius:10px;">創作者: ${safeAuthorName}</span>
-            </div>
-            <div class="store-desc">${safeDesc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${book.wordCount} 個單字)</span></div>
-            <div style="display: flex; justify-content: flex-end; align-items: center;">
-                ${btnHtml}
+            <div class="store-desc">${bundle.desc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(包含 ${totalSubBundles} 個主題單字包)</span></div>
+            <button class="btn" style="width: 100%; margin: 0; background: #222; color: #fff; border: 1px solid #444; font-weight: 500;" onclick="window.toggleSubBundles('${bundle.id}')">查看主題列表 ▾</button>
+            
+            <div id="sub-list-${bundle.id}" class="sub-bundle-container hidden">
             </div>
         `;
         container.appendChild(card);
+
+        const subContainer = document.getElementById(`sub-list-${bundle.id}`);
+        if (bundle.subBundles) {
+            bundle.subBundles.forEach(sub => {
+                const isInstalled = window.books.some(b => b.bundleId === sub.id);
+                const isPurchased = purchasedBundles.includes(sub.id);
+                
+                const subItem = document.createElement('div');
+                subItem.className = 'sub-bundle-item';
+                
+                let btnHtml = '';
+                if (isInstalled) {
+                    btnHtml = `<div style="font-size:0.8rem; color:#888;">已安裝</div>`;
+                } else if (isPurchased) {
+                    btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#fff; border:1px solid #555;" onclick="window.purchaseBundle('${sub.id}', 0, '${sub.name}')">重新下載</button>`;
+                } else {
+                    btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseBundle('${sub.id}', ${sub.price}, '${sub.name}')">${sub.price} pts</button>`;
+                }
+
+                subItem.innerHTML = `
+                    <div class="sub-bundle-info">
+                        <div class="sub-bundle-name">${sub.name}</div>
+                        <div class="sub-bundle-meta">共 ${sub.wordCount} 詞</div>
+                    </div>
+                    <div>${btnHtml}</div>
+                `;
+                subContainer.appendChild(subItem);
+            });
+        }
     });
 };
 
-window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
-    const user = auth.currentUser;
-    if (!user) {
-        window.SilenModal.alert("請先登入！"); return;
-    }
+window.toggleSubBundles = function(bundleId) {
+    const el = document.getElementById(`sub-list-${bundleId}`);
+    if (el) el.classList.toggle('hidden');
+};
 
+window.purchaseBundle = function(subBundleId, price, subBundleName) {
     if (window.myStorePoints < price) {
-        window.SilenModal.alert(`點數不足！\n\n購買此單字包需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
+        window.SilenModal.alert(`點數不足！\n\n解鎖此單字包需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
         return;
     }
 
-    window.SilenModal.confirm(`確定要花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
+    let confirmMsg = price > 0 ? `確定要花費 ${price} 點數解鎖「${subBundleName}」嗎？` : `確定要重新下載最新的「${subBundleName}」嗎？`;
+
+    window.SilenModal.confirm(confirmMsg).then(async agreed => {
         if (agreed) {
-            window.SilenModal.alert("交易處理中，請稍候...");
-
+            window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
+            
             try {
-                const docRef = doc(db, "market_books", marketBookId);
-                const docSnap = await getDoc(docRef);
-                if (!docSnap.exists()) {
-                    window.SilenModal.alert("此商品已不存在。"); return;
-                }
-                const bookData = docSnap.data();
-
-                window.myStorePoints -= price;
-                const el1 = document.getElementById('market-my-score');
-                const el2 = document.getElementById('store-my-score');
-                if(el1) el1.innerText = window.myStorePoints;
-                if(el2) el2.innerText = window.myStorePoints;
+                const res = await fetch(subBundleId + ".json?t=" + Date.now());
+                if (!res.ok) throw new Error("Bundle fetch failed");
+                const bundleData = await res.json();
                 
-                await set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+                if (price > 0) {
+                    window.myStorePoints -= price;
+                    document.getElementById('store-my-score').innerText = window.myStorePoints;
+                    if (typeof window.uploadScoreToCloud === 'function') {
+                        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints); 
+                    }
+                }
 
-                const sellerRevenue = Math.floor(price * 0.8);
-                const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
-                const sellerSnap = await get(sellerRef);
-                const currentSellerPoints = sellerSnap.exists() ? sellerSnap.val() : 0;
-                await set(sellerRef, currentSellerPoints + sellerRevenue);
-
-                await updateDoc(docRef, {
-                    salesCount: (bookData.salesCount || 0) + 1
-                });
+                if (!purchasedBundles.includes(subBundleId)) {
+                    purchasedBundles.push(subBundleId);
+                    localStorage.setItem('sv_purchased_bundles', JSON.stringify(purchasedBundles));
+                }
 
                 window.books.push({
                     id: Date.now(),
-                    name: bookData.bookName,
-                    tag: "玩家市集",
+                    name: subBundleName,
+                    tag: "官方擴充",
                     isGSAT: false,
                     isPhrase: false, 
-                    isStore: false, 
-                    marketId: marketBookId,
-                    words: bookData.words
+                    isStore: true,  
+                    bundleId: subBundleId,
+                    words: bundleData
                 });
 
-                window.saveData(); 
+                window.saveData();
+                window.renderStoreCatalog(window.currentCatalogData);
+                const parentBundleId = subBundleId.split('-')[0];
+                window.toggleSubBundles(parentBundleId);
                 
-                window.SilenModal.alert(`交易成功！\n\n「${bookName}」已加入您的題庫中。\n(賣家將獲得扣除 20% 稅金後的 ${sellerRevenue} 點數)`).then(() => {
-                    window.openMarket(); 
+                window.SilenModal.alert(`下載成功！\n\n「${subBundleName}」已加入您的擴充庫中。`).then(() => {
+                    window.setLibMode('store', '商城擴充庫');
+                    window.openBookSelect();
                 });
 
             } catch (e) {
-                console.error("交易失敗", e);
-                window.SilenModal.alert("交易失敗，請檢查網路連線。");
+                console.error(e);
+                window.SilenModal.alert(`下載失敗！\n無法獲取檔案：${subBundleId}.json\n請確認該檔案是否已放進專案目錄中。`);
             }
         }
     });
