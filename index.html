@@ -205,10 +205,15 @@
             </div>
         </div>
 
-        <div class="card" style="text-align: center; border-color: #ff9800; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
-            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
-            <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="market-my-score">0</span></div>
-            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(購買玩家上架商品將消耗您的商城點數)</p>
+        <div class="card" style="border-color: #ff9800; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="text-align: left;">
+                    <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
+                    <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="market-my-score">0</span></div>
+                </div>
+                <button class="btn btn-outline" style="margin: 0; border-color: #ff9800; color: #ff9800;" onclick="window.openPublishModal()">上架我的題庫</button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; margin-bottom: 0; letter-spacing: 0.5px; text-align: left;">(購買玩家上架商品將消耗您的商城點數)</p>
         </div>
 
         <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">玩家創作大廳</h3>
@@ -836,8 +841,12 @@
 
 <div id="silen-publish-overlay" class="hidden">
     <div class="silen-modal-box" style="max-width: 400px; text-align: left;">
-        <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">發布至玩家市場</h3>
-        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">目標題庫：<span id="pub-book-name" style="color:var(--text-main); font-weight:bold;"></span></p>
+        <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">發佈至玩家市場</h3>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">選擇要上架的題庫 (需大於10個單字)</label>
+            <select id="pub-book-select" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px; outline: none;">
+            </select>
+        </div>
         <div style="margin-bottom: 15px;">
             <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">市場定價 (最低 50，系統將抽成 20%)</label>
             <input type="number" id="pub-price" value="100" min="50" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px;">
@@ -856,8 +865,8 @@
     </div>
 </div>
 
-<script src="app.js?v=1028"></script>
-<script type="module" src="auth.js?v=1027"></script>
+<script src="app.js?v=1029"></script>
+<script type="module" src="auth.js?v=1028"></script>
 
 </body>
 </html>
