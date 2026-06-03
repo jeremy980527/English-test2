@@ -3,7 +3,7 @@
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
@@ -106,7 +106,6 @@ async function syncFromCloud(uid) {
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
             }
         } else {
-            console.log("偵測到新註冊帳戶，進行雲端檔案初始化...");
             if (window.books && window.books.length > 0) {
                 syncToCloud(uid, window.books);
             }
@@ -123,7 +122,6 @@ async function syncToCloud(uid, booksData) {
             books: booksData,
             lastUpdated: new Date().toISOString()
         }, { merge: true });
-        console.log("進度已備份至雲端。");
     } catch (error) {
         console.error("雲端備份錯誤:", error);
     }
@@ -571,4 +569,155 @@ window.settleLastSeason = function() {
 
         window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！\n徽章已自動掛載至玩家個人主頁。`);
     });
+};
+
+// ==========================================
+// 14. 玩家市場系統 (Player Market)
+// ==========================================
+
+window.currentPublishBookId = null;
+
+window.checkPublishLimit = async function() {
+    const user = auth.currentUser;
+    if (!user) return { canUpload: false, remaining: 0 };
+    try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+            let count = data.dailyUploadCount || 0;
+            let lastDate = data.lastUploadDate || '';
+            
+            if (lastDate !== today) {
+                count = 0;
+            }
+            return { canUpload: count < 3, remaining: 3 - count };
+        }
+        return { canUpload: true, remaining: 3 };
+    } catch(e) {
+        console.error("讀取額度失敗", e);
+        return { canUpload: false, remaining: 0 };
+    }
+};
+
+window.openPublishModal = function(bookId) {
+    if (typeof window.checkPublishLimit !== 'function') {
+        window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
+    }
+    const book = window.books.find(b => b.id === bookId);
+    if (!book) return;
+
+    if (book.words.length < 10) {
+        window.SilenModal.alert("單字本數量太少！\n為了維持市場品質，請至少包含 10 個單字後再上架。");
+        return;
+    }
+
+    window.currentPublishBookId = bookId;
+    document.getElementById('pub-book-name').innerText = book.name;
+    document.getElementById('pub-price').value = 100;
+    document.getElementById('pub-desc').value = '';
+    document.getElementById('btn-confirm-pub').disabled = true;
+    document.getElementById('pub-limit-text').innerText = "正在檢查每日額度...";
+    
+    const overlay = document.getElementById('silen-publish-overlay');
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.classList.add('show');
+    
+    window.checkPublishLimit().then(res => {
+        const txt = document.getElementById('pub-limit-text');
+        if (res.canUpload) {
+            txt.innerText = `今日上架額度剩餘: ${res.remaining} / 3`;
+            txt.style.color = '#4caf50';
+            document.getElementById('btn-confirm-pub').disabled = false;
+        } else {
+            txt.innerText = `今日上架額度已達上限 (3 / 3)，請明日再來！`;
+            txt.style.color = '#ff4444';
+        }
+    });
+};
+
+window.closePublishModal = function() {
+    const overlay = document.getElementById('silen-publish-overlay');
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.classList.add('hidden'), 200);
+};
+
+window.confirmPublish = function() {
+    const price = parseInt(document.getElementById('pub-price').value);
+    const desc = document.getElementById('pub-desc').value.trim();
+    if (isNaN(price) || price < 50) {
+        window.SilenModal.alert("定價最低需為 50 點數。"); return;
+    }
+    if (!desc) {
+        window.SilenModal.alert("請輸入簡單的商品介紹。"); return;
+    }
+    
+    const book = window.books.find(b => b.id === window.currentPublishBookId);
+    window.closePublishModal();
+    if (typeof window.executePublishToMarket === 'function') {
+        window.executePublishToMarket(book, price, desc);
+    }
+};
+
+window.executePublishToMarket = async function(book, price, desc) {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    window.SilenModal.alert("上架處理中，請稍候...");
+    try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        let data = docSnap.exists() ? docSnap.data() : {};
+        const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+        
+        let count = data.dailyUploadCount || 0;
+        let lastDate = data.lastUploadDate || '';
+        
+        if (lastDate !== today) {
+            count = 0;
+        }
+        
+        if (count >= 3) {
+            window.SilenModal.alert("您今日的上架額度已用盡，請明日再來！");
+            return;
+        }
+        
+        const cleanWords = book.words.map(w => ({
+            en: w.en,
+            zh: w.zh,
+            pos: w.pos || ''
+        }));
+
+        const marketRef = collection(db, "market_books");
+        await addDoc(marketRef, {
+            authorUid: user.uid,
+            authorName: user.displayName || '匿名玩家',
+            bookName: book.name,
+            description: desc,
+            price: price,
+            wordCount: cleanWords.length,
+            words: cleanWords,
+            salesCount: 0,
+            timestamp: Date.now()
+        });
+        
+        await updateDoc(userRef, {
+            dailyUploadCount: count + 1,
+            lastUploadDate: today
+        });
+        
+        window.SilenModal.alert("上架成功！\n您的單字簿已發布至玩家交易市場。");
+        
+    } catch(e) {
+        console.error("上架失敗", e);
+        window.SilenModal.alert("上架失敗，請檢查網路連線。");
+    }
+};
+
+window.openMarket = function() {
+    window.switchView('market');
+    const el = document.getElementById('market-my-score');
+    if(el) el.innerText = window.myStorePoints || 0;
 };
