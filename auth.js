@@ -3,7 +3,7 @@
 // =====================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
@@ -106,6 +106,7 @@ async function syncFromCloud(uid) {
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
             }
         } else {
+            console.log("偵測到新註冊帳戶，進行雲端檔案初始化...");
             if (window.books && window.books.length > 0) {
                 syncToCloud(uid, window.books);
             }
@@ -572,7 +573,7 @@ window.settleLastSeason = function() {
 };
 
 // ==========================================
-// 14. 玩家市場系統 (Player Market)
+// 14. 玩家市場系統 (Player Market) Phase 2
 // ==========================================
 
 window.currentPublishBookId = null;
@@ -708,7 +709,9 @@ window.executePublishToMarket = async function(book, price, desc) {
             lastUploadDate: today
         });
         
-        window.SilenModal.alert("上架成功！\n您的單字簿已發布至玩家交易市場。");
+        window.SilenModal.alert("上架成功！\n您的單字簿已發布至玩家交易市場。").then(() => {
+            window.openMarket();
+        });
         
     } catch(e) {
         console.error("上架失敗", e);
@@ -716,8 +719,139 @@ window.executePublishToMarket = async function(book, price, desc) {
     }
 };
 
-window.openMarket = function() {
+window.openMarket = async function() {
     window.switchView('market');
     const el = document.getElementById('market-my-score');
     if(el) el.innerText = window.myStorePoints || 0;
+
+    const container = document.getElementById('market-catalog-area');
+    container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在從伺服器載入市場資料...</div>';
+
+    try {
+        const marketRef = collection(db, "market_books");
+        const q = fsQuery(marketRef, fsOrderBy("timestamp", "desc"), fsLimit(50));
+        const querySnapshot = await getDocs(q);
+
+        let books = [];
+        querySnapshot.forEach((docSnap) => {
+            books.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        window.renderMarketCatalog(books);
+    } catch (e) {
+        console.error("載入市場失敗", e);
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: #ff4444; letter-spacing: 1px;">載入失敗，請檢查網路連線或資料庫權限。</div>';
+    }
+};
+
+window.renderMarketCatalog = function(marketBooks) {
+    const container = document.getElementById('market-catalog-area');
+    container.innerHTML = '';
+
+    if (marketBooks.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">目前市場上還沒有任何商品，快去上架第一本吧！</div>';
+        return;
+    }
+
+    marketBooks.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'store-card';
+        
+        const isOwned = window.books.some(b => b.marketId === book.id);
+        const myUid = auth.currentUser ? auth.currentUser.uid : '';
+
+        let btnHtml = '';
+        if (isOwned) {
+            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>已擁有</button>`;
+        } else if (book.authorUid === myUid) {
+            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>您的商品</button>`;
+        } else {
+            btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`;
+        }
+
+        const safeBookName = book.bookName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeAuthorName = book.authorName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const safeDesc = book.description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        card.innerHTML = `
+            <div class="store-header">
+                <h4 class="store-title">${safeBookName}</h4>
+                <div style="font-size: 0.8rem; color: #ff9800; border: 1px solid #ff9800; padding: 2px 6px; border-radius: 4px;">銷量: ${book.salesCount || 0}</div>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px; display:flex; align-items:center; gap:5px;">
+                <span style="background:#222; padding:2px 8px; border-radius:10px;">創作者: ${safeAuthorName}</span>
+            </div>
+            <div class="store-desc">${safeDesc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${book.wordCount} 個單字)</span></div>
+            <div style="display: flex; justify-content: flex-end; align-items: center;">
+                ${btnHtml}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+};
+
+window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
+    const user = auth.currentUser;
+    if (!user) {
+        window.SilenModal.alert("請先登入！"); return;
+    }
+
+    if (window.myStorePoints < price) {
+        window.SilenModal.alert(`點數不足！\n\n購買此單字包需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
+        return;
+    }
+
+    window.SilenModal.confirm(`確定要花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
+        if (agreed) {
+            window.SilenModal.alert("交易處理中，請稍候...");
+
+            try {
+                const docRef = doc(db, "market_books", marketBookId);
+                const docSnap = await getDoc(docRef);
+                if (!docSnap.exists()) {
+                    window.SilenModal.alert("此商品已不存在。"); return;
+                }
+                const bookData = docSnap.data();
+
+                window.myStorePoints -= price;
+                const el1 = document.getElementById('market-my-score');
+                const el2 = document.getElementById('store-my-score');
+                if(el1) el1.innerText = window.myStorePoints;
+                if(el2) el2.innerText = window.myStorePoints;
+                
+                await set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+
+                const sellerRevenue = Math.floor(price * 0.8);
+                const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
+                const sellerSnap = await get(sellerRef);
+                const currentSellerPoints = sellerSnap.exists() ? sellerSnap.val() : 0;
+                await set(sellerRef, currentSellerPoints + sellerRevenue);
+
+                await updateDoc(docRef, {
+                    salesCount: (bookData.salesCount || 0) + 1
+                });
+
+                window.books.push({
+                    id: Date.now(),
+                    name: bookData.bookName,
+                    tag: "玩家市集",
+                    isGSAT: false,
+                    isPhrase: false, 
+                    isStore: false, 
+                    marketId: marketBookId,
+                    words: bookData.words
+                });
+
+                window.saveData(); 
+                
+                window.SilenModal.alert(`交易成功！\n\n「${bookName}」已加入您的題庫中。\n(賣家將獲得扣除 20% 稅金後的 ${sellerRevenue} 點數)`).then(() => {
+                    window.openMarket(); 
+                });
+
+            } catch (e) {
+                console.error("交易失敗", e);
+                window.SilenModal.alert("交易失敗，請檢查網路連線。");
+            }
+        }
+    });
 };
