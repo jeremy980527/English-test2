@@ -194,9 +194,6 @@
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 玩家交易市場 (Market View) -->
-    <!-- ========================================================= -->
     <div id="view-market" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
@@ -205,15 +202,14 @@
             </div>
         </div>
 
-        <div class="card" style="border-color: #ff9800; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="text-align: left;">
-                    <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
-                    <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="market-my-score">0</span></div>
-                </div>
-                <button class="btn btn-outline" style="margin: 0; border-color: #ff9800; color: #ff9800;" onclick="window.openPublishModal()">上架我的題庫</button>
+        <div class="card" style="text-align: center; border-color: #ff9800; background: var(--card-bg); padding: 25px 20px; margin-bottom: 30px;">
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; letter-spacing: 1px;">目前可用商城點數</div>
+            <div style="font-size: 2.2rem; font-weight: bold; color: var(--text-main); font-family: 'Courier New', Courier, monospace;"><span id="market-my-score">0</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 10px; letter-spacing: 0.5px;">(購買玩家上架商品將消耗您的商城點數)</p>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #444;">
+                <button class="btn btn-outline" style="width: 100%; margin: 0; border-color: #ff9800; color: #ff9800; font-size: 0.95rem; letter-spacing: 1px;" onclick="window.switchView('book-select'); window.renderBookList();">前往單字庫選擇上架題庫</button>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-sub); margin-top: 15px; margin-bottom: 0; letter-spacing: 0.5px; text-align: left;">(購買玩家上架商品將消耗您的商城點數)</p>
         </div>
 
         <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">玩家創作大廳</h3>
@@ -834,19 +830,14 @@
 
 </div>
 
-<!-- 彈窗模組 -->
 <div id="silen-modal-overlay" class="hidden"><div class="silen-modal-box"><div id="silen-modal-msg" class="silen-modal-msg"></div><input type="text" id="silen-modal-input" class="hidden"><textarea id="silen-modal-textarea" class="hidden"></textarea><div class="silen-modal-actions"><button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden">取消</button><button id="silen-modal-btn-confirm" class="btn btn-small">確認</button></div></div></div>
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%; background: #fff; color: #000;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
 
 <div id="silen-publish-overlay" class="hidden">
     <div class="silen-modal-box" style="max-width: 400px; text-align: left;">
-        <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">發佈至玩家市場</h3>
-        <div style="margin-bottom: 15px;">
-            <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">選擇要上架的題庫 (需大於10個單字)</label>
-            <select id="pub-book-select" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px; outline: none;">
-            </select>
-        </div>
+        <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">發布至玩家市場</h3>
+        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">目標題庫：<span id="pub-book-name" style="color:var(--text-main); font-weight:bold;"></span></p>
         <div style="margin-bottom: 15px;">
             <label style="font-size: 0.8rem; color: var(--text-sub); display: block; margin-bottom: 5px;">市場定價 (最低 50，系統將抽成 20%)</label>
             <input type="number" id="pub-price" value="100" min="50" style="width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border); color: #fff; border-radius: 6px;">
@@ -865,8 +856,8 @@
     </div>
 </div>
 
-<script src="app.js?v=1029"></script>
-<script type="module" src="auth.js?v=1028"></script>
+<script src="app.js?v=1030"></script>
+<script type="module" src="auth.js?v=1029"></script>
 
 </body>
 </html>
