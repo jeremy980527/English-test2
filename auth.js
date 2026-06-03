@@ -99,12 +99,6 @@ async function syncFromCloud(uid) {
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             
-            if (cloudData.isAdmin === true) {
-                window.isAdmin = true;
-                const adminBtn = document.getElementById('sidebar-admin-btn');
-                if (adminBtn) adminBtn.style.display = 'block';
-            }
-
             if (cloudData && cloudData.books) {
                 window.books = cloudData.books;
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
@@ -192,8 +186,9 @@ onAuthStateChanged(auth, (user) => {
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `users/${user.uid}/totalScore`)),
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
-            get(ref(rtdb, `users/${user.uid}/isAdmin`))
-        ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdmin]) => {
+            get(ref(rtdb, `users/${user.uid}/isAdmin`)),
+            get(doc(db, "users", user.uid))
+        ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
             const currentRank = snapRank.exists() ? snapRank.val() : 0;
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
@@ -211,10 +206,16 @@ onAuthStateChanged(auth, (user) => {
                 set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
             }
 
-            if (snapAdmin.exists() && snapAdmin.val() === true) {
+            let hasAdminPrivilege = false;
+            if (snapAdminRtdb.exists() && snapAdminRtdb.val() === true) hasAdminPrivilege = true;
+            if (docSnapAdminDb.exists() && docSnapAdminDb.data().isAdmin === true) hasAdminPrivilege = true;
+
+            if (hasAdminPrivilege) {
                 window.isAdmin = true;
                 const adminBtn = document.getElementById('sidebar-admin-btn');
                 if (adminBtn) adminBtn.style.display = 'block';
+            } else {
+                window.isAdmin = false;
             }
         });
 
@@ -360,26 +361,40 @@ window.updateCloudUserName = async function(newName) {
 };
 
 // ==========================================
-// 系統全伺服器即時公告系統 (Admin & Global)
+// 系統全伺服器即時彈窗公告系統 (Admin & Global)
 // ==========================================
+window.pendingAnnouncement = null;
+
+window.showAnnouncementModal = function(data) {
+    localStorage.setItem('sv_last_seen_announcement', data.timestamp);
+    window.pendingAnnouncement = null;
+    window.SilenModal.alert(`[系統公告] ${data.title}\n\n${data.content}`);
+};
+
 const announcementRef = ref(rtdb, 'system/announcement');
 onValue(announcementRef, (snap) => {
     const data = snap.val();
-    const card = document.getElementById('home-announcement-card');
     
     if (data && data.visible) {
-        if (card) {
-            card.classList.remove('hidden');
-            document.getElementById('announcement-title').innerText = '[系統公告] ' + data.title;
-            document.getElementById('announcement-content').innerText = data.content;
-            
-            const titleInput = document.getElementById('admin-announce-title');
-            const contentInput = document.getElementById('admin-announce-content');
-            if (titleInput && !titleInput.value) titleInput.value = data.title;
-            if (contentInput && !contentInput.value) contentInput.value = data.content;
+        const lastSeen = parseInt(localStorage.getItem('sv_last_seen_announcement')) || 0;
+        
+        if (data.timestamp > lastSeen) {
+            const homeView = document.getElementById('view-home');
+            const isHome = homeView && !homeView.classList.contains('hidden');
+
+            if (isHome) {
+                window.showAnnouncementModal(data);
+            } else {
+                window.pendingAnnouncement = data;
+            }
         }
+        
+        const titleInput = document.getElementById('admin-announce-title');
+        const contentInput = document.getElementById('admin-announce-content');
+        if (titleInput && !titleInput.value) titleInput.value = data.title;
+        if (contentInput && !contentInput.value) contentInput.value = data.content;
     } else {
-        if (card) card.classList.add('hidden');
+        window.pendingAnnouncement = null;
     }
 });
 
@@ -403,7 +418,7 @@ window.publishAnnouncement = async function() {
             visible: true,
             timestamp: Date.now()
         });
-        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即看到此訊息。").then(() => window.goHome());
+        window.SilenModal.alert("公告已成功全服廣播！\n\n所有在線玩家將立即收到彈窗通知。").then(() => window.goHome());
     } catch (e) {
         console.error("發布失敗", e);
         window.SilenModal.alert("發布失敗，請檢查資料庫權限。");
@@ -413,7 +428,7 @@ window.publishAnnouncement = async function() {
 window.revokeAnnouncement = async function() {
     if (!window.isAdmin) return;
     
-    window.SilenModal.confirm("確定要撤回當前公告嗎？\n(撤回後所有玩家首頁的公告將瞬間消失)").then(async agreed => {
+    window.SilenModal.confirm("確定要撤回當前公告嗎？\n(撤回後未讀玩家將不會再收到彈窗)").then(async agreed => {
         if (agreed) {
             try {
                 await set(ref(rtdb, 'system/announcement/visible'), false);
