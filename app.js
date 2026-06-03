@@ -164,7 +164,7 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin'];
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -538,9 +538,24 @@ window.renderBookList = function() {
                     div.appendChild(wrapper); 
                     div.appendChild(actionContainer);
                 } else {
-                    const editBtn = document.createElement('button'); editBtn.className = 'btn-icon edit-btn'; editBtn.innerHTML = '編輯'; 
+                    const actionContainer = document.createElement('div');
+                    actionContainer.style.cssText = 'display: flex; gap: 8px;';
+                    
+                    const pubBtn = document.createElement('button');
+                    pubBtn.className = 'btn-icon edit-btn';
+                    pubBtn.innerHTML = '發布';
+                    pubBtn.style.color = '#ff9800';
+                    pubBtn.onclick = (e) => { e.stopPropagation(); window.openPublishModal(book.id); };
+                    actionContainer.appendChild(pubBtn);
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'btn-icon edit-btn';
+                    editBtn.innerHTML = '編輯'; 
                     editBtn.onclick = (e) => { e.stopPropagation(); window.openEditBook(book.id); };
-                    div.appendChild(wrapper); div.appendChild(editBtn);
+                    actionContainer.appendChild(editBtn);
+
+                    div.appendChild(wrapper);
+                    div.appendChild(actionContainer);
                 }
                 
                 div.onclick = () => {
