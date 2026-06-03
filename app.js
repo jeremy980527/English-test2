@@ -1651,18 +1651,10 @@ window.openPublicProfile = function(user) {
     }
     
     const badgeContainer = document.getElementById('public-badges-container');
-    badgeContainer.innerHTML = '';
-    
-    if (user.badges && user.badges.length > 0) {
-        user.badges.forEach(badge => {
-            const slot = document.createElement('div');
-            slot.className = 'badge-slot';
-            slot.style.border = 'none';
-            slot.innerHTML = `<img src="${badge.iconUrl}" class="badge-img" title="${badge.name}">`;
-            badgeContainer.appendChild(slot);
-        });
-    } else {
-        badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
+    badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">載入徽章中...</div>';
+
+    if (typeof window.fetchPublicBadges === 'function') {
+        window.fetchPublicBadges(user.uid);
     }
 
     window.switchView('public-profile');
