@@ -180,7 +180,6 @@ onAuthStateChanged(auth, (user) => {
 
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
-        // 修復：正確使用 getDoc 獲取 Firestore 資料，並加入 catch 防呆機制
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
@@ -219,9 +218,12 @@ onAuthStateChanged(auth, (user) => {
             }
 
         }).catch(err => {
-            console.error("資料庫拉取分數或權限時發生錯誤，改為使用預設值:", err);
+            console.error("資料庫讀取異常", err);
         }).finally(() => {
-            // 確保無論 Promise 成功或失敗，這兩行都一定會執行，解除黑屏危機
+            get(ref(rtdb, `users/${user.uid}/badges`)).then(snap => {
+                window.renderMyBadges(snap.exists() ? snap.val() : []);
+            });
+
             syncFromCloud(user.uid);
             if (!window.isGuestMode && !hasShareLink) {
                 if (typeof window.goHome === 'function') window.goHome();
@@ -239,6 +241,66 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
+
+// =====================================
+// 個人主頁與公有主頁的徽章渲染引擎
+// =====================================
+window.renderMyBadges = function(badges) {
+    const container = document.getElementById('profile-badges-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!badges || badges.length === 0) {
+        container.innerHTML = '<div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div>';
+        return;
+    }
+    
+    badges.forEach(b => {
+        const slot = document.createElement('div');
+        slot.className = 'badge-slot';
+        slot.style.border = `2px solid ${b.color}`;
+        slot.style.color = b.color;
+        slot.style.fontWeight = 'bold';
+        slot.style.fontSize = '0.8rem';
+        slot.style.display = 'flex';
+        slot.style.flexDirection = 'column';
+        slot.style.lineHeight = '1.4';
+        
+        const lines = b.name.split(' ');
+        slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
+        container.appendChild(slot);
+    });
+};
+
+window.fetchPublicBadges = async function(uid) {
+    const badgeContainer = document.getElementById('public-badges-container');
+    try {
+        const snap = await get(ref(rtdb, `users/${uid}/badges`));
+        badgeContainer.innerHTML = '';
+        if (snap.exists() && snap.val().length > 0) {
+            const badges = snap.val();
+            badges.forEach(b => {
+                const slot = document.createElement('div');
+                slot.className = 'badge-slot';
+                slot.style.border = `2px solid ${b.color}`;
+                slot.style.color = b.color;
+                slot.style.fontWeight = 'bold';
+                slot.style.fontSize = '0.8rem';
+                slot.style.display = 'flex';
+                slot.style.flexDirection = 'column';
+                slot.style.lineHeight = '1.4';
+                
+                const lines = b.name.split(' ');
+                slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
+                badgeContainer.appendChild(slot);
+            });
+        } else {
+            badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
+        }
+    } catch(e) {
+        badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>';
+    }
+};
 
 // =====================================
 // 雲端短網址分享機制核心
@@ -446,5 +508,67 @@ window.revokeAnnouncement = async function() {
                 console.error("撤回失敗", e);
             }
         }
+    });
+};
+
+// ==========================================
+// 賽季結算與徽章發放引擎 (Admin)
+// ==========================================
+window.settleLastSeason = function() {
+    if (!window.isAdmin) return;
+    window.SilenModal.prompt("請輸入要結算的賽季 (例如: 1) \n系統將為該賽季前三名發放徽章。", window.getCurrentWeekId().toString()).then(async input => {
+        if (!input) return;
+        const targetWeek = parseInt(input.trim());
+        if (isNaN(targetWeek) || targetWeek < 1) {
+            window.SilenModal.alert("請輸入有效的賽季數字。"); return;
+        }
+
+        const settleRef = ref(rtdb, `system/settlement/week_${targetWeek}`);
+        const settleSnap = await get(settleRef);
+        if (settleSnap.exists() && settleSnap.val() === true) {
+            window.SilenModal.alert(`第 ${targetWeek} 賽季已經結算並發放過徽章了！`);
+            return;
+        }
+
+        const lbRef = query(ref(rtdb, `leaderboard/week_${targetWeek}`), orderByChild('score'), limitToLast(3));
+        const snap = await get(lbRef);
+
+        if (!snap.exists()) {
+            window.SilenModal.alert(`第 ${targetWeek} 賽季無人參與。`);
+            return;
+        }
+
+        let winners = [];
+        snap.forEach(childSnap => {
+            winners.push({ uid: childSnap.key, ...childSnap.val() });
+        });
+        winners.reverse();
+
+        for (let i = 0; i < winners.length; i++) {
+            const winner = winners[i];
+            let rankText = (i === 0) ? '冠軍' : (i === 1) ? '亞軍' : '季軍';
+            let badgeColor = (i === 0) ? '#FFD700' : (i === 1) ? '#C0C0C0' : '#CD7F32';
+
+            const userBadgesRef = ref(rtdb, `users/${winner.uid}/badges`);
+            const ubSnap = await get(userBadgesRef);
+            let badges = ubSnap.exists() ? ubSnap.val() : [];
+            badges.push({
+                season: targetWeek,
+                name: `S${targetWeek} ${rankText}`,
+                color: badgeColor
+            });
+            await set(userBadgesRef, badges);
+        }
+
+        await set(settleRef, true);
+        
+        if (auth.currentUser) {
+            const myBadgeSnap = await get(ref(rtdb, `users/${auth.currentUser.uid}/badges`));
+            if (myBadgeSnap.exists() && window.renderMyBadges) {
+                window.renderMyBadges(myBadgeSnap.val());
+            }
+        }
+
+        window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！\n徽章已自動掛載至玩家個人主頁。`);
     });
 };
