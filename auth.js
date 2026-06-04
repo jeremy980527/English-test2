@@ -191,10 +191,25 @@ onAuthStateChanged(auth, (user) => {
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
             const lbScore = snapLb.exists() ? snapLb.val() : 0;
             
-            // 【修復核心】：將總積分與本週賽季積分徹底分離
+            // 將總積分與本週賽季積分分離
             window.myRankPoints = Math.max(currentRank, oldTotalScore);
             window.mySeasonRankPoints = lbScore; 
             window.myStorePoints = Math.max(currentStore, oldTotalScore);
+
+            // 【終極修復】：自我淨化機制 (Auto-Healing)
+            // 如果從資料庫抓下來的賽季分數，竟然大於生涯總分，絕對是上一版疊加 Bug 的殘留數據！
+            if (window.mySeasonRankPoints > window.myRankPoints) {
+                console.log("偵測到異常賽季分數，執行淨化重置...");
+                window.mySeasonRankPoints = 0; // 強制將本季分數歸零
+                
+                // 立即覆蓋雲端錯誤的排行榜數據，消滅 11575 這種離譜數字
+                set(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}`), {
+                    name: user.displayName || '匿名者',
+                    photo: user.photoURL || '',
+                    score: 0,
+                    timestamp: Date.now()
+                });
+            }
 
             if (elRank) elRank.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
