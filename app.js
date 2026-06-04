@@ -1543,7 +1543,6 @@ window.addEventListener('load', () => {
 // 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
 window.myRankPoints = 0;
-window.mySeasonRankPoints = 0; // 【核心修復點】：新增賽季獨立計分變數
 window.myStorePoints = 0;
 window.lastRankScoreTime = 0;
 window.lastStoreScoreTime = 0;
@@ -1551,9 +1550,9 @@ window.lastStoreScoreTime = 0;
 window.showScoringRules = function() {
     window.SilenModal.alert(
         "雙軌賽季計分規則\n\n" +
-        "[牌位積分] (影響排行榜)\n" +
-        "只能透過綜合精通模式與連結力訓練獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
-        "[商城點數] (用於商城擴充)\n" +
+        "[牌位積分] (每週賽季)\n" +
+        "每個賽季將從 0 開始計算。只能透過綜合精通模式與連結力訓練獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
+        "[商城點數] (終身累計)\n" +
         "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫選購！"
     );
 };
@@ -1572,14 +1571,14 @@ window.addRankPoints = function(points, force = false) {
     if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
     window.lastRankScoreTime = now;
 
+    // 牌位積分 = 絕對的本季積分
     window.myRankPoints += points;
-    window.mySeasonRankPoints = (window.mySeasonRankPoints || 0) + points; // 【核心修復點】：同步增加賽季分數
 
     const elTotal = document.getElementById('stat-rank-score');
     if (elTotal) elTotal.innerText = window.myRankPoints;
 
     const elSeason = document.getElementById('lb-my-score');
-    if (elSeason) elSeason.innerText = window.mySeasonRankPoints; // 排行榜顯示賽季分數
+    if (elSeason) elSeason.innerText = window.myRankPoints;
 
     if (typeof window.uploadScoreToCloud === 'function') {
         window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
@@ -1691,8 +1690,6 @@ window.editUserName = function() {
         }
     });
 };
-
-
 
 // ==========================================================================
 // 11. 片語專屬綜合練習模式
