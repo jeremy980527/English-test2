@@ -191,8 +191,10 @@ onAuthStateChanged(auth, (user) => {
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
             const lbScore = snapLb.exists() ? snapLb.val() : 0;
             
-            window.myRankPoints = Math.max(currentRank, oldTotalScore, lbScore);
-            window.myStorePoints = Math.max(currentStore, oldTotalScore, lbScore);
+            // 【修復核心】：將總積分與本週賽季積分徹底分離
+            window.myRankPoints = Math.max(currentRank, oldTotalScore);
+            window.mySeasonRankPoints = lbScore; 
+            window.myStorePoints = Math.max(currentStore, oldTotalScore);
 
             if (elRank) elRank.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
@@ -343,10 +345,11 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
+        // 【修復核心】：上傳時強制只上傳獨立的「本季分數」，不再將生涯積分覆蓋上去
         await set(lbRef, {
             name: currentUser.displayName || '匿名者',
             photo: currentUser.photoURL || '',
-            score: rankPoints,
+            score: window.mySeasonRankPoints || 0,
             timestamp: Date.now()
         });
         
@@ -672,6 +675,7 @@ window.closePublishModal = function() {
 };
 
 window.confirmPublish = function() {
+    const bookId = window.currentPublishBookId;
     const price = parseInt(document.getElementById('pub-price').value);
     const desc = document.getElementById('pub-desc').value.trim();
     
@@ -682,7 +686,7 @@ window.confirmPublish = function() {
         window.SilenModal.alert("請輸入簡單的商品介紹。"); return;
     }
     
-    const book = window.books.find(b => b.id === window.currentPublishBookId);
+    const book = window.books.find(b => b.id === bookId);
     if (!book) {
         window.SilenModal.alert("找不到指定的單字簿。"); return;
     }
