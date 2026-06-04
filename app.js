@@ -1543,6 +1543,7 @@ window.addEventListener('load', () => {
 // 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
 window.myRankPoints = 0;
+window.mySeasonRankPoints = 0; // 【核心修復點】：新增賽季獨立計分變數
 window.myStorePoints = 0;
 window.lastRankScoreTime = 0;
 window.lastStoreScoreTime = 0;
@@ -1572,8 +1573,13 @@ window.addRankPoints = function(points, force = false) {
     window.lastRankScoreTime = now;
 
     window.myRankPoints += points;
+    window.mySeasonRankPoints = (window.mySeasonRankPoints || 0) + points; // 【核心修復點】：同步增加賽季分數
+
     const elTotal = document.getElementById('stat-rank-score');
     if (elTotal) elTotal.innerText = window.myRankPoints;
+
+    const elSeason = document.getElementById('lb-my-score');
+    if (elSeason) elSeason.innerText = window.mySeasonRankPoints; // 排行榜顯示賽季分數
 
     if (typeof window.uploadScoreToCloud === 'function') {
         window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
