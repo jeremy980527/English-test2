@@ -179,46 +179,31 @@ onAuthStateChanged(auth, (user) => {
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
         Promise.all([
-            get(ref(rtdb, `users/${user.uid}/rankPoints`)),
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `users/${user.uid}/totalScore`)),
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
             getDoc(doc(db, "users", user.uid)) 
-        ]).then(([snapRank, snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
+        ]).then(([snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
             const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
-            const currentRank = snapRank.exists() ? snapRank.val() : 0;
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
-            const lbScore = snapLb.exists() ? snapLb.val() : 0;
+            let lbScore = snapLb.exists() ? snapLb.val() : 0;
             
-            // 將總積分與本週賽季積分分離
-            window.myRankPoints = Math.max(currentRank, oldTotalScore);
-            window.mySeasonRankPoints = lbScore; 
-            window.myStorePoints = Math.max(currentStore, oldTotalScore);
-
-            // 【終極修復】：自我淨化機制 (Auto-Healing)
-            // 如果從資料庫抓下來的賽季分數，竟然大於生涯總分，絕對是上一版疊加 Bug 的殘留數據！
-            if (window.mySeasonRankPoints > window.myRankPoints) {
-                console.log("偵測到異常賽季分數，執行淨化重置...");
-                window.mySeasonRankPoints = 0; // 強制將本季分數歸零
-                
-                // 立即覆蓋雲端錯誤的排行榜數據，消滅 11575 這種離譜數字
-                set(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}`), {
-                    name: user.displayName || '匿名者',
-                    photo: user.photoURL || '',
-                    score: 0,
-                    timestamp: Date.now()
-                });
+            // 【自動淨化機制】：消除上個賽季疊加過來的 11575 異常分數！
+            if (weekId === 2 && lbScore > 5000) {
+                lbScore = 0;
+                set(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`), 0);
             }
+
+            // 【徹底解決賽季不歸零問題】：強制作為唯一真理，賽季結束自動變 0
+            window.myRankPoints = lbScore;
+            window.myStorePoints = Math.max(currentStore, oldTotalScore);
 
             if (elRank) elRank.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
             if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
 
-            if (window.myRankPoints > currentRank || window.myStorePoints > currentStore || !snapRank.exists() || !snapStore.exists()) {
-                set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
-                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
-            }
+            set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
 
             let hasAdminPrivilege = false;
             if (snapAdminRtdb.exists() && snapAdminRtdb.val() === true) hasAdminPrivilege = true;
@@ -354,17 +339,16 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     const uid = currentUser.uid;
     
     try {
-        await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
         await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
         
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-        // 【核心修復】：上傳時強制只上傳獨立的「本季分數」，不再將生涯積分覆蓋上去
+        // 現在 rankPoints 絕對等於賽季分數
         await set(lbRef, {
             name: currentUser.displayName || '匿名者',
             photo: currentUser.photoURL || '',
-            score: window.mySeasonRankPoints || 0,
+            score: rankPoints,
             timestamp: Date.now()
         });
         
