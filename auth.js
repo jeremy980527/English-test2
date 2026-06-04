@@ -345,7 +345,7 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-        // 【修復核心】：上傳時強制只上傳獨立的「本季分數」，不再將生涯積分覆蓋上去
+        // 【核心修復】：上傳時強制只上傳獨立的「本季分數」，不再將生涯積分覆蓋上去
         await set(lbRef, {
             name: currentUser.displayName || '匿名者',
             photo: currentUser.photoURL || '',
