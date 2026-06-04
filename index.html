@@ -263,8 +263,14 @@
 
         <div class="card" style="border-color: var(--border); background: var(--card-bg); margin-top: 20px;">
             <h3 style="margin-top: 0; color: var(--text-main); font-weight: 500; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">賽季徽章結算</h3>
-            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">結算指定賽季排行榜，並自動將榮譽徽章發放至前三名玩家的主頁。同一賽季不可重複發放。</p>
-            <button class="btn btn-outline" style="width: 100%; border-color: var(--text-main); color: var(--text-main);" onclick="window.settleLastSeason()">發放賽季徽章</button>
+            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">結算指定賽季排行榜，並自動將榮譽徽章發放至前三名玩家的主頁。結算後將自動清空全服玩家的牌位積分。</p>
+            <button class="btn btn-outline" style="width: 100%; border-color: var(--text-main); color: var(--text-main);" onclick="window.settleLastSeason()">發放徽章並重置積分</button>
+        </div>
+
+        <div class="card" style="border-color: #ff4444; background: var(--card-bg); margin-top: 20px;">
+            <h3 style="margin-top: 0; color: #ff4444; font-weight: 500; letter-spacing: 1px; border-bottom: 1px solid #ff4444; padding-bottom: 15px;">危險操作區</h3>
+            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">強制將 Firebase 中所有玩家的「牌位積分」清零。用於修復舊賽季異常疊加的分數。</p>
+            <button class="btn btn-outline" style="width: 100%; border-color: #ff4444; color: #ff4444;" onclick="window.resetAllRankPoints()">強制清空全服牌位積分</button>
         </div>
     </div>
 
