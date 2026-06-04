@@ -1571,7 +1571,6 @@ window.addRankPoints = function(points, force = false) {
     if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
     window.lastRankScoreTime = now;
 
-    // 牌位積分 = 絕對的本季積分
     window.myRankPoints += points;
 
     const elTotal = document.getElementById('stat-rank-score');
