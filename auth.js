@@ -945,3 +945,42 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
         }
     });
 };
+
+// ==========================================
+// 全服牌位強制歸零 (管理員強制操作)
+// ==========================================
+window.resetAllRankPoints = async function() {
+    if (!window.isAdmin) return;
+    
+    window.SilenModal.confirm("⚠️ 警告：確定要清空全服所有玩家的 Firebase 牌位積分嗎？\n\n這將把所有玩家的 rankPoints 強制設為 0。通常用於修復舊賽季分數疊加的 Bug。").then(async agreed => {
+        if (agreed) {
+            window.SilenModal.alert("正在清空全服 Firebase 牌位積分，請稍候...");
+            try {
+                const usersSnap = await get(ref(rtdb, 'users'));
+                if (usersSnap.exists()) {
+                    const updates = {};
+                    usersSnap.forEach(childSnap => {
+                        updates[`users/${childSnap.key}/rankPoints`] = 0;
+                    });
+                    
+                    // 一口氣把全伺服器所有玩家的積分更新為 0
+                    await update(ref(rtdb), updates);
+                    
+                    // 同步更新自己畫面上的數字
+                    window.myRankPoints = 0;
+                    const elTotal = document.getElementById('stat-rank-score');
+                    const elSeason = document.getElementById('lb-my-score');
+                    if(elTotal) elTotal.innerText = 0;
+                    if(elSeason) elSeason.innerText = 0;
+                    
+                    window.SilenModal.alert("✅ 成功！\n全服所有玩家的 Firebase 牌位積分已徹底歸零。現在資料庫乾淨了！");
+                } else {
+                    window.SilenModal.alert("找不到玩家資料！");
+                }
+            } catch (e) {
+                console.error("清空失敗", e);
+                window.SilenModal.alert("清空失敗，請檢查網路或資料庫權限。");
+            }
+        }
+    });
+};
