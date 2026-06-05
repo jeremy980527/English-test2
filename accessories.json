@@ -1,12 +1,13 @@
 [
   {
     "id": "frame_gold_01",
-    "name": "尊爵閃耀金框",
+    "name": "閃耀金框",
     "desc": "閃耀著榮耀光芒的專屬頭像框",
     "type": "avatar_frame",
-    "price": 1500,
+    "price": 4000,
     "imgUrl": "Frame_gold.png",
-    "active": true  // 設為 false 就會自動從商店下架
+    "active": true
   }
 ]
+
 
