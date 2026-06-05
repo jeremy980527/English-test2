@@ -125,7 +125,7 @@ window.toggleSetting = function(type) {
 };
 
 // =====================================
-// 2. 全局變數與基礎邏輯 (Globals)
+// 2. 全局變數與基礎邏輯 (Globals) + 智能系統
 // =====================================
 window.books = JSON.parse(localStorage.getItem('sv_books')) || [];
 let autoPronounce = JSON.parse(localStorage.getItem('sv_autoPronounce')) ?? true; 
@@ -164,7 +164,6 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-// 【修復核心】：在清單最後面補上 'accessories'，系統才會認得飾品店
 const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories'];
 
 window.switchView = function(viewName) {
@@ -194,6 +193,44 @@ function setDisplayState(id, isDisplay, displayType = 'block') {
         }
     }
 }
+
+// 【全新：智能語意互斥過濾器】
+window.isSemanticOverlap = function(wordA, wordB) {
+    if (!wordA.zh || !wordB.zh) return false;
+    // 透過正規表達式剝除括號內的補充說明，只比較核心字義
+    const cleanA = wordA.zh.map(z => z.replace(/[\(（].*?[）\)]/g, '').trim());
+    const cleanB = wordB.zh.map(z => z.replace(/[\(（].*?[）\)]/g, '').trim());
+    
+    for (let a of cleanA) {
+        if (!a) continue;
+        for (let b of cleanB) {
+            if (!b) continue;
+            // 只要有任何包含關係，就視為互斥（例如 "巨大" 包含 "巨大"）
+            if (a.includes(b) || b.includes(a)) return true; 
+        }
+    }
+    return false;
+};
+
+// 【全新：專屬黑化提示彈窗】
+window.showHelp = function(type) {
+    let msg = "";
+    switch(type) {
+        case 'add_word':
+            msg = "【單字建檔指南】\n\n1. 詞性多選：如果一個單字擁有多個詞性，且「意思完全相同」(例如 water 水)，你可以同時點亮 [n.] 與 [v.]。\n\n2. 強制分開：如果不同詞性代表「完全不同的意思」(例如 book 書本/預定)，請務必拆分成兩張字卡新增！這能幫助系統在出題時給予精確的詞性提示，避免混淆。";
+            break;
+        case 'practice':
+            msg = "【訓練模式說明】\n\n• 綜合精通模式：依照記憶曲線設計，單字會從「視覺辨識」慢慢晉升到「主動拼寫」，並強制進入「記憶潛伏期」再進行畢業考。通關可獲取大量牌位積分！\n\n• 針對性訓練：選擇題、拼圖等單元適合輕鬆複習，每答對一題皆可穩定獲取商城點數。";
+            break;
+        case 'gsat':
+            msg = "【學測單字抽取】\n\n系統內建完整的學測單字庫。你可以自訂數量進行「抽卡」，系統的大腦會自動排除你已經背過的單字，保證每次抽出的都是全新生詞！";
+            break;
+        case 'market':
+            msg = "【玩家市場 (C2C)】\n\n你可以在這裡花費點數，購買其他玩家精心整理的單字簿；\n也可以將自己編輯的心血結晶「上架」來大賺商城點數！\n(請注意：市場交易會扣除 20% 系統稅)";
+            break;
+    }
+    window.SilenModal.alert(msg);
+};
 
 
 window.goHome = function() { 
@@ -405,7 +442,7 @@ window.startGuestMode = function(data) {
 };
 
 // =====================================
-// 5. 題庫管理與精通度計算
+// 5. 題庫管理與多選詞性系統
 // =====================================
 window.updateProfileStats = function() {
     let count = 0;
@@ -749,6 +786,7 @@ window.saveBookInfo = function() {
 
 window.editingWordIndex = null;
 
+// 【重構：支援行內標籤修改的多重詞性渲染】
 window.renderWordList = function() {
     const book = window.books.find(b => b.id === currentBookId); 
     const list = document.getElementById('word-list'); 
@@ -766,20 +804,19 @@ window.renderWordList = function() {
             const safeEn = word.en.replace(/"/g, '&quot;');
             const safeZh = word.zh.join(', ').replace(/"/g, '&quot;');
             
+            const posList = ['n.', 'v.', 'adj.', 'adv.', 'prep.', 'conj.', 'phr.'];
+            const currentPosStr = word.pos || '';
+            const posHtml = posList.map(p => {
+                const isActive = currentPosStr.includes(p) ? 'active' : '';
+                return `<button class="pos-btn ${isActive}" onclick="this.classList.toggle('active')" data-pos="${p}">${p}</button>`;
+            }).join('');
+            
             div.innerHTML = `
+                <div class="pos-toggle-group" id="inline-pos-group-${actualIndex}" style="margin-bottom: 10px;">
+                    ${posHtml}
+                </div>
                 <div class="flex-row" style="margin-bottom: 10px;">
-                    <input type="text" id="inline-en-${actualIndex}" value="${safeEn}" style="flex: 2; padding: 8px; font-size: 1rem;">
-                    <select id="inline-pos-${actualIndex}" style="flex: 1; padding: 8px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); border-radius: 8px; outline: none; font-size: 1rem;">
-                        <option value="" ${word.pos===''?'selected':''}>無</option>
-                        <option value="n." ${word.pos==='n.'?'selected':''}>n. (名詞)</option>
-                        <option value="v." ${word.pos==='v.'?'selected':''}>v. (動詞)</option>
-                        <option value="vt." ${word.pos==='vt.'?'selected':''}>vt. (及物)</option>
-                        <option value="vi." ${word.pos==='vi.'?'selected':''}>vi. (不及物)</option>
-                        <option value="adj." ${word.pos==='adj.'?'selected':''}>adj. (形容)</option>
-                        <option value="adv." ${word.pos==='adv.'?'selected':''}>adv. (副詞)</option>
-                        <option value="prep." ${word.pos==='prep.'?'selected':''}>prep. (介係)</option>
-                        <option value="conj." ${word.pos==='conj.'?'selected':''}>conj. (連接)</option>
-                    </select>
+                    <input type="text" id="inline-en-${actualIndex}" value="${safeEn}" style="flex: 1; padding: 8px; font-size: 1rem;">
                 </div>
                 <input type="text" id="inline-zh-${actualIndex}" value="${safeZh}" style="margin-bottom: 10px; padding: 8px; font-size: 1rem;">
                 <div class="flex-row" style="justify-content: flex-end; margin-top: 5px;">
@@ -816,8 +853,10 @@ window.cancelEditWord = function() {
 
 window.saveEditWord = function(index) {
     const en = document.getElementById(`inline-en-${index}`).value.trim();
-    const pos = document.getElementById(`inline-pos-${index}`).value.trim();
     const zhStr = document.getElementById(`inline-zh-${index}`).value.trim();
+    
+    let activeBtns = document.querySelectorAll(`#inline-pos-group-${index} .pos-btn.active`);
+    let pos = Array.from(activeBtns).map(b => b.dataset.pos).join(', ');
     
     if(!en || !zhStr) { window.SilenModal.alert("英文與中文不可為空"); return; }
     
@@ -833,8 +872,11 @@ window.saveEditWord = function(index) {
 
 window.addWord = function() {
     const en = document.getElementById('input-en').value.trim(); 
-    const pos = document.getElementById('input-pos').value.trim(); 
     const zhStr = document.getElementById('input-zh').value.trim();
+    
+    let activeBtns = document.querySelectorAll('#input-pos-group .pos-btn.active');
+    let pos = Array.from(activeBtns).map(b => b.dataset.pos).join(', ');
+
     if(!en || !zhStr) { window.SilenModal.alert("英文與中文欄位不可為空"); return; }
     
     window.books.find(b => b.id === currentBookId).words.push({ 
@@ -844,8 +886,8 @@ window.addWord = function() {
     }); 
     window.saveData(); 
     document.getElementById('input-en').value = ''; 
-    document.getElementById('input-pos').value = ''; 
     document.getElementById('input-zh').value = ''; 
+    document.querySelectorAll('#input-pos-group .pos-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById('input-en').focus(); 
     window.renderWordList();
 };
@@ -941,7 +983,7 @@ window.finalizeMasterySession = function() {
 window.setupMasteryMode = function(type) {
     let words = window.getPracticeWords(); if(!words || words.length === 0) return;
     masteryModeType = type; pendingMasteredWords = []; 
-    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered })); 
+    masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered, pos: w.pos || '' })); 
     masteryPool.sort(() => Math.random() - 0.5);
     
     const headerTitle = document.getElementById('mastery-header-title'); const progressBar = document.getElementById('mastery-progress-bar');
@@ -1016,11 +1058,16 @@ window.tickMasteryDelays = function() { masteryPool.forEach(w => { if (w.level =
 window.hideAllMasteryAreas = function() { ['mastery-l0-area', 'mastery-mcq-area', 'mastery-match-area', 'mastery-puzzle-area', 'mastery-typing-area', 'mastery-feedback-area', 'mastery-success-area'].forEach(id => { setDisplayState(id, false); }); };
 
 window.showMasteryL0 = function(word) {
-    setDisplayState('mastery-l0-area', true); document.getElementById('mastery-l0-en').innerText = word.en; document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
+    setDisplayState('mastery-l0-area', true); 
+    // 【全新：獨立字卡的詞性提示】
+    let posHtml = (word.pos && word.pos.trim() !== '') ? `<span style="font-size: 0.9rem; background: #333; padding: 4px 10px; border-radius: 6px; color: #ff9800; margin-left: 10px; vertical-align: middle;">[${word.pos}]</span>` : '';
+    document.getElementById('mastery-l0-en').innerHTML = word.en + posHtml; 
+    document.getElementById('mastery-l0-zh').innerText = word.zh.join(' / ');
     window.forceSpeak = true; window.speakEnglishWord(word.en); 
 };
 window.masteryL0Next = function() { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); currentMasteryTarget.level = 1; window.nextMasteryTurn(); };
 
+// 【升級：導入智能語意互斥過濾】
 window.showMasteryMCQ = function(word, mode, isDelayed) {
     setDisplayState('mastery-mcq-area', true); 
     
@@ -1030,16 +1077,27 @@ window.showMasteryMCQ = function(word, mode, isDelayed) {
     else badgeText = masteryModeType === 'comprehensive' ? "Lv 2: 逆向回想 (中選英)" : "Lv 1: 視覺辨識 (中選英)";
     
     document.getElementById('mastery-mcq-badge').innerText = badgeText;
-    document.getElementById('mastery-mcq-q').innerText = (mode === 'zh-to-en') ? word.zh.join(' / ') : word.en;
     
-    let options = [word]; let distractors = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...distractors.slice(0, 3));
-    if (options.length < 4) { let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); options.push(...fallback.slice(0, 4 - options.length)); }
+    let posHtml = (word.pos && word.pos.trim() !== '') ? `<span style="font-size: 0.8rem; background: #333; padding: 2px 6px; border-radius: 4px; color: #ff9800; margin-left: 6px;">[${word.pos}]</span>` : '';
+    document.getElementById('mastery-mcq-q').innerHTML = (mode === 'zh-to-en') ? word.zh.join(' / ') : word.en + posHtml;
+    
+    let options = [word]; 
+    // AI 啟動：排除掉意思相近的干擾項
+    let filteredPool = masteryPool.filter(w => w.en !== word.en && !window.isSemanticOverlap(w, word)).sort(() => Math.random() - 0.5); 
+    options.push(...filteredPool.slice(0, 3));
+    
+    // 如果單字簿太小過濾完不夠 4 個，從全局庫再拿
+    if (options.length < 4) { 
+        let fallback = window.getSelectedWordsPool().filter(w => w.en !== word.en && !window.isSemanticOverlap(w, word)).sort(() => Math.random() - 0.5); 
+        options.push(...fallback.slice(0, 4 - options.length)); 
+    }
     options = options.slice(0, 4).sort(() => Math.random() - 0.5);
     
     const optArea = document.getElementById('mastery-mcq-options'); optArea.innerHTML = '';
     options.forEach(opt => { 
         let btn = document.createElement('button'); btn.className = 'btn-mcq'; 
-        btn.innerText = (mode === 'zh-to-en') ? opt.en : opt.zh[0]; 
+        let optPosHtml = (opt.pos && opt.pos.trim() !== '' && mode === 'zh-to-en') ? ` <span style="font-size:0.75rem; color:#ff9800;">[${opt.pos}]</span>` : '';
+        btn.innerHTML = (mode === 'zh-to-en') ? opt.en + optPosHtml : opt.zh[0]; 
         btn.onclick = () => window.checkMasteryAnswer(opt.en === word.en); 
         optArea.appendChild(btn); 
     });
@@ -1051,12 +1109,17 @@ window.showMasteryMatch = function(word) {
     let pool = masteryPool.filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); let selectedDistractors = pool.slice(0, 3);
     if (selectedDistractors.length < 3) { let globalPool = window.getSelectedWordsPool().filter(w => w.en !== word.en).sort(() => Math.random() - 0.5); selectedDistractors.push(...globalPool.slice(0, 3 - selectedDistractors.length)); }
     let currentMatchPairs = [word, ...selectedDistractors].slice(0, 4); matchPairsLeft = currentMatchPairs.length;
-    window.renderMatchColumns(currentMatchPairs.map(w => ({ text: w.en, ref: w })).sort(() => Math.random() - 0.5), currentMatchPairs.map(w => ({ text: w.zh[0], ref: w })).sort(() => Math.random() - 0.5));
+    window.renderMatchColumns(currentMatchPairs.map(w => ({ text: w.en, pos: w.pos, ref: w })).sort(() => Math.random() - 0.5), currentMatchPairs.map(w => ({ text: w.zh[0], ref: w })).sort(() => Math.random() - 0.5));
 };
 
 window.renderMatchColumns = function(enList, zhList) {
     const enCol = document.getElementById('match-col-en'); const zhCol = document.getElementById('match-col-zh'); enCol.innerHTML = ''; zhCol.innerHTML = ''; matchEnSelected = null; matchZhSelected = null;
-    enList.forEach((item) => { let btn = document.createElement('button'); btn.className = 'match-btn'; btn.innerText = item.text; btn.onclick = () => window.handleMatchClick('en', item, btn); enCol.appendChild(btn); });
+    enList.forEach((item) => { 
+        let btn = document.createElement('button'); btn.className = 'match-btn'; 
+        let posHtml = (item.pos && item.pos.trim() !== '') ? ` <span style="font-size:0.7rem; color:#ff9800;">[${item.pos}]</span>` : '';
+        btn.innerHTML = item.text + posHtml; 
+        btn.onclick = () => window.handleMatchClick('en', item, btn); enCol.appendChild(btn); 
+    });
     zhList.forEach((item) => { let btn = document.createElement('button'); btn.className = 'match-btn'; btn.innerText = item.text; btn.onclick = () => window.handleMatchClick('zh', item, btn); zhCol.appendChild(btn); });
 };
 
@@ -1178,6 +1241,263 @@ window.checkMasteryAnswer = function(isCorrect) {
 
 window.masteryFeedbackNext = function() { window.nextMasteryTurn(); };
 window.replayMasteryAudio = function() { if (currentMasteryTarget) { window.forceSpeak = true; window.speakEnglishWord(currentMasteryTarget.en); } };
+
+// =====================================
+// 7. 原版 8 大練習模式 (給予「商城點數」)
+// =====================================
+window.setupPractice = function(mode) { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; 
+    document.getElementById('mode-display').innerText = (mode === 'zh-to-en') ? '中翻英' : '英翻中'; 
+    setDisplayState('sequential-badge', isSequentialMode, 'inline-block'); setDisplayState('hint-btn', (mode === 'zh-to-en'), 'inline-block'); 
+    window.switchView('practice'); window.showNextCard(); 
+};
+
+window.showNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('interaction-area', true, 'block'); setDisplayState('feedback-area', false); 
+    const inputEl = document.getElementById('answer-input'); if (inputEl) { inputEl.value = ''; setTimeout(() => inputEl.focus(), 50); }
+    document.getElementById('hint-display').innerText = ''; document.getElementById('progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    const q = (currentMode === 'zh-to-en') ? w.zh.join(' / ') : w.en; document.getElementById('question-display').innerText = q; document.getElementById('feedback-question-copy').innerText = q; 
+};
+
+window.showHint = function() { 
+    if (!practiceQueue[currentCardIndex]) return; let w = practiceQueue[currentCardIndex].en; 
+    document.getElementById('hint-display').innerText = (w.length <= 2) ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; 
+};
+
+window.checkAnswer = function() { 
+    if (currentCardIndex >= practiceQueue.length) return; const v = document.getElementById('answer-input').value.trim(); const w = practiceQueue[currentCardIndex]; let c = false; 
+    if (v !== '') { if (currentMode === 'zh-to-en') { c = (v.toLowerCase() === w.en.toLowerCase()); } else { c = w.zh.some(m => m.trim().includes(v) && v.length > 0); } } 
+    lastAnswerCorrect = c; 
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+    if (!c && !isSequentialMode) window.requeueWord(w); window.showFeedback(c, w); 
+};
+
+window.showFeedback = function(c, w) { 
+    setDisplayState('interaction-area', false); setDisplayState('feedback-area', true, 'flex'); 
+    const i = document.getElementById('feedback-icon'); const s = document.getElementById('feedback-status'); 
+    document.getElementById('feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
+    else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handleNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showNextCard(); }); } 
+    else { currentCardIndex++; window.showNextCard(); }
+};
+
+const answerInputEl = document.getElementById('answer-input');
+if (answerInputEl) { answerInputEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); window.checkAnswer(); } }); }
+
+window.setupMultipleChoice = function(mode) { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    let pool = window.getSelectedWordsPool(); let uniqueWords = new Set(); pool.forEach(w => uniqueWords.add(w.en));
+    if (uniqueWords.size < 4) { window.SilenModal.alert("單字簿數量不足以生成干擾項選項。"); return; }
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentMode = mode; currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; 
+    document.getElementById('mcq-mode-display').innerText = (mode === 'zh-to-en') ? '中選英' : '英選中'; 
+    setDisplayState('mcq-seq-badge', isSequentialMode, 'inline-block'); window.switchView('mcq'); window.showMcqNextCard(); 
+};
+
+// 【升級：導入智能語意互斥過濾】
+window.showMcqNextCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); 
+    const w = practiceQueue[currentCardIndex]; setDisplayState('mcq-interaction-area', true, 'block'); setDisplayState('mcq-feedback-area', false); 
+    document.getElementById('mcq-progress-display').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${completedCount}/${initialQueueLength}`; 
+    
+    let posHtml = (w.pos && w.pos.trim() !== '') ? `<span style="font-size: 0.8rem; background: #333; padding: 2px 6px; border-radius: 4px; color: #ff9800; margin-left: 6px;">[${w.pos}]</span>` : '';
+    const q = (currentMode === 'zh-to-en') ? w.zh.join(' / ') : w.en + posHtml; 
+    document.getElementById('mcq-question-display').innerHTML = q; 
+    document.getElementById('mcq-feedback-question-copy').innerHTML = q; 
+    
+    let opts = [w]; 
+    let pool = window.getSelectedWordsPool(); 
+    // AI 啟動：排除掉意思相近的干擾項
+    let dis = pool.filter(x => x.en !== w.en && !window.isSemanticOverlap(x, w)).sort(() => Math.random() - 0.5);
+    opts = opts.concat(dis.slice(0, 3)); opts.sort(() => Math.random() - 0.5); 
+    
+    const a = document.getElementById('mcq-options-area'); a.innerHTML = ''; 
+    opts.forEach(o => { 
+        let b = document.createElement('button'); b.className = 'btn-mcq'; 
+        let optPosHtml = (o.pos && o.pos.trim() !== '' && currentMode === 'zh-to-en') ? ` <span style="font-size:0.75rem; color:#ff9800;">[${o.pos}]</span>` : '';
+        b.innerHTML = (currentMode === 'zh-to-en') ? o.en + optPosHtml : o.zh.join(' / '); 
+        b.onclick = () => window.checkMcqAnswer(o.en === w.en); a.appendChild(b); 
+    }); 
+};
+
+window.checkMcqAnswer = function(c) { 
+    if (currentCardIndex >= practiceQueue.length) return; lastAnswerCorrect = c; const w = practiceQueue[currentCardIndex]; 
+    if (c && !w.scored) { w.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+    if (!c && !isSequentialMode) window.requeueWord(w); setDisplayState('mcq-interaction-area', false); setDisplayState('mcq-feedback-area', true, 'flex'); 
+    const i = document.getElementById('mcq-feedback-icon'); const s = document.getElementById('mcq-feedback-status'); 
+    document.getElementById('mcq-feedback-answer').innerText = (currentMode === 'zh-to-en') ? w.en : w.zh.join(', '); 
+    if (c) { i.innerText = '✔'; i.className = 'big-icon icon-correct'; s.innerText = '正確 (+10 點數)'; s.className = 'result-status status-correct'; } 
+    else { i.innerText = '✘'; i.className = 'big-icon icon-wrong'; s.innerText = '錯誤'; s.className = 'result-status status-wrong'; } 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.handleMcqNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert("評測錯誤，重頭開始。").then(() => { currentCardIndex = 0; completedCount = 0; window.showMcqNextCard(); }); } 
+    else { currentCardIndex++; window.showMcqNextCard(); }
+};
+
+window.setupSpeakingMode = function() { 
+    if (!recognition) { window.SilenModal.alert("當前核心環境不支援語音介面。"); return; }
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentCardIndex = 0; initialQueueLength = practiceQueue.length; completedCount = 0; window.switchView('speaking'); window.showNextSpeakingCard(); 
+};
+
+window.showNextSpeakingCard = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); const w = practiceQueue[currentCardIndex]; 
+    setDisplayState('speaking-interaction-area', true, 'block'); setDisplayState('speaking-feedback-area', false); 
+    document.getElementById('speaking-word-display').innerText = w.en; document.getElementById('speaking-zh-display').innerText = w.zh.join(' / '); 
+    document.getElementById('speaking-status').innerText = '準備就緒'; document.getElementById('speaking-progress').innerText = `${completedCount}/${initialQueueLength}`; 
+    window.forceSpeak = true; window.speakEnglishWord(w.en); 
+};
+
+window.startSpeechRecognition = function() { 
+    if (!recognition) return; const b = document.getElementById('mic-btn'); const s = document.getElementById('speaking-status'); 
+    try { recognition.start(); b.classList.add('listening'); s.innerText = '正在語音錄製與分析...'; } catch(e) { console.error(e); } 
+    recognition.onresult = (e) => { 
+        const h = e.results[0][0].transcript.toLowerCase().replace(/[.,?!]/g, "").trim(); const c = e.results[0][0].confidence; const t = practiceQueue[currentCardIndex].en.toLowerCase().trim(); 
+        b.classList.remove('listening'); setDisplayState('speaking-interaction-area', false); setDisplayState('speaking-feedback-area', true, 'flex'); 
+        const sd = document.getElementById('speaking-score'); const md = document.getElementById('speaking-feedback-msg'); const hd = document.getElementById('speaking-heard-text'); 
+        if (h === t || h.includes(t) || t.includes(h)) { 
+            lastAnswerCorrect = true; let fs = Math.round(c * 100); if (fs < 50) fs = 80; 
+            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(fs); }
+            sd.innerText = `${fs} 點數`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (+${fs} 點數)`; hd.innerText = `捕獲音訊: "${h}"`; 
+        } else { 
+            lastAnswerCorrect = false; sd.innerText = '0 點數'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
+            if (!isSequentialMode) window.requeueWord(practiceQueue[currentCardIndex]); 
+        } 
+    }; 
+    recognition.onerror = () => { b.classList.remove('listening'); s.innerText = '音訊解碼失敗。'; }; 
+    recognition.onspeechend = () => { recognition.stop(); b.classList.remove('listening'); }; 
+};
+
+window.handleSpeakingNextClick = function() { 
+    if (lastAnswerCorrect) completedCount++; 
+    if (isSequentialMode && !lastAnswerCorrect) { window.SilenModal.alert('重頭開始。').then(() => { currentCardIndex = 0; completedCount = 0; window.showNextSpeakingCard(); }); } 
+    else { currentCardIndex++; window.showNextSpeakingCard(); }
+};
+
+window.setupPuzzleMode = function() { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    if (!isSequentialMode) { practiceQueue.sort(() => Math.random() - 0.5); }
+    currentCardIndex = 0; setDisplayState('puzzle-seq-badge', isSequentialMode, 'inline-block'); window.switchView('puzzle'); window.loadPuzzleLevel(); 
+};
+
+window.loadPuzzleLevel = function() { 
+    if (currentCardIndex >= practiceQueue.length) return window.endQuiz(); puzzleCurrentWord = practiceQueue[currentCardIndex]; puzzleUserAnswer = []; 
+    let ls = puzzleCurrentWord.en.toLowerCase().split(''); for (let i = ls.length - 1; i > 0; i--) { let j = Math.floor(Math.random() * (i + 1)); let temp = ls[i]; ls[i] = ls[j]; ls[j] = temp; } 
+    puzzleSourceLetters = ls.map((l, i) => ({ id: i, char: l, used: false })); document.getElementById('puzzle-hint-display').innerText = ''; 
+    document.getElementById('puzzle-question').innerText = puzzleCurrentWord.zh.join(' / '); document.getElementById('puzzle-message').innerText = ''; 
+    document.getElementById('puzzle-progress').innerText = isSequentialMode ? `第 ${currentCardIndex+1} 關` : `${currentCardIndex+1}/${practiceQueue.length}`; window.renderPuzzleBoard(); 
+};
+
+window.showPuzzleHint = function() { 
+    if(!puzzleCurrentWord) return; let w = puzzleCurrentWord.en; let hintStr = (w.length <= 2) ? w : `${w.charAt(0)}${'_'.repeat(w.length-2)}${w.charAt(w.length-1)}`; document.getElementById('puzzle-hint-display').innerText = hintStr; 
+};
+
+window.renderPuzzleBoard = function() { 
+    const a = document.getElementById('puzzle-answer-area'); const p = document.getElementById('puzzle-pool-area'); a.innerHTML = ''; p.innerHTML = ''; 
+    puzzleUserAnswer.forEach((o, i) => { 
+        let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+        t.onclick = () => { puzzleUserAnswer[i].used = false; puzzleUserAnswer.splice(i, 1); window.renderPuzzleBoard(); }; a.appendChild(t); 
+    }); 
+    if (puzzleUserAnswer.length < puzzleCurrentWord.en.length) { let ph = document.createElement('div'); ph.className = 'letter-tile empty'; ph.innerText = '_'; a.appendChild(ph); } 
+    puzzleSourceLetters.forEach(o => { 
+        if (!o.used) { 
+            let t = document.createElement('div'); t.className = 'letter-tile'; t.innerText = o.char; 
+            t.onclick = () => { o.used = true; puzzleUserAnswer.push(o); window.renderPuzzleBoard(); window.checkPuzzleState(false); }; p.appendChild(t); 
+        } 
+    }); 
+};
+
+window.checkPuzzleState = function(f) { 
+    if(!puzzleCurrentWord) return; let cs = puzzleUserAnswer.map(o => o.char).join(''); let ts = puzzleCurrentWord.en.toLowerCase(); let m = document.getElementById('puzzle-message'); 
+    if (cs.length === ts.length || f === true) { 
+        if (cs === ts) { 
+            m.className = 'result-msg result-correct'; m.innerText = '正確 (+10 點數)'; 
+            if (!puzzleCurrentWord.scored) { puzzleCurrentWord.scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(10); }
+            window.forceSpeak = true; window.speakEnglishWord(ts); setTimeout(() => { currentCardIndex++; window.loadPuzzleLevel(); }, 800); 
+        } else { 
+            if (isSequentialMode) { 
+                m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}。`; window.forceSpeak = true; window.speakEnglishWord(ts); setTimeout(() => { currentCardIndex = 0; window.loadPuzzleLevel(); }, 2000); 
+            } else { 
+                if (f === true) { m.className = 'result-msg result-wrong'; m.innerText = `錯誤，答案為 ${ts}`; window.forceSpeak = true; window.speakEnglishWord(ts); window.requeueWord(puzzleCurrentWord); setTimeout(() => { currentCardIndex++; window.loadPuzzleLevel(); }, 2000); } 
+                else { m.className = 'result-msg result-wrong'; m.innerText = '比對不符'; } 
+            } 
+        } 
+    } 
+};
+
+window.setupMemoryMode = function() { 
+    let p = window.getPracticeWords(); if (!p || p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); memoryCards = []; 
+    sw.forEach(w => { memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); }); 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); window.renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
+};
+
+window.setupMemoryModeGuest = function() { 
+    let p = [...practiceQueue]; if (!p || p.length < 2) { window.SilenModal.alert("生成記憶矩陣單字數量不足。"); return; } 
+    p.sort(() => Math.random() - 0.5); let sw = p.slice(0, 8); memoryCards = []; 
+    sw.forEach(w => { memoryCards.push({ id: w.en, content: w.en, type: 'en', matched: false }); memoryCards.push({ id: w.en, content: w.zh[0], type: 'zh', matched: false }); }); 
+    memoryCards.sort(() => Math.random() - 0.5); memoryFlipped = []; memoryLocked = false; memoryMatchedCount = 0; 
+    window.switchView('memory'); window.renderMemoryBoard(); document.getElementById('memory-message').innerText = '請選取卡片'; 
+};
+
+window.renderMemoryBoard = function() { 
+    const b = document.getElementById('memory-board'); b.innerHTML = ''; 
+    memoryCards.forEach((c, i) => { 
+        let d = document.createElement('div'); d.className = `memory-card ${c.matched ? 'matched' : ''}`; 
+        d.innerHTML = `<div class="memory-inner"><div class="memory-front">${c.content}</div><div class="memory-back">?</div></div>`; 
+        d.onclick = () => window.flipCard(i); b.appendChild(d); 
+    }); 
+};
+
+window.flipCard = function(i) { 
+    if (memoryLocked || memoryCards[i].matched || memoryFlipped.includes(i)) return; 
+    document.getElementById('memory-board').children[i].classList.add('flipped'); memoryFlipped.push(i); 
+    if (memoryFlipped.length === 2) window.checkMemoryMatch(); 
+};
+
+window.checkMemoryMatch = function() { 
+    memoryLocked = true; let i1 = memoryFlipped[0]; let i2 = memoryFlipped[1]; let c1 = memoryCards[i1]; let c2 = memoryCards[i2]; let m = document.getElementById('memory-message'); 
+    if (c1.id === c2.id) { 
+        c1.matched = c2.matched = true; memoryMatchedCount += 2; 
+        if (typeof window.addStorePoints === 'function') window.addStorePoints(10);
+        document.getElementById('memory-board').children[i1].classList.add('matched'); document.getElementById('memory-board').children[i2].classList.add('matched'); 
+        m.innerText = '矩陣配對成功 (+10 點數)'; m.className = 'result-msg result-correct'; window.forceSpeak = true; window.speakEnglishWord(c1.id); 
+        memoryFlipped = []; memoryLocked = false; if (memoryMatchedCount === memoryCards.length) setTimeout(() => window.endQuiz(), 500); 
+    } else { 
+        m.innerText = '不匹配'; m.className = 'result-msg result-wrong'; 
+        setTimeout(() => { document.getElementById('memory-board').children[i1].classList.remove('flipped'); document.getElementById('memory-board').children[i2].classList.remove('flipped'); memoryFlipped = []; memoryLocked = false; m.innerText = ''; }, 1000); 
+    } 
+};
+
+window.setupYouglishMode = function() { 
+    practiceQueue = window.getPracticeWords(); if (!practiceQueue || practiceQueue.length === 0) return; 
+    practiceQueue.sort(() => Math.random() - 0.5); currentCardIndex = 0; window.switchView('youglish'); window.loadYouglishCard(); 
+};
+
+window.loadYouglishCard = function() { 
+    if (!practiceQueue[currentCardIndex]) return; const w = practiceQueue[currentCardIndex]; 
+    document.getElementById('yg-word').innerText = w.en; document.getElementById('yg-zh').innerText = w.zh.join(' / '); 
+    document.getElementById('yg-progress').innerText = `${currentCardIndex+1}/${practiceQueue.length}`; document.getElementById('yg-link-word').innerText = w.en; 
+    document.getElementById('yg-link').href = `https://youglish.com/pronounce/${encodeURIComponent(w.en)}/english`; 
+};
+
+window.nextYouglishCard = function() { if (currentCardIndex < practiceQueue.length - 1) { currentCardIndex++; window.loadYouglishCard(); } else { window.endQuiz(); } };
+window.prevYouglishCard = function() { if (currentCardIndex > 0) { currentCardIndex--; window.loadYouglishCard(); } else { window.SilenModal.alert("已達佇列首端。"); } };
 
 // =====================================
 // 7. 原版 8 大練習模式 (給予「商城點數」)
