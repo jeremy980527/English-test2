@@ -1370,10 +1370,11 @@ window.startSpeechRecognition = function() {
         const sd = document.getElementById('speaking-score'); const md = document.getElementById('speaking-feedback-msg'); const hd = document.getElementById('speaking-heard-text'); 
         if (h === t || h.includes(t) || t.includes(h)) { 
             lastAnswerCorrect = true; let fs = Math.round(c * 100); if (fs < 50) fs = 80; 
-            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; if (typeof window.addStorePoints === 'function') window.addStorePoints(fs); }
-            sd.innerText = `${fs} 點數`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (+${fs} 點數)`; hd.innerText = `捕獲音訊: "${h}"`; 
+            if (!practiceQueue[currentCardIndex].scored) { practiceQueue[currentCardIndex].scored = true; }
+            // 移除了點數獎勵，純粹顯示發音準確度
+            sd.innerText = `${fs}%`; sd.style.color = 'var(--success)'; md.innerText = `發音標準 (口說無點數獎勵)`; hd.innerText = `捕獲音訊: "${h}"`; 
         } else { 
-            lastAnswerCorrect = false; sd.innerText = '0 點數'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
+            lastAnswerCorrect = false; sd.innerText = '0%'; sd.style.color = 'var(--error)'; md.innerText = '識別不匹配'; hd.innerText = `捕獲音訊: "${h}"`; 
             if (!isSequentialMode) window.requeueWord(practiceQueue[currentCardIndex]); 
         } 
     }; 
