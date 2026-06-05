@@ -25,6 +25,15 @@
     "price": 4500,
     "imgUrl": "Frame_wave.png",
     "active": true
+  },
+  {
+    "id": "frame_chinese_01",
+    "name": "秋水共長天",
+    "desc": "中式特色, 訴說著你的故事",
+    "type": "avatar_frame",
+    "price": 4000,
+    "imgUrl": "Frame_Chinese_01.png",
+    "active": true
   }
 ]
 
