@@ -164,7 +164,8 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market'];
+// 【修復核心】：在清單最後面補上 'accessories'，系統才會認得飾品店
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -193,6 +194,7 @@ function setDisplayState(id, isDisplay, displayType = 'block') {
         }
     }
 }
+
 
 window.goHome = function() { 
     if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary(); 
