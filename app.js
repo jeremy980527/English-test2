@@ -1540,7 +1540,7 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
+// 10. 全新重構：絕對真實的牌位計分系統
 // =====================================
 window.myRankPoints = 0;
 window.myStorePoints = 0;
@@ -1551,9 +1551,9 @@ window.showScoringRules = function() {
     window.SilenModal.alert(
         "雙軌賽季計分規則\n\n" +
         "[牌位積分] (每週賽季)\n" +
-        "每個賽季將從 0 開始計算。只能透過綜合精通模式與連結力訓練獲取。完全精通單字後，才能一口氣獲得 50 分的大獎勵。(學測單字享最高 3 倍加成)\n\n" +
+        "每個賽季將自動從 0 開始計算。只能透過綜合精通模式獲取。完全精通單字後，獲得 50 分獎勵。(學測單字享最高 3 倍加成)\n\n" +
         "[商城點數] (終身累計)\n" +
-        "遊玩其他任何單元（選擇、拼圖、口說等），每答對一題皆可穩定獲取商城點數，用於擴充庫選購！"
+        "遊玩其他任何單元，皆可穩定獲取商城點數！"
     );
 };
 
@@ -1571,12 +1571,13 @@ window.addRankPoints = function(points, force = false) {
     if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
     window.lastRankScoreTime = now;
 
+    // 直接將分數加在唯一的真實變數上
     window.myRankPoints += points;
 
+    // 同步更新所有畫面的分數顯示
     const elTotal = document.getElementById('stat-rank-score');
-    if (elTotal) elTotal.innerText = window.myRankPoints;
-
     const elSeason = document.getElementById('lb-my-score');
+    if (elTotal) elTotal.innerText = window.myRankPoints;
     if (elSeason) elSeason.innerText = window.myRankPoints;
 
     if (typeof window.uploadScoreToCloud === 'function') {
@@ -1591,6 +1592,7 @@ window.addStorePoints = function(points, force = false) {
     window.lastStoreScoreTime = now;
 
     window.myStorePoints += points;
+    
     const elStore = document.getElementById('stat-store-points');
     const elStoreMyScore = document.getElementById('store-my-score');
     if (elStore) elStore.innerText = window.myStorePoints;
@@ -1606,6 +1608,10 @@ window.openLeaderboard = function() {
     const currentWeek = window.getCurrentWeekId();
     document.getElementById('lb-current-week').innerText = `第 ${currentWeek} 賽季`;
     
+    // 確保進入排行榜時，頂部的個人分數絕對是最新狀態
+    const elSeason = document.getElementById('lb-my-score');
+    if (elSeason) elSeason.innerText = window.myRankPoints;
+
     if (typeof window.fetchLeaderboard === 'function') {
         window.fetchLeaderboard(currentWeek);
     } else {
@@ -1614,7 +1620,6 @@ window.openLeaderboard = function() {
 };
 
 window.renderLeaderboard = function(listData, mySeasonScore) {
-    document.getElementById('lb-my-score').innerText = mySeasonScore || 0;
     const container = document.getElementById('leaderboard-list');
     container.innerHTML = '';
 
