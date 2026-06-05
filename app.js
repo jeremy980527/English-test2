@@ -1540,7 +1540,7 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// 10. 全新重構：絕對真實的牌位計分系統
+// 10. 排行榜與雙軌計分系統 (Leaderboard & Store Points)
 // =====================================
 window.myRankPoints = 0;
 window.myStorePoints = 0;
@@ -1571,10 +1571,8 @@ window.addRankPoints = function(points, force = false) {
     if (!force && window.lastRankScoreTime && now - window.lastRankScoreTime < 500) return;
     window.lastRankScoreTime = now;
 
-    // 直接將分數加在唯一的真實變數上
     window.myRankPoints += points;
 
-    // 同步更新所有畫面的分數顯示
     const elTotal = document.getElementById('stat-rank-score');
     const elSeason = document.getElementById('lb-my-score');
     if (elTotal) elTotal.innerText = window.myRankPoints;
@@ -1592,7 +1590,6 @@ window.addStorePoints = function(points, force = false) {
     window.lastStoreScoreTime = now;
 
     window.myStorePoints += points;
-    
     const elStore = document.getElementById('stat-store-points');
     const elStoreMyScore = document.getElementById('store-my-score');
     if (elStore) elStore.innerText = window.myStorePoints;
@@ -1603,14 +1600,18 @@ window.addStorePoints = function(points, force = false) {
     }
 };
 
-window.openLeaderboard = function() {
+window.openLeaderboard = async function() {
     window.switchView('leaderboard');
     const currentWeek = window.getCurrentWeekId();
     document.getElementById('lb-current-week').innerText = `第 ${currentWeek} 賽季`;
     
-    // 確保進入排行榜時，頂部的個人分數絕對是最新狀態
     const elSeason = document.getElementById('lb-my-score');
     if (elSeason) elSeason.innerText = window.myRankPoints;
+
+    // 確保飾品資料已載入，這樣排行榜才能畫出邊框
+    if (typeof window.loadAccessoriesCatalog === 'function') {
+        await window.loadAccessoriesCatalog();
+    }
 
     if (typeof window.fetchLeaderboard === 'function') {
         window.fetchLeaderboard(currentWeek);
@@ -1620,6 +1621,7 @@ window.openLeaderboard = function() {
 };
 
 window.renderLeaderboard = function(listData, mySeasonScore) {
+    document.getElementById('lb-my-score').innerText = mySeasonScore || 0;
     const container = document.getElementById('leaderboard-list');
     container.innerHTML = '';
 
@@ -1635,12 +1637,24 @@ window.renderLeaderboard = function(listData, mySeasonScore) {
         else if (index === 1) { rankClass = 'lb-rank-2'; rankText = '2'; }
         else if (index === 2) { rankClass = 'lb-rank-3'; rankText = '3'; }
 
+        // 解析並疊加外觀邊框
+        let frameHtml = '';
+        if (user.frame && window.accessoriesCatalog) {
+            const item = window.accessoriesCatalog.find(a => a.id === user.frame);
+            if (item) {
+                frameHtml = `<img src="${item.imgUrl}" class="avatar-frame" style="display:block;">`;
+            }
+        }
+
         const div = document.createElement('div');
         div.className = 'lb-item';
         div.onclick = () => window.openPublicProfile(user); 
         div.innerHTML = `
             <div class="lb-rank ${rankClass}">${rankText}</div>
-            <img src="${user.photo || 'https://via.placeholder.com/45'}" class="lb-avatar">
+            <div class="avatar-wrapper" style="margin-right: 15px; width: 45px; height: 45px;">
+                <img src="${user.photo || 'https://via.placeholder.com/45'}" class="lb-avatar" style="margin: 0; width: 100%; height: 100%;">
+                ${frameHtml}
+            </div>
             <div class="lb-info">
                 <div class="lb-name">${user.name}</div>
             </div>
@@ -1656,6 +1670,7 @@ window.openPublicProfile = function(user) {
     
     const avatarImg = document.getElementById('public-avatar-img');
     const avatarPlaceholder = document.getElementById('public-avatar-placeholder');
+    const pubFrame = document.getElementById('public-avatar-frame');
     
     if (user.photo) {
         avatarImg.src = user.photo;
@@ -1665,6 +1680,21 @@ window.openPublicProfile = function(user) {
         avatarImg.style.display = 'none';
         avatarPlaceholder.style.display = 'flex';
         avatarPlaceholder.innerText = user.name ? user.name.charAt(0).toUpperCase() : '?';
+    }
+
+    // 渲染對方的邊框
+    if (pubFrame) {
+        if (user.frame && window.accessoriesCatalog) {
+            const item = window.accessoriesCatalog.find(a => a.id === user.frame);
+            if (item) {
+                pubFrame.src = item.imgUrl;
+                pubFrame.style.display = 'block';
+            } else {
+                pubFrame.style.display = 'none';
+            }
+        } else {
+            pubFrame.style.display = 'none';
+        }
     }
     
     const badgeContainer = document.getElementById('public-badges-container');
@@ -1694,6 +1724,7 @@ window.editUserName = function() {
         }
     });
 };
+
 
 // ==========================================================================
 // 11. 片語專屬綜合練習模式
