@@ -29,7 +29,7 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // =====================================
-// 即時在線陪伴系統
+// 即時在線陪伴系統 (升級版)
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
@@ -39,7 +39,8 @@ onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
         mySessionRef = push(presenceRef);
         onDisconnect(mySessionRef).remove();
-        set(mySessionRef, true);
+        // 預設為匿名訪客狀態
+        set(mySessionRef, { isGuest: true, timestamp: Date.now() });
     }
 });
 
@@ -171,7 +172,7 @@ onAuthStateChanged(auth, (user) => {
         const pfName = document.getElementById('profile-name');
         const pfEmail = document.getElementById('profile-email');
         if(pfPlaceholder) pfPlaceholder.style.display = 'none';
-        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'block'; }
+        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'inline-block'; }
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
@@ -182,8 +183,8 @@ onAuthStateChanged(auth, (user) => {
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
             getDoc(doc(db, "users", user.uid)),
-            get(ref(rtdb, `users/${user.uid}/purchasedAccessories`)), // 讀取飾品
-            get(ref(rtdb, `users/${user.uid}/equippedFrame`)) // 讀取邊框
+            get(ref(rtdb, `users/${user.uid}/purchasedAccessories`)), 
+            get(ref(rtdb, `users/${user.uid}/equippedFrame`)) 
         ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame]) => {
             
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
@@ -192,7 +193,6 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // 寫入飾品狀態並渲染
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
             window.equippedFrame = snapFrame.exists() ? snapFrame.val() : null;
             localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
@@ -200,7 +200,6 @@ onAuthStateChanged(auth, (user) => {
             if (typeof window.applyAvatarFrame === 'function') {
                 window.applyAvatarFrame(window.equippedFrame);
                 
-                // 額外處理頂部小頭像的邊框
                 const headerFrame = document.getElementById('header-avatar-frame');
                 if (headerFrame && window.equippedFrame && window.accessoriesCatalog) {
                     const item = window.accessoriesCatalog.find(a => a.id === window.equippedFrame);
@@ -209,6 +208,19 @@ onAuthStateChanged(auth, (user) => {
                         headerFrame.style.display = 'block';
                     }
                 }
+            }
+
+            // ★ 將玩家詳細資訊與戰績同步至即時在線節點，讓管理員能看見 ★
+            if (mySessionRef) {
+                update(mySessionRef, {
+                    uid: user.uid,
+                    name: user.displayName || '匿名者',
+                    photo: user.photoURL || '',
+                    score: window.myRankPoints,
+                    frame: window.equippedFrame || '',
+                    isGuest: false,
+                    timestamp: Date.now()
+                });
             }
 
             const elRank = document.getElementById('stat-rank-score');
@@ -274,11 +286,14 @@ window.syncAccessoriesToCloud = async function() {
         await set(ref(rtdb, `users/${uid}/purchasedAccessories`), window.purchasedAccessories || []);
         await set(ref(rtdb, `users/${uid}/equippedFrame`), window.equippedFrame || '');
         
-        // 即時同步更新本週排行榜上的外觀
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        // 額外處理頂部小頭像的邊框
+        // 同步更新在線監控的頭像框
+        if (mySessionRef) {
+            update(mySessionRef, { frame: window.equippedFrame || '' });
+        }
+        
         const headerFrame = document.getElementById('header-avatar-frame');
         if (headerFrame && window.accessoriesCatalog) {
             if (window.equippedFrame) {
@@ -397,7 +412,6 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-        // 上傳時，把 frame (外觀邊框) 也一併傳上去
         await set(lbRef, {
             name: window.currentUser.displayName || '匿名者',
             photo: window.currentUser.photoURL || '',
@@ -405,6 +419,11 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
             frame: window.equippedFrame || '',
             timestamp: Date.now()
         });
+        
+        // ★ 玩家做完題目分數變化時，即時更新給管理員看 ★
+        if (mySessionRef) {
+            update(mySessionRef, { score: rankPoints });
+        }
         
     } catch(e) { console.error("上傳分數失敗", e); }
 };
@@ -416,24 +435,19 @@ window.fetchLeaderboard = async function(weekId) {
         const snapshot = await get(lbRef);
         
         let list = [];
-        let mySeasonScore = 0;
-        const myUid = window.currentUser ? window.currentUser.uid : null;
 
         if (snapshot.exists()) {
             snapshot.forEach((childSnap) => {
                 const data = childSnap.val();
                 data.uid = childSnap.key;
                 list.push(data);
-                if (data.uid === myUid) {
-                    mySeasonScore = data.score; 
-                }
             });
         }
         
         list.reverse();
         
         if (window.renderLeaderboard) {
-            window.renderLeaderboard(list, mySeasonScore);
+            window.renderLeaderboard(list, window.myRankPoints);
         }
     } catch(e) {
         console.error("抓取排行榜失敗", e);
@@ -616,7 +630,6 @@ window.settleLastSeason = function() {
 
         await set(settleRef, true);
         
-        // 結算後自動清空全服玩家的 rankPoints
         try {
             const usersSnap = await get(ref(rtdb, 'users'));
             if (usersSnap.exists()) {
@@ -626,7 +639,6 @@ window.settleLastSeason = function() {
                 });
                 await update(ref(rtdb), updates);
                 
-                // 本地同步歸零
                 window.myRankPoints = 0;
                 const elTotal = document.getElementById('stat-rank-score');
                 const elSeason = document.getElementById('lb-my-score');
@@ -648,7 +660,6 @@ window.settleLastSeason = function() {
     });
 };
 
-// 此為手動按鈕
 window.resetAllRankPoints = async function() {
     if (!window.isAdmin) return;
     
@@ -681,6 +692,89 @@ window.resetAllRankPoints = async function() {
             }
         }
     });
+};
+
+// ==========================================
+// 管理員專屬：讀取即時在線玩家名單
+// ==========================================
+window.refreshAdminOnlineUsers = async function() {
+    if (!window.isAdmin) return;
+    const container = document.getElementById('admin-online-list');
+    if(!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; padding: 20px 0; color: var(--text-sub); letter-spacing: 1px;">連線至節點中...</div>';
+    
+    try {
+        const snap = await get(ref(rtdb, 'online_users'));
+        let list = [];
+        let guestCount = 0;
+        
+        if (snap.exists()) {
+            snap.forEach(childSnap => {
+                const data = childSnap.val();
+                if (data === true || data.isGuest) {
+                    guestCount++;
+                } else if (data.uid) {
+                    list.push(data);
+                }
+            });
+        }
+        
+        container.innerHTML = '';
+        if (list.length === 0 && guestCount === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px 0; color: var(--text-sub);">目前無人上線</div>';
+            return;
+        }
+        
+        // 依照分數排序，重現在線殺戮排行榜的感覺
+        list.sort((a, b) => (b.score || 0) - (a.score || 0));
+        
+        list.forEach((user) => {
+            // 處理玩家裝備的炫耀邊框
+            let frameHtml = '';
+            if (user.frame && window.accessoriesCatalog) {
+                const item = window.accessoriesCatalog.find(a => a.id === user.frame);
+                if (item) {
+                    frameHtml = `<img src="${item.imgUrl}" class="avatar-frame" style="display:block;">`;
+                }
+            }
+
+            const div = document.createElement('div');
+            div.className = 'lb-item';
+            div.style.padding = '10px 15px';
+            div.style.marginBottom = '8px';
+            div.style.cursor = 'pointer';
+            
+            // 點擊後直接關掉側邊欄並打開該玩家主頁
+            div.onclick = () => { window.openPublicProfile(user); };
+            
+            div.innerHTML = `
+                <div class="avatar-wrapper" style="margin-right: 15px; width: 40px; height: 40px;">
+                    <img src="${user.photo || 'https://via.placeholder.com/45'}" class="lb-avatar" style="margin: 0; width: 100%; height: 100%;">
+                    ${frameHtml}
+                </div>
+                <div class="lb-info">
+                    <div class="lb-name" style="font-size: 0.95rem;">${user.name}</div>
+                </div>
+                <div class="lb-score" style="font-size: 0.9rem; color: #4caf50;">${user.score || 0} pts</div>
+            `;
+            container.appendChild(div);
+        });
+        
+        if (guestCount > 0) {
+            const div = document.createElement('div');
+            div.style.textAlign = 'center';
+            div.style.color = 'var(--text-sub)';
+            div.style.fontSize = '0.85rem';
+            div.style.marginTop = '10px';
+            div.innerText = `+ ${guestCount} 名未登入訪客正在遊玩`;
+            container.appendChild(div);
+        }
+        
+    } catch(e) {
+        console.error("載入在線名單失敗", e);
+        container.innerHTML = '<div style="text-align: center; padding: 20px 0; color: #ff4444;">連線失敗，請檢查權限</div>';
+    }
 };
 
 // ==========================================
