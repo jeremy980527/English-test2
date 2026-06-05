@@ -4,7 +4,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // =====================================
 // Firebase 專案配置
@@ -172,38 +172,39 @@ onAuthStateChanged(auth, (user) => {
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
-        const elRank = document.getElementById('stat-rank-score');
-        const elStore = document.getElementById('stat-store-points');
-        const elStoreMyScore = document.getElementById('store-my-score');
-
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
-            get(ref(rtdb, `users/${user.uid}/totalScore`)),
-            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
+            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)), // 絕對唯一的牌位積分來源！
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
             getDoc(doc(db, "users", user.uid)) 
-        ]).then(([snapStore, snapTotal, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
-            const oldTotalScore = snapTotal.exists() ? snapTotal.val() : 0;
-            const currentStore = snapStore.exists() ? snapStore.val() : 0;
-            let lbScore = snapLb.exists() ? snapLb.val() : 0;
+        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
             
-            // 【自動淨化機制】：消除上個賽季疊加過來的 11575 異常分數！
-            if (weekId === 2 && lbScore > 5000) {
-                lbScore = 0;
-                set(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`), 0);
-            }
+            const currentStore = snapStore.exists() ? snapStore.val() : 0;
+            const trueSeasonScore = snapLb.exists() ? snapLb.val() : 0;
+            
+            // 【終極修復】：將本地分數完全等同於真實的賽季分數
+            window.myRankPoints = trueSeasonScore;
+            window.myStorePoints = currentStore;
 
-            // 【徹底解決賽季不歸零問題】：強制作為唯一真理，賽季結束自動變 0
-            window.myRankPoints = lbScore;
-            window.myStorePoints = Math.max(currentStore, oldTotalScore);
+            // 立即渲染到畫面上
+            const elRank = document.getElementById('stat-rank-score');
+            const elLbMyScore = document.getElementById('lb-my-score');
+            const elStore = document.getElementById('stat-store-points');
+            const elStoreMyScore = document.getElementById('store-my-score');
 
             if (elRank) elRank.innerText = window.myRankPoints;
+            if (elLbMyScore) elLbMyScore.innerText = window.myRankPoints;
             if (elStore) elStore.innerText = window.myStorePoints;
             if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
 
-            set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+            // 強制用「真實賽季分數」去覆蓋掉玩家資料庫裡面的 `rankPoints`，徹底洗掉 2029 這種髒資料
+            set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
+            
+            if (!snapStore.exists()) {
+                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+            }
 
             let hasAdminPrivilege = false;
             if (snapAdminRtdb.exists() && snapAdminRtdb.val() === true) hasAdminPrivilege = true;
@@ -335,19 +336,22 @@ window.downloadShareData = async (shareId) => {
 // 賽季排行榜與雙軌分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(rankPoints, storePoints) {
-    if (!currentUser || typeof rtdb === 'undefined') return;
-    const uid = currentUser.uid;
+    if (!auth.currentUser || typeof rtdb === 'undefined') return;
+    const uid = auth.currentUser.uid;
     
     try {
         await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
         
+        // 個人主頁同步保持乾淨
+        await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
+        
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-        // 現在 rankPoints 絕對等於賽季分數
+        // 上傳排行榜時，保證寫入的是最新計算過的最純分數
         await set(lbRef, {
-            name: currentUser.displayName || '匿名者',
-            photo: currentUser.photoURL || '',
+            name: auth.currentUser.displayName || '匿名者',
+            photo: auth.currentUser.photoURL || '',
             score: rankPoints,
             timestamp: Date.now()
         });
@@ -362,24 +366,20 @@ window.fetchLeaderboard = async function(weekId) {
         const snapshot = await get(lbRef);
         
         let list = [];
-        let mySeasonScore = 0;
-        const myUid = currentUser ? currentUser.uid : null;
 
         if (snapshot.exists()) {
             snapshot.forEach((childSnap) => {
                 const data = childSnap.val();
                 data.uid = childSnap.key;
                 list.push(data);
-                if (data.uid === myUid) {
-                    mySeasonScore = data.score; 
-                }
             });
         }
         
         list.reverse();
         
         if (window.renderLeaderboard) {
-            window.renderLeaderboard(list, mySeasonScore);
+            // 直接將本地最精準的分數餵給渲染器
+            window.renderLeaderboard(list, window.myRankPoints);
         }
     } catch(e) {
         console.error("抓取排行榜失敗", e);
@@ -512,11 +512,11 @@ window.revokeAnnouncement = async function() {
 };
 
 // ==========================================
-// 賽季結算與徽章發放引擎 (Admin)
+// 賽季結算與強制清零機制 (Admin)
 // ==========================================
 window.settleLastSeason = function() {
     if (!window.isAdmin) return;
-    window.SilenModal.prompt("請輸入要結算的賽季 (例如: 1) \n系統將為該賽季前三名發放徽章。", window.getCurrentWeekId().toString()).then(async input => {
+    window.SilenModal.prompt("請輸入要結算的賽季 (例如: 1) \n系統將為該賽季前三名發放徽章，並在結算後自動清空所有人的 Firebase 牌位積分！", window.getCurrentWeekId().toString()).then(async input => {
         if (!input) return;
         const targetWeek = parseInt(input.trim());
         if (isNaN(targetWeek) || targetWeek < 1) {
@@ -562,6 +562,27 @@ window.settleLastSeason = function() {
 
         await set(settleRef, true);
         
+        // 結算後自動清空全服玩家的 rankPoints
+        try {
+            const usersSnap = await get(ref(rtdb, 'users'));
+            if (usersSnap.exists()) {
+                const updates = {};
+                usersSnap.forEach(childSnap => {
+                    updates[`users/${childSnap.key}/rankPoints`] = 0;
+                });
+                await update(ref(rtdb), updates);
+                
+                // 本地同步歸零
+                window.myRankPoints = 0;
+                const elTotal = document.getElementById('stat-rank-score');
+                const elSeason = document.getElementById('lb-my-score');
+                if(elTotal) elTotal.innerText = 0;
+                if(elSeason) elSeason.innerText = 0;
+            }
+        } catch(e) {
+            console.error("清空積分失敗", e);
+        }
+
         if (auth.currentUser) {
             const myBadgeSnap = await get(ref(rtdb, `users/${auth.currentUser.uid}/badges`));
             if (myBadgeSnap.exists() && window.renderMyBadges) {
@@ -569,7 +590,42 @@ window.settleLastSeason = function() {
             }
         }
 
-        window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！\n徽章已自動掛載至玩家個人主頁。`);
+        window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！\n徽章已自動發放，且全服 Firebase 牌位積分已徹底歸零！`);
+    });
+};
+
+// 此為手動按鈕
+window.resetAllRankPoints = async function() {
+    if (!window.isAdmin) return;
+    
+    window.SilenModal.confirm("⚠️ 警告：確定要清空全服所有玩家的 Firebase 牌位積分嗎？\n\n這將把所有玩家的 rankPoints 強制設為 0。通常用於修復舊賽季分數疊加的 Bug。").then(async agreed => {
+        if (agreed) {
+            window.SilenModal.alert("正在清空全服 Firebase 牌位積分，請稍候...");
+            try {
+                const usersSnap = await get(ref(rtdb, 'users'));
+                if (usersSnap.exists()) {
+                    const updates = {};
+                    usersSnap.forEach(childSnap => {
+                        updates[`users/${childSnap.key}/rankPoints`] = 0;
+                    });
+                    
+                    await update(ref(rtdb), updates);
+                    
+                    window.myRankPoints = 0;
+                    const elTotal = document.getElementById('stat-rank-score');
+                    const elSeason = document.getElementById('lb-my-score');
+                    if(elTotal) elTotal.innerText = 0;
+                    if(elSeason) elSeason.innerText = 0;
+                    
+                    window.SilenModal.alert("✅ 成功！\n全服所有玩家的 Firebase 牌位積分已徹底歸零。");
+                } else {
+                    window.SilenModal.alert("找不到玩家資料！");
+                }
+            } catch (e) {
+                console.error("清空失敗", e);
+                window.SilenModal.alert("清空失敗，請檢查網路或資料庫權限。");
+            }
+        }
     });
 };
 
