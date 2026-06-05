@@ -150,7 +150,7 @@
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
         
-        <div id="sidebar-admin-btn" class="sidebar-item" style="display: none; border-left: 3px solid #fff;" onclick="window.switchView('admin'); window.toggleSidebar();">系統管理後台</div>
+        <div id="sidebar-admin-btn" class="sidebar-item" style="display: none; border-left: 3px solid #fff;" onclick="window.switchView('admin'); if(window.refreshAdminOnlineUsers) window.refreshAdminOnlineUsers(); window.toggleSidebar();">系統管理後台</div>
     </div>
 </div>
 
