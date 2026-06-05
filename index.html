@@ -281,7 +281,16 @@
             </div>
         </div>
 
-        <div class="card" style="border-color: var(--border); background: var(--card-bg);">
+        <div class="card" style="border-color: #4caf50; background: var(--card-bg);">
+            <h3 style="margin-top: 0; color: #4caf50; font-weight: 500; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">在線玩家即時監控</h3>
+            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">點擊玩家即可查看其個人主頁與詳細成就 (僅顯示已登入玩家)。</p>
+            <div id="admin-online-list">
+                <div style="text-align: center; padding: 20px 0; color: var(--text-sub); letter-spacing: 1px;">連線中...</div>
+            </div>
+            <button class="btn btn-outline" style="width: 100%; border-color: #4caf50; color: #4caf50; margin-top: 15px;" onclick="window.refreshAdminOnlineUsers()">重新整理列表</button>
+        </div>
+
+        <div class="card" style="border-color: var(--border); background: var(--card-bg); margin-top: 20px;">
             <h3 style="margin-top: 0; color: var(--text-main); font-weight: 500; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">發布彈窗系統公告</h3>
             <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">發布後，未讀玩家在首頁將收到一次彈窗通知，不會持續干擾畫面。</p>
             
