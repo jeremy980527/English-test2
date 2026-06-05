@@ -2236,3 +2236,149 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
         }
     });
 };
+
+// ==========================================
+// 15. 外觀飾品系統 (Accessories System)
+// ==========================================
+window.purchasedAccessories = JSON.parse(localStorage.getItem('sv_purchased_acc')) || [];
+window.equippedFrame = localStorage.getItem('sv_equipped_frame') || null;
+window.accessoriesCatalog = [];
+
+window.loadAccessoriesCatalog = async function() {
+    if (window.accessoriesCatalog.length > 0) return window.accessoriesCatalog;
+    try {
+        const res = await fetch("accessories.json?t=" + Date.now());
+        if (res.ok) {
+            window.accessoriesCatalog = await res.json();
+            window.applyAvatarFrame(window.equippedFrame); // 載入後立即套用現有邊框
+            return window.accessoriesCatalog;
+        }
+    } catch(e) { console.error("飾品庫讀取失敗", e); }
+    return [];
+};
+
+// 網頁啟動時自動載入型錄，確保側邊欄的大頭貼一開始就有框
+window.addEventListener('DOMContentLoaded', () => {
+    window.loadAccessoriesCatalog();
+});
+
+window.applyAvatarFrame = function(frameId) {
+    window.equippedFrame = frameId;
+    localStorage.setItem('sv_equipped_frame', frameId || '');
+    
+    let frameUrl = '';
+    if (frameId && window.accessoriesCatalog) {
+        const item = window.accessoriesCatalog.find(a => a.id === frameId);
+        if (item) frameUrl = item.imgUrl;
+    }
+
+    // 同步更新側邊欄與個人主頁的邊框
+    const targetEls = ['sb-avatar-frame', 'profile-avatar-frame'];
+    targetEls.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (frameUrl) {
+                el.src = frameUrl;
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+                el.src = '';
+            }
+        }
+    });
+};
+
+window.openAccessoriesStore = async function() {
+    window.switchView('accessories');
+    const elScore = document.getElementById('acc-my-score');
+    if (elScore) elScore.innerText = window.myStorePoints || 0;
+    
+    const container = document.getElementById('accessories-catalog-area');
+    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px 0; color: var(--text-sub);">載入飾品資料中...</div>';
+    
+    const catalog = await window.loadAccessoriesCatalog();
+    window.renderAccessoriesCatalog(catalog);
+};
+
+window.renderAccessoriesCatalog = function(catalog) {
+    const container = document.getElementById('accessories-catalog-area');
+    container.innerHTML = '';
+    
+    const activeItems = catalog.filter(item => item.active);
+    
+    if (activeItems.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px 0; color: var(--text-sub);">目前沒有販售任何飾品。</div>';
+        return;
+    }
+
+    activeItems.forEach(item => {
+        const isPurchased = window.purchasedAccessories.includes(item.id);
+        const isEquipped = window.equippedFrame === item.id;
+        
+        const card = document.createElement('div');
+        card.className = 'acc-card';
+        
+        let btnHtml = '';
+        if (isEquipped) {
+            btnHtml = `<button class="btn btn-small" style="margin:0; background:#f1c40f; color:#000; font-weight:bold;" onclick="window.equipAccessory('${item.id}')">卸下</button>`;
+        } else if (isPurchased) {
+            btnHtml = `<button class="btn btn-small btn-outline" style="margin:0; border-color:#f1c40f; color:#f1c40f;" onclick="window.equipAccessory('${item.id}')">裝備</button>`;
+        } else {
+            btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseAccessory('${item.id}', ${item.price}, '${item.name}')">${item.price} pts</button>`;
+        }
+
+        card.innerHTML = `
+            <div class="acc-img-wrapper">
+                <div class="acc-avatar-dummy"></div>
+                <img src="${item.imgUrl}" class="acc-img" alt="${item.name}">
+            </div>
+            <div class="acc-title">${item.name}</div>
+            <div class="acc-desc">${item.desc}</div>
+            <div style="margin-top: 10px;">${btnHtml}</div>
+        `;
+        container.appendChild(card);
+    });
+};
+
+window.purchaseAccessory = function(id, price, name) {
+    if (!window.currentUser && typeof auth !== 'undefined' && typeof window.syncAccessoriesToCloud === 'function') {
+        window.SilenModal.alert("請先登入帳號才能購買飾品！"); return;
+    }
+
+    if (window.myStorePoints < price) {
+        window.SilenModal.alert(`點數不足！\n\n購買需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
+        return;
+    }
+
+    window.SilenModal.confirm(`確定要花費 ${price} 點數購買「${name}」嗎？`).then(agreed => {
+        if (agreed) {
+            window.myStorePoints -= price;
+            if (typeof window.addStorePoints === 'function') window.addStorePoints(0, true); // 更新介面點數
+            
+            window.purchasedAccessories.push(id);
+            localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
+            
+            if (typeof window.syncAccessoriesToCloud === 'function') {
+                window.syncAccessoriesToCloud();
+            }
+
+            window.SilenModal.alert(`購買成功！\n\n您已解鎖「${name}」，現在可以裝備它了！`).then(() => {
+                window.openAccessoriesStore();
+            });
+        }
+    });
+};
+
+window.equipAccessory = function(id) {
+    if (window.equippedFrame === id) {
+        window.applyAvatarFrame(null); // 卸下
+    } else {
+        window.applyAvatarFrame(id); // 裝備
+    }
+    
+    if (typeof window.syncAccessoriesToCloud === 'function') {
+        window.syncAccessoriesToCloud();
+    }
+    
+    window.openAccessoriesStore(); // 重新渲染按鈕狀態
+};
