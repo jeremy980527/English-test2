@@ -149,11 +149,14 @@ onAuthStateChanged(auth, (user) => {
     const hasShareLink = urlParams.get('lz') || urlParams.get('s') || urlParams.get('share') || urlParams.get('q');
 
     if (user) {
-        currentUser = user;
+        window.currentUser = user;
         mainHeader.classList.remove('hidden');
         
         authContainer.innerHTML = `
-            <img src="${user.photoURL}" alt="avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); cursor: pointer;" onclick="window.toggleSidebar()">
+            <div class="avatar-wrapper" style="cursor: pointer;" onclick="window.toggleSidebar()">
+                <img src="${user.photoURL}" alt="avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); display: block; margin: 0;">
+                <img id="header-avatar-frame" class="avatar-frame" src="" style="display: none;">
+            </div>
         `;
         
         const sbPlaceholder = document.getElementById('sb-avatar-placeholder');
@@ -168,7 +171,7 @@ onAuthStateChanged(auth, (user) => {
         const pfName = document.getElementById('profile-name');
         const pfEmail = document.getElementById('profile-email');
         if(pfPlaceholder) pfPlaceholder.style.display = 'none';
-        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'inline-block'; }
+        if(pfImg) { pfImg.src = user.photoURL; pfImg.style.display = 'block'; }
         if(pfName) pfName.innerText = user.displayName;
         if(pfEmail) pfEmail.innerText = user.email;
 
@@ -176,19 +179,38 @@ onAuthStateChanged(auth, (user) => {
 
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
-            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)), // 絕對唯一的牌位積分來源！
+            get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
-            getDoc(doc(db, "users", user.uid)) 
-        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb]) => {
+            getDoc(doc(db, "users", user.uid)),
+            get(ref(rtdb, `users/${user.uid}/purchasedAccessories`)), // 讀取飾品
+            get(ref(rtdb, `users/${user.uid}/equippedFrame`)) // 讀取邊框
+        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame]) => {
             
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
             const trueSeasonScore = snapLb.exists() ? snapLb.val() : 0;
             
-            // 【終極修復】：將本地分數完全等同於真實的賽季分數
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // 立即渲染到畫面上
+            // 寫入飾品狀態並渲染
+            window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
+            window.equippedFrame = snapFrame.exists() ? snapFrame.val() : null;
+            localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
+            
+            if (typeof window.applyAvatarFrame === 'function') {
+                window.applyAvatarFrame(window.equippedFrame);
+                
+                // 額外處理頂部小頭像的邊框
+                const headerFrame = document.getElementById('header-avatar-frame');
+                if (headerFrame && window.equippedFrame && window.accessoriesCatalog) {
+                    const item = window.accessoriesCatalog.find(a => a.id === window.equippedFrame);
+                    if (item) {
+                        headerFrame.src = item.imgUrl;
+                        headerFrame.style.display = 'block';
+                    }
+                }
+            }
+
             const elRank = document.getElementById('stat-rank-score');
             const elLbMyScore = document.getElementById('lb-my-score');
             const elStore = document.getElementById('stat-store-points');
@@ -199,7 +221,6 @@ onAuthStateChanged(auth, (user) => {
             if (elStore) elStore.innerText = window.myStorePoints;
             if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
 
-            // 強制用「真實賽季分數」去覆蓋掉玩家資料庫裡面的 `rankPoints`，徹底洗掉 2029 這種髒資料
             set(ref(rtdb, `users/${user.uid}/rankPoints`), window.myRankPoints);
             
             if (!snapStore.exists()) {
@@ -232,7 +253,7 @@ onAuthStateChanged(auth, (user) => {
         });
 
     } else {
-        currentUser = null;
+        window.currentUser = null;
         authContainer.innerHTML = ``;
         if (hasShareLink) {
             mainHeader.classList.remove('hidden');
@@ -242,6 +263,36 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
+
+// =====================================
+// 飾品系統 Firebase 同步
+// =====================================
+window.syncAccessoriesToCloud = async function() {
+    if (!window.currentUser) return;
+    const uid = window.currentUser.uid;
+    try {
+        await set(ref(rtdb, `users/${uid}/purchasedAccessories`), window.purchasedAccessories || []);
+        await set(ref(rtdb, `users/${uid}/equippedFrame`), window.equippedFrame || '');
+        
+        // 即時同步更新本週排行榜上的外觀
+        const weekId = window.getCurrentWeekId();
+        await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
+        
+        // 額外處理頂部小頭像的邊框
+        const headerFrame = document.getElementById('header-avatar-frame');
+        if (headerFrame && window.accessoriesCatalog) {
+            if (window.equippedFrame) {
+                const item = window.accessoriesCatalog.find(a => a.id === window.equippedFrame);
+                if (item) {
+                    headerFrame.src = item.imgUrl;
+                    headerFrame.style.display = 'block';
+                }
+            } else {
+                headerFrame.style.display = 'none';
+            }
+        }
+    } catch (e) { console.error("飾品同步失敗", e); }
+};
 
 // =====================================
 // 個人主頁與公有主頁的徽章渲染引擎
@@ -336,23 +387,22 @@ window.downloadShareData = async (shareId) => {
 // 賽季排行榜與雙軌分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(rankPoints, storePoints) {
-    if (!auth.currentUser || typeof rtdb === 'undefined') return;
-    const uid = auth.currentUser.uid;
+    if (!window.currentUser || typeof rtdb === 'undefined') return;
+    const uid = window.currentUser.uid;
     
     try {
         await set(ref(rtdb, `users/${uid}/storePoints`), storePoints);
-        
-        // 個人主頁同步保持乾淨
         await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints);
         
         const weekId = window.getCurrentWeekId();
         const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${uid}`);
             
-        // 上傳排行榜時，保證寫入的是最新計算過的最純分數
+        // 上傳時，把 frame (外觀邊框) 也一併傳上去
         await set(lbRef, {
-            name: auth.currentUser.displayName || '匿名者',
-            photo: auth.currentUser.photoURL || '',
+            name: window.currentUser.displayName || '匿名者',
+            photo: window.currentUser.photoURL || '',
             score: rankPoints,
+            frame: window.equippedFrame || '',
             timestamp: Date.now()
         });
         
@@ -366,20 +416,24 @@ window.fetchLeaderboard = async function(weekId) {
         const snapshot = await get(lbRef);
         
         let list = [];
+        let mySeasonScore = 0;
+        const myUid = window.currentUser ? window.currentUser.uid : null;
 
         if (snapshot.exists()) {
             snapshot.forEach((childSnap) => {
                 const data = childSnap.val();
                 data.uid = childSnap.key;
                 list.push(data);
+                if (data.uid === myUid) {
+                    mySeasonScore = data.score; 
+                }
             });
         }
         
         list.reverse();
         
         if (window.renderLeaderboard) {
-            // 直接將本地最精準的分數餵給渲染器
-            window.renderLeaderboard(list, window.myRankPoints);
+            window.renderLeaderboard(list, mySeasonScore);
         }
     } catch(e) {
         console.error("抓取排行榜失敗", e);
@@ -390,7 +444,7 @@ window.fetchLeaderboard = async function(weekId) {
 // 同步更新使用者名稱至 Firebase 雲端與排行榜
 // ==========================================
 window.updateCloudUserName = async function(newName) {
-    const user = auth.currentUser;
+    const user = window.currentUser;
     if (!user) {
         window.SilenModal.alert("請先登入帳號，才能將名稱同步至雲端排行榜！");
         return;
@@ -583,8 +637,8 @@ window.settleLastSeason = function() {
             console.error("清空積分失敗", e);
         }
 
-        if (auth.currentUser) {
-            const myBadgeSnap = await get(ref(rtdb, `users/${auth.currentUser.uid}/badges`));
+        if (window.currentUser) {
+            const myBadgeSnap = await get(ref(rtdb, `users/${window.currentUser.uid}/badges`));
             if (myBadgeSnap.exists() && window.renderMyBadges) {
                 window.renderMyBadges(myBadgeSnap.val());
             }
@@ -636,7 +690,7 @@ window.resetAllRankPoints = async function() {
 window.currentPublishBookId = null;
 
 window.checkPublishLimit = async function() {
-    const user = auth.currentUser;
+    const user = window.currentUser;
     if (!user) return { canUpload: false, remaining: 0 };
     try {
         const docRef = doc(db, "users", user.uid);
@@ -660,7 +714,7 @@ window.checkPublishLimit = async function() {
 };
 
 window.openPublishModal = function() {
-    if (!auth.currentUser) {
+    if (!window.currentUser) {
         window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
     }
 
@@ -753,7 +807,7 @@ window.confirmPublish = function() {
 };
 
 window.executePublishToMarket = async function(book, price, desc) {
-    const user = auth.currentUser;
+    const user = window.currentUser;
     if (!user) return;
     
     window.SilenModal.alert("上架處理中，請稍候...");
@@ -848,7 +902,7 @@ window.renderMarketCatalog = function(marketBooks) {
         card.className = 'store-card';
         
         const isOwned = window.books.some(b => b.marketId === book.id);
-        const myUid = auth.currentUser ? auth.currentUser.uid : '';
+        const myUid = window.currentUser ? window.currentUser.uid : '';
 
         let btnHtml = '';
         if (isOwned) {
@@ -881,7 +935,7 @@ window.renderMarketCatalog = function(marketBooks) {
 };
 
 window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
-    const user = auth.currentUser;
+    const user = window.currentUser;
     if (!user) {
         window.SilenModal.alert("請先登入！"); return;
     }
@@ -941,45 +995,6 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
             } catch (e) {
                 console.error("交易失敗", e);
                 window.SilenModal.alert("交易失敗，請檢查網路連線。");
-            }
-        }
-    });
-};
-
-// ==========================================
-// 全服牌位強制歸零 (管理員強制操作)
-// ==========================================
-window.resetAllRankPoints = async function() {
-    if (!window.isAdmin) return;
-    
-    window.SilenModal.confirm("⚠️ 警告：確定要清空全服所有玩家的 Firebase 牌位積分嗎？\n\n這將把所有玩家的 rankPoints 強制設為 0。通常用於修復舊賽季分數疊加的 Bug。").then(async agreed => {
-        if (agreed) {
-            window.SilenModal.alert("正在清空全服 Firebase 牌位積分，請稍候...");
-            try {
-                const usersSnap = await get(ref(rtdb, 'users'));
-                if (usersSnap.exists()) {
-                    const updates = {};
-                    usersSnap.forEach(childSnap => {
-                        updates[`users/${childSnap.key}/rankPoints`] = 0;
-                    });
-                    
-                    // 一口氣把全伺服器所有玩家的積分更新為 0
-                    await update(ref(rtdb), updates);
-                    
-                    // 同步更新自己畫面上的數字
-                    window.myRankPoints = 0;
-                    const elTotal = document.getElementById('stat-rank-score');
-                    const elSeason = document.getElementById('lb-my-score');
-                    if(elTotal) elTotal.innerText = 0;
-                    if(elSeason) elSeason.innerText = 0;
-                    
-                    window.SilenModal.alert("✅ 成功！\n全服所有玩家的 Firebase 牌位積分已徹底歸零。現在資料庫乾淨了！");
-                } else {
-                    window.SilenModal.alert("找不到玩家資料！");
-                }
-            } catch (e) {
-                console.error("清空失敗", e);
-                window.SilenModal.alert("清空失敗，請檢查網路或資料庫權限。");
             }
         }
     });
