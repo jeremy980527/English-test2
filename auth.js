@@ -29,7 +29,7 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // =====================================
-// 即時在線陪伴系統 (升級版)
+// 即時在線陪伴系統
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
@@ -39,7 +39,6 @@ onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
         mySessionRef = push(presenceRef);
         onDisconnect(mySessionRef).remove();
-        // 預設為匿名訪客狀態
         set(mySessionRef, { isGuest: true, timestamp: Date.now() });
     }
 });
@@ -57,7 +56,6 @@ onValue(presenceRef, (snap) => {
 // =====================================
 window.loginWithGoogle = () => {
     const isApp = typeof AndroidBridge !== 'undefined';
-
     if (isApp) {
         signInWithRedirect(auth, provider).catch((error) => {
             if (window.SilenModal) window.SilenModal.alert("App 登入失敗：" + error.message);
@@ -99,7 +97,6 @@ async function syncFromCloud(uid) {
 
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
-
             if (cloudData && cloudData.books) {
                 window.books = cloudData.books;
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
@@ -193,6 +190,42 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
+            // ★ 每日簽到系統 ★
+            const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
+            const now = new Date();
+            const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toLocaleDateString('zh-TW', tzOptions);
+
+            let dbData = docSnapAdminDb.exists() ? docSnapAdminDb.data() : {};
+            let lastDate = dbData.lastCheckInDate || '';
+            let streak = dbData.checkInStreak || 0;
+
+            if (lastDate !== todayStr && !window.isGuestMode && !hasShareLink) {
+                if (lastDate === yesterdayStr) {
+                    streak = (streak % 7) + 1; 
+                } else {
+                    streak = 1; 
+                }
+
+                const rewards = [0, 200, 300, 400, 500, 650, 800, 1300];
+                const rewardPoints = rewards[streak];
+
+                window.myStorePoints += rewardPoints;
+                
+                // 寫回資料庫
+                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
+                setDoc(doc(db, "users", user.uid), {
+                    lastCheckInDate: todayStr,
+                    checkInStreak: streak
+                }, { merge: true });
+
+                setTimeout(() => {
+                    window.SilenModal.alert(`🎉 每日簽到成功！\n\n這是您連續簽到的第 ${streak} 天。\n已為您發放 ${rewardPoints} 點商城點數！`);
+                }, 800);
+            }
+
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
             window.equippedFrame = snapFrame.exists() ? snapFrame.val() : null;
             localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
@@ -210,7 +243,6 @@ onAuthStateChanged(auth, (user) => {
                 }
             }
 
-            // ★ 將玩家詳細資訊與戰績同步至即時在線節點，讓管理員能看見 ★
             if (mySessionRef) {
                 update(mySessionRef, {
                     uid: user.uid,
@@ -289,7 +321,6 @@ window.syncAccessoriesToCloud = async function() {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        // 同步更新在線監控的頭像框
         if (mySessionRef) {
             update(mySessionRef, { frame: window.equippedFrame || '' });
         }
@@ -420,7 +451,6 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
             timestamp: Date.now()
         });
         
-        // ★ 玩家做完題目分數變化時，即時更新給管理員看 ★
         if (mySessionRef) {
             update(mySessionRef, { score: rankPoints });
         }
@@ -726,11 +756,9 @@ window.refreshAdminOnlineUsers = async function() {
             return;
         }
         
-        // 依照分數排序，重現在線殺戮排行榜的感覺
         list.sort((a, b) => (b.score || 0) - (a.score || 0));
         
         list.forEach((user) => {
-            // 處理玩家裝備的炫耀邊框
             let frameHtml = '';
             if (user.frame && window.accessoriesCatalog) {
                 const item = window.accessoriesCatalog.find(a => a.id === user.frame);
@@ -745,7 +773,6 @@ window.refreshAdminOnlineUsers = async function() {
             div.style.marginBottom = '8px';
             div.style.cursor = 'pointer';
             
-            // 點擊後直接關掉側邊欄並打開該玩家主頁
             div.onclick = () => { window.openPublicProfile(user); };
             
             div.innerHTML = `
