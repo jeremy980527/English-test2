@@ -164,7 +164,7 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories'];
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories', 'arena'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -2461,4 +2461,20 @@ window.equipAccessory = function(id) {
     }
     
     window.openAccessoriesStore(); // 重新渲染按鈕狀態
+};
+
+// ==========================================
+// 16. 1v1 即時對戰大廳 (Arena) Phase 1
+// ==========================================
+window.createArenaRoom = function() {
+    window.SilenModal.alert("【第一階段建置中】\n之後點擊這裡會自動生成一組 5 碼房間代碼，並切換到『等待對手加入』的畫面！");
+};
+
+window.joinArenaRoom = function() {
+    const code = document.getElementById('arena-join-code').value.trim().toUpperCase();
+    if(code.length !== 5) {
+        window.SilenModal.alert("請輸入完整的 5 碼房間代碼！");
+        return;
+    }
+    window.SilenModal.alert(`【第一階段建置中】\n之後系統會去資料庫尋找代碼 [${code}]，如果找到了就會直接進入對戰房！`);
 };
