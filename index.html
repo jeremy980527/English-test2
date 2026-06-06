@@ -326,6 +326,44 @@
         </div>
     </div>
 
+    <div id="view-arena-match" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.surrenderArena()">投降離開</button>
+            <div class="nav-bar-right"><span style="color: #ff9800; font-weight: bold; letter-spacing: 1px; animation: pulse 1.5s infinite;">即時對戰中</span></div>
+        </div>
+        
+        <div class="practice-area" style="margin-top: 10px;">
+            <div class="card" style="padding: 15px; margin-bottom: 20px; border-color: var(--border);">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <img id="am-host-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ff9800; margin-right: 10px; object-fit: cover;">
+                    <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
+                        <div id="am-host-bar" style="width: 0%; height: 100%; background: #ff9800; transition: width 0.3s ease;"></div>
+                    </div>
+                    <span id="am-host-score" style="margin-left: 10px; font-weight: bold; color: #ff9800; width: 30px; text-align: right;">0</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <img id="am-guest-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #4caf50; margin-right: 10px; object-fit: cover;">
+                    <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
+                        <div id="am-guest-bar" style="width: 0%; height: 100%; background: #4caf50; transition: width 0.3s ease;"></div>
+                    </div>
+                    <span id="am-guest-score" style="margin-left: 10px; font-weight: bold; color: #4caf50; width: 30px; text-align: right;">0</span>
+                </div>
+                <div style="text-align: center; font-size: 0.75rem; color: var(--text-sub); margin-top: 10px;">目標：率先答對 10 題者獲勝！</div>
+            </div>
+
+            <div id="am-interaction-area">
+                <div class="question-text" id="am-question-display" style="font-size: 2.2rem; margin-bottom: 30px;">Loading...</div>
+                <div class="mcq-grid" id="am-options-area"></div>
+            </div>
+            
+            <div id="am-feedback-area" class="hidden" style="text-align: center; padding: 20px 0;">
+                <div id="am-feedback-icon" class="big-icon"></div>
+                <div id="am-feedback-status" class="result-status"></div>
+                <div style="color: var(--text-sub); font-size: 0.9rem; margin-top: 10px;">準備進入下一題...</div>
+            </div>
+        </div>
+    </div>
+
     <div id="view-admin" class="hidden">
         <div class="nav-bar">
             <button class="btn-icon" onclick="window.goHome()">返回</button>
