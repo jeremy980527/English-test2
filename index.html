@@ -121,7 +121,7 @@
         .silen-modal-box::-webkit-scrollbar, #pub-book-list-container::-webkit-scrollbar { display: none; }
         .silen-modal-box, #pub-book-list-container { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* 全新：提示系統與詞性按鈕 CSS */
+        /* 提示系統與詞性按鈕 CSS */
         .help-icon { display: inline-flex; justify-content: center; align-items: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; font-size: 0.75rem; cursor: pointer; margin-left: 8px; vertical-align: middle; transition: 0.2s; font-weight: bold; user-select: none; }
         .help-icon:hover { background: #ff9800; color: #000; }
         .pos-toggle-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
@@ -149,6 +149,9 @@
         <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();">擴充商城庫</div>
         <div class="sidebar-item" onclick="window.openAccessoriesStore(); window.toggleSidebar();" style="border-left: 3px solid #f1c40f; color: #f1c40f;">外觀飾品店</div>
         <div class="sidebar-item" onclick="window.openMarket(); window.toggleSidebar();" style="border-left: 3px solid #ff9800; color: #ff9800;">玩家市場 (C2C)</div>
+        
+        <div class="sidebar-item" onclick="window.switchView('arena'); window.toggleSidebar();">1v1 對戰大廳</div>
+        
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
         <div id="sidebar-admin-btn" class="sidebar-item" style="display: none; border-left: 3px solid #fff;" onclick="window.switchView('admin'); if(window.refreshAdminOnlineUsers) window.refreshAdminOnlineUsers(); window.toggleSidebar();">系統管理後台</div>
@@ -259,6 +262,32 @@
         <h3 style="margin-top: 0; font-weight: 500; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 15px; color: var(--text-main);">飾品型錄</h3>
         <div id="accessories-catalog-area" class="acc-grid">
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在連線至飾品伺服器...</div>
+        </div>
+    </div>
+
+    <div id="view-arena" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.goHome()">返回</button>
+            <div class="nav-bar-right"><span style="font-weight: 500; letter-spacing: 1px;">1v1 對戰大廳</span></div>
+        </div>
+        
+        <div class="card" style="text-align: center; border-color: var(--border); padding: 40px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">⚔️</div>
+            <h2 style="margin-top: 0; color: var(--text-main); font-weight: 500; letter-spacing: 2px;">即時競技場</h2>
+            <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 30px; letter-spacing: 0.5px;">創建專屬房間，邀請好友展開即時的單字廝殺！</p>
+            
+            <button class="btn" style="width: 100%; background: #fff; color: #000; font-weight: bold; font-size: 1.1rem; padding: 15px;" onclick="window.createArenaRoom()">創建對戰房間</button>
+            
+            <div style="display: flex; align-items: center; margin: 30px 0;">
+                <div style="flex: 1; height: 1px; background: #333;"></div>
+                <div style="margin: 0 15px; color: var(--text-sub); font-size: 0.85rem; letter-spacing: 1px;">或加入現有房間</div>
+                <div style="flex: 1; height: 1px; background: #333;"></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="arena-join-code" placeholder="輸入 5 碼房間代碼" maxlength="5" style="flex: 2; text-align: center; text-transform: uppercase; font-size: 1.2rem; letter-spacing: 5px; font-weight: bold;">
+                <button class="btn btn-outline" style="flex: 1; margin: 0;" onclick="window.joinArenaRoom()">加入</button>
+            </div>
         </div>
     </div>
 
@@ -587,8 +616,6 @@
             <div class="progress-text" id="pos-progress-display"></div>
         </div>
     </div>
-
-    <!-- ===== 這裡就是被誤刪的完整區塊！現在 100% 復活了！ ===== -->
     
     <div id="view-mastery" class="hidden">
         <div class="nav-bar">
@@ -811,12 +838,9 @@
             <div class="progress-text" id="yg-progress"></div>
         </div>
     </div>
-    
-    <!-- ============================================== -->
 
 </div>
 
-<!-- 彈窗模組 -->
 <div id="silen-modal-overlay" class="hidden"><div class="silen-modal-box"><div id="silen-modal-msg" class="silen-modal-msg"></div><input type="text" id="silen-modal-input" class="hidden"><textarea id="silen-modal-textarea" class="hidden"></textarea><div class="silen-modal-actions"><button id="silen-modal-btn-cancel" class="btn btn-outline btn-small hidden">取消</button><button id="silen-modal-btn-confirm" class="btn btn-small">確認</button></div></div></div>
 
 <div id="silen-settings-overlay" class="hidden"><div class="silen-modal-box" style="max-width: 320px;"><h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 25px;">偏好設定</h3><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')"><input type="checkbox" id="set-pronounce" style="pointer-events: none;"><label style="flex:1;">自動朗讀英文</label></div><div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('sequential')"><input type="checkbox" id="set-sequential" style="pointer-events: none;"><label style="flex:1;">「循序漸進」模式</label></div><div class="checkbox-wrapper" style="margin-bottom: 30px;" onclick="window.toggleSetting('presence')"><input type="checkbox" id="set-presence" style="pointer-events: none;"><label style="flex:1;">顯示即時學習人數</label></div><div class="silen-modal-actions" style="flex-direction: column; gap: 10px;"><button class="btn btn-small" style="width: 100%; background: #fff; color: #000;" onclick="window.SilenSettings.close()">完成設定</button><button class="btn btn-outline btn-small" style="width: 100%; color: var(--error);" onclick="window.SilenSettings.close(); window.logout();">登出帳號</button></div></div></div>
