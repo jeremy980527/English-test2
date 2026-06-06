@@ -52,6 +52,15 @@
     "price": 4500,
     "imgUrl": "Frame_meme_01.png",
     "active": true
+  },
+  {
+    "id": "frame_flood_01",
+    "name": "淹水啦",
+    "desc": "溺斃在英文的海洋",
+    "type": "avatar_frame",
+    "price": 3000,
+    "imgUrl": "Frame_flood.gif",
+    "active": true
   }
   
 ]
