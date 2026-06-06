@@ -29,17 +29,37 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 
 // =====================================
-// 即時在線陪伴系統
+// 即時在線陪伴系統 (防斷線重連覆蓋升級版)
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
 let mySessionRef = null;
 
+// 全新：統一的狀態校正大腦
+window.updateMyPresence = function() {
+    if (!mySessionRef) return;
+    const user = window.currentUser;
+    if (user) {
+        update(mySessionRef, {
+            uid: user.uid,
+            name: user.displayName || '匿名者',
+            photo: user.photoURL || '',
+            score: window.myRankPoints || 0,
+            frame: window.equippedFrame || '',
+            isGuest: false,
+            timestamp: Date.now()
+        });
+    } else {
+        set(mySessionRef, { isGuest: true, timestamp: Date.now() });
+    }
+};
+
 onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
         mySessionRef = push(presenceRef);
         onDisconnect(mySessionRef).remove();
-        set(mySessionRef, { isGuest: true, timestamp: Date.now() });
+        // 連線成功時，呼叫狀態大腦進行檢查，防止登入玩家被降級成訪客
+        window.updateMyPresence();
     }
 });
 
@@ -190,7 +210,7 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // ★ 每日簽到系統 ★
+            // 每日簽到系統
             const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
@@ -214,7 +234,6 @@ onAuthStateChanged(auth, (user) => {
 
                 window.myStorePoints += rewardPoints;
                 
-                // 寫回資料庫
                 set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
                 setDoc(doc(db, "users", user.uid), {
                     lastCheckInDate: todayStr,
@@ -243,17 +262,8 @@ onAuthStateChanged(auth, (user) => {
                 }
             }
 
-            if (mySessionRef) {
-                update(mySessionRef, {
-                    uid: user.uid,
-                    name: user.displayName || '匿名者',
-                    photo: user.photoURL || '',
-                    score: window.myRankPoints,
-                    frame: window.equippedFrame || '',
-                    isGuest: false,
-                    timestamp: Date.now()
-                });
-            }
+            // 觸發在線狀態更新
+            window.updateMyPresence();
 
             const elRank = document.getElementById('stat-rank-score');
             const elLbMyScore = document.getElementById('lb-my-score');
@@ -298,6 +308,8 @@ onAuthStateChanged(auth, (user) => {
 
     } else {
         window.currentUser = null;
+        window.updateMyPresence(); // 登出時，如果沒關網頁，自動變回訪客
+        
         authContainer.innerHTML = ``;
         if (hasShareLink) {
             mainHeader.classList.remove('hidden');
@@ -321,9 +333,7 @@ window.syncAccessoriesToCloud = async function() {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        if (mySessionRef) {
-            update(mySessionRef, { frame: window.equippedFrame || '' });
-        }
+        window.updateMyPresence(); // 買完裝備，即時更新給管理員看
         
         const headerFrame = document.getElementById('header-avatar-frame');
         if (headerFrame && window.accessoriesCatalog) {
@@ -451,9 +461,7 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
             timestamp: Date.now()
         });
         
-        if (mySessionRef) {
-            update(mySessionRef, { score: rankPoints });
-        }
+        window.updateMyPresence(); // 玩家分數變動時，即時更新給管理員看
         
     } catch(e) { console.error("上傳分數失敗", e); }
 };
@@ -510,6 +518,8 @@ window.updateCloudUserName = async function(newName) {
                 await set(lbRef, { ...snap.val(), name: newName });
             }
         }
+
+        window.updateMyPresence(); // 改名也通知監控清單
 
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert(`改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
