@@ -1010,21 +1010,21 @@
     </div>
 </div>
 
+<!-- 替換 arena-setup-overlay 內的內容 -->
 <div id="arena-setup-overlay" class="hidden">
-    <div class="silen-modal-box" style="max-width: 400px; width: 90%;">
+    <div class="silen-modal-box" style="max-width: 450px; width: 90%;">
         <h3 style="margin-top:0; color:var(--text-main);">對戰設定</h3>
         
-        <div style="margin-bottom: 15px; text-align:left;">
-            <label style="color:var(--text-sub); font-size:0.85rem;">選擇單字簿 (需大於 10 個字)</label>
-            <select id="arena-setup-book" class="form-dropdown" style="width:100%; padding:10px; background:var(--bg-color); color:#fff; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
-            </select>
+        <label style="color:var(--text-sub); font-size:0.85rem;">選擇單字簿</label>
+        <div id="arena-setup-book-list" style="margin: 10px 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+            <!-- 之後用 JS 把你的 book-item 塞進來 -->
         </div>
         
         <div style="margin-bottom: 25px; text-align:left;">
             <label style="color:var(--text-sub); font-size:0.85rem;">選擇對戰模式</label>
             <select id="arena-setup-mode" class="form-dropdown" style="width:100%; padding:10px; background:var(--bg-color); color:#fff; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
-                <option value="comp">綜合挑戰 (全題型隨機混戰)</option>
-                <option value="conn">連接力挑戰 (雙向選擇題)</option>
+                <option value="comp">綜合精通挑戰 (擊敗對手解鎖進度)</option>
+                <option value="conn">連結力訓練 (雙向選擇)</option>
                 <option value="mcq_zh_en">選擇題 (中選英)</option>
                 <option value="mcq_en_zh">選擇題 (英選中)</option>
                 <option value="typing_zh_en">拼打模式 (中翻英)</option>
