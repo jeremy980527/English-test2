@@ -35,7 +35,7 @@ const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
 let mySessionRef = null;
 
-// 全新：統一的狀態校正大腦
+// 統一的狀態校正大腦
 window.updateMyPresence = function() {
     if (!mySessionRef) return;
     const user = window.currentUser;
@@ -58,11 +58,11 @@ onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
         mySessionRef = push(presenceRef);
         onDisconnect(mySessionRef).remove();
-        // 連線成功時，呼叫狀態大腦進行檢查，防止登入玩家被降級成訪客
         window.updateMyPresence();
     }
 });
 
+// 左上角智能去重計數器
 onValue(presenceRef, (snap) => {
     let uniqueUids = new Set();
     let guestCount = 0;
@@ -73,14 +73,13 @@ onValue(presenceRef, (snap) => {
             if (data === true || data.isGuest) {
                 guestCount++;
             } else if (data.uid) {
-                uniqueUids.add(data.uid); // 利用 Set 的特性，相同的 UID 永遠只算 1 個
+                uniqueUids.add(data.uid); 
             }
         });
     }
 
-    // 真實人數 = 不重複的登入玩家數 + 訪客數
     let realCount = uniqueUids.size + guestCount;
-    if (realCount === 0) realCount = 1; // 保底顯示 1（至少有自己）
+    if (realCount === 0) realCount = 1; 
 
     const countEl = document.getElementById('online-count');
     if (countEl) {
@@ -227,7 +226,7 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // 每日簽到系統
+            // ★ 每日簽到系統 ★
             const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
@@ -279,7 +278,6 @@ onAuthStateChanged(auth, (user) => {
                 }
             }
 
-            // 觸發在線狀態更新
             window.updateMyPresence();
 
             const elRank = document.getElementById('stat-rank-score');
@@ -325,7 +323,7 @@ onAuthStateChanged(auth, (user) => {
 
     } else {
         window.currentUser = null;
-        window.updateMyPresence(); // 登出時，如果沒關網頁，自動變回訪客
+        window.updateMyPresence();
         
         authContainer.innerHTML = ``;
         if (hasShareLink) {
@@ -350,7 +348,7 @@ window.syncAccessoriesToCloud = async function() {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        window.updateMyPresence(); // 買完裝備，即時更新給管理員看
+        window.updateMyPresence();
         
         const headerFrame = document.getElementById('header-avatar-frame');
         if (headerFrame && window.accessoriesCatalog) {
@@ -478,7 +476,7 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
             timestamp: Date.now()
         });
         
-        window.updateMyPresence(); // 玩家分數變動時，即時更新給管理員看
+        window.updateMyPresence(); 
         
     } catch(e) { console.error("上傳分數失敗", e); }
 };
@@ -536,7 +534,7 @@ window.updateCloudUserName = async function(newName) {
             }
         }
 
-        window.updateMyPresence(); // 改名也通知監控清單
+        window.updateMyPresence();
 
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert(`改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
@@ -763,7 +761,7 @@ window.refreshAdminOnlineUsers = async function() {
     
     try {
         const snap = await get(ref(rtdb, 'online_users'));
-        let uniqueUsers = new Map(); // 【全新】：用來過濾重複玩家的大腦
+        let uniqueUsers = new Map();
         let guestCount = 0;
         
         if (snap.exists()) {
@@ -772,7 +770,6 @@ window.refreshAdminOnlineUsers = async function() {
                 if (data === true || data.isGuest) {
                     guestCount++;
                 } else if (data.uid) {
-                    // 偵測到重複玩家時，只保留分數正常（最高）的那一個連線
                     if (!uniqueUsers.has(data.uid)) {
                         uniqueUsers.set(data.uid, data);
                     } else {
@@ -785,7 +782,6 @@ window.refreshAdminOnlineUsers = async function() {
             });
         }
         
-        // 將 Map 轉換回原本的陣列
         let list = Array.from(uniqueUsers.values());
         
         container.innerHTML = '';
@@ -845,7 +841,6 @@ window.refreshAdminOnlineUsers = async function() {
 // ==========================================
 // 14. 玩家市場系統 (Player Market) Phase 2
 // ==========================================
-
 window.currentPublishBookId = null;
 
 window.checkPublishLimit = async function() {
@@ -1165,7 +1160,7 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
 window.currentArenaRoom = null;
 window.isArenaHost = false;
 window.arenaUnsubscribe = null; 
-let matchStarted = false; // 防止重複觸發開戰
+let matchStarted = false; 
 
 window.generateRoomCode = function() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
@@ -1179,7 +1174,7 @@ window.createArenaRoom = async function() {
     const code = window.generateRoomCode();
     const roomRef = ref(rtdb, `arena_rooms/${code}`);
     
-    const myData = { uid: window.currentUser.uid, name: window.currentUser.displayName || '匿名玩家', photo: window.currentUser.photoURL || '', score: 0 };
+    const myData = { uid: window.currentUser.uid, name: window.currentUser.displayName || '匿名玩家', photo: window.currentUser.photoURL || '', frame: window.equippedFrame || '', score: 0 };
 
     try {
         await set(roomRef, { status: 'waiting', host: myData, timestamp: Date.now() });
@@ -1206,7 +1201,7 @@ window.joinArenaRoom = async function() {
         if (roomData.status !== 'waiting' || roomData.guest) { window.SilenModal.alert("房間已在對戰中或已滿！"); return; }
         if (roomData.host.uid === window.currentUser.uid) { window.SilenModal.alert("不能加入自己的房間！"); return; }
         
-        const myData = { uid: window.currentUser.uid, name: window.currentUser.displayName || '匿名玩家', photo: window.currentUser.photoURL || '', score: 0 };
+        const myData = { uid: window.currentUser.uid, name: window.currentUser.displayName || '匿名玩家', photo: window.currentUser.photoURL || '', frame: window.equippedFrame || '', score: 0 };
 
         await update(roomRef, { guest: myData });
         onDisconnect(child(roomRef, 'guest')).remove();
@@ -1218,7 +1213,6 @@ window.joinArenaRoom = async function() {
     } catch(e) { window.SilenModal.alert("加入失敗，請檢查網路。"); }
 };
 
-// 核心戰場監聽器 (即時血條與勝負裁定)
 window.listenToArenaRoom = function(roomRef) {
     if (window.arenaUnsubscribe) window.arenaUnsubscribe();
     
@@ -1231,17 +1225,14 @@ window.listenToArenaRoom = function(roomRef) {
         
         const data = snap.val();
         
-        // 階段一：等待中
         if (data.status === 'waiting') {
             if (typeof window.updateArenaWaiting === 'function') window.updateArenaWaiting(data);
         } 
-        // 階段二：開戰中
         else if (data.status === 'playing') {
             if (!matchStarted) {
                 matchStarted = true;
                 if (typeof window.renderArenaMatch === 'function') window.renderArenaMatch(data.quizPayload, data.host, data.guest);
             }
-            // 更新即時血條
             let hostScore = data.host.score || 0;
             let guestScore = data.guest.score || 0;
             let maxScore = window.arenaMaxScore || 10;
@@ -1251,7 +1242,6 @@ window.listenToArenaRoom = function(roomRef) {
             document.getElementById('am-host-bar').style.width = (hostScore / maxScore * 100) + '%';
             document.getElementById('am-guest-bar').style.width = (guestScore / maxScore * 100) + '%';
             
-            // 裁定勝負
             if (hostScore >= maxScore || guestScore >= maxScore) {
                 window.declareArenaWinner(data, hostScore >= maxScore ? 'host' : 'guest');
             }
@@ -1275,18 +1265,14 @@ window.updateArenaScore = async function(newScore) {
     await set(scoreRef, newScore);
 };
 
-// 結算與發獎勵
+// 結算與發獎勵 (純娛樂模式，拔除牌位積分)
 window.declareArenaWinner = async function(roomData, winnerRole) {
     if (window.arenaUnsubscribe) { window.arenaUnsubscribe(); window.arenaUnsubscribe = null; }
     const myRole = window.isArenaHost ? 'host' : 'guest';
     const isWin = (myRole === winnerRole);
     
     let title = isWin ? "🏆 YOU WIN 🏆" : "💀 YOU LOSE 💀";
-    let msg = isWin ? "太神啦！你率先達陣，獲得了 50 點牌位積分！" : "手速太慢囉！對手率先抵達終點，再接再厲！";
-    
-    if (isWin) {
-        if (typeof window.addRankPoints === 'function') window.addRankPoints(50, false);
-    }
+    let msg = isWin ? "太神啦！你率先達陣，獲得了本場對戰的勝利！" : "手速太慢囉！對手率先抵達終點，再接再厲！";
     
     window.currentArenaRoom = null;
     window.isArenaHost = false;
@@ -1296,7 +1282,6 @@ window.declareArenaWinner = async function(roomData, winnerRole) {
         window.switchView('arena');
     });
     
-    // 房長負責銷毀房間
     if (myRole === 'host') {
         setTimeout(() => set(ref(rtdb, `arena_rooms/${roomData.code}`), null), 2000); 
     }
@@ -1318,13 +1303,11 @@ window.leaveArenaRoom = async function() {
 window.handleRoomClosed = function() {
     if (window.arenaUnsubscribe) window.arenaUnsubscribe();
     window.currentArenaRoom = null; window.isArenaHost = false; matchStarted = false;
-    window.SilenModal.alert("房間已解散！").then(() => window.switchView('arena'));
+    window.SilenModal.alert("房間已解散或連線中斷！").then(() => window.switchView('arena'));
 };
 
 window.handleOpponentFled = function() {
     if (window.arenaUnsubscribe) window.arenaUnsubscribe();
     window.currentArenaRoom = null; window.isArenaHost = false; matchStarted = false;
-    // 對手落跑，直接判勝
-    if (typeof window.addRankPoints === 'function') window.addRankPoints(20, false);
-    window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，系統補償您 20 點牌位積分！").then(() => window.switchView('arena'));
+    window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，您贏得了這場對決！").then(() => window.switchView('arena'));
 };
