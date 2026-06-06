@@ -2533,52 +2533,27 @@ window.arenaCurrentIndex = 0;
 window.myArenaScore = 0;
 window.arenaMaxScore = 10; // 率先答對 10 題獲勝
 
-// 1. 房長設定：彈出新版選單
+// 房長點擊開始：彈出設定視窗
 window.startArenaMatchLogic = function() {
-    const list = document.getElementById('arena-setup-book-list');
-    list.innerHTML = '';
+    const bookSelect = document.getElementById('arena-setup-book');
+    bookSelect.innerHTML = '';
     
-    // 直接渲染與單字庫管理頁面一樣的 UI
-    window.books.forEach(b => {
-        if(b.words.length < 10) return;
-        const div = document.createElement('div');
-        div.className = 'card book-item';
-        div.style.padding = '10px';
-        div.innerHTML = `<strong>${b.name}</strong> <span style="font-size:0.8rem; color:#888;">[${b.tag || '未分類'}]</span>`;
-        div.onclick = () => {
-            document.querySelectorAll('.book-item').forEach(el => el.style.background = 'transparent');
-            div.style.background = 'var(--primary)';
-            window.selectedArenaBookId = b.id;
-        };
-        list.appendChild(div);
+    let validBooks = window.books.filter(b => b.words.length >= 10);
+    if(validBooks.length === 0) {
+        window.SilenModal.alert("您目前的資料庫中，沒有單字量超過 10 的單字簿可供對戰！"); return;
+    }
+    
+    validBooks.forEach(b => {
+        let opt = document.createElement('option');
+        opt.value = b.id;
+        opt.innerText = `${b.name} (${b.words.length} 詞)`;
+        bookSelect.appendChild(opt);
     });
     
-    document.getElementById('arena-setup-overlay').classList.add('show');
-};
-
-// 2. 修正：依照房長選定的模式，正確指派 qMode 與 qType
-window.confirmArenaSetup = function() {
-    if (!window.selectedArenaBookId) { window.SilenModal.alert("請先選擇一本單字簿！"); return; }
-    window.closeArenaSetup();
-    const mode = document.getElementById('arena-setup-mode').value;
-    let selectedBook = window.books.find(b => b.id == window.selectedArenaBookId);
-    let pool = selectedBook.words;
-    
-    // 這裡修正了：綜合與連結力模式強制 Level 1-4 (拔掉 Level 0)
-    let quizPayload = pool.sort(() => Math.random() - 0.5).slice(0, 30).map(w => {
-        let qType = 'mcq', qMode = 'zh-to-en';
-        
-        if (mode === 'comp' || mode === 'conn') {
-            qType = (Math.random() < 0.5) ? 'mcq' : 'typing';
-            qMode = (Math.random() < 0.5) ? 'zh-to-en' : 'en-to-zh';
-        } else {
-            [qType, qMode] = mode.split('_'); // e.g., mcq_zh_en
-        }
-        
-        // ... (保持原本的選擇邏輯，確保 qMode 傳遞正確)
-        return { type: qType, mode: qMode, q: (qMode === 'zh-to-en' ? w.zh.join(' / ') : w.en), ans: (qMode === 'zh-to-en' ? w.en : w.zh.join(' / ')), opts: [...] };
-    });
-    window.triggerArenaStart(quizPayload);
+    const overlay = document.getElementById('arena-setup-overlay');
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.classList.add('show');
 };
 
 window.closeArenaSetup = function() {
