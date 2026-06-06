@@ -64,10 +64,27 @@ onValue(connectedRef, (snap) => {
 });
 
 onValue(presenceRef, (snap) => {
-    const count = snap.size || 1; 
+    let uniqueUids = new Set();
+    let guestCount = 0;
+
+    if (snap.exists()) {
+        snap.forEach(childSnap => {
+            const data = childSnap.val();
+            if (data === true || data.isGuest) {
+                guestCount++;
+            } else if (data.uid) {
+                uniqueUids.add(data.uid); // 利用 Set 的特性，相同的 UID 永遠只算 1 個
+            }
+        });
+    }
+
+    // 真實人數 = 不重複的登入玩家數 + 訪客數
+    let realCount = uniqueUids.size + guestCount;
+    if (realCount === 0) realCount = 1; // 保底顯示 1（至少有自己）
+
     const countEl = document.getElementById('online-count');
     if (countEl) {
-        countEl.innerText = count;
+        countEl.innerText = realCount;
     }
 });
 
