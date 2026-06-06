@@ -164,7 +164,7 @@ window.saveData = function() {
     localStorage.setItem('sv_books', JSON.stringify(window.books)); 
 };
 
-const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories', 'arena'];
+const views = ['landing', 'home', 'book-select', 'edit', 'practice', 'mcq', 'speaking', 'puzzle', 'memory', 'youglish', 'mastery', 'profile', 'leaderboard', 'pos', 'public-profile', 'store', 'admin', 'market', 'accessories', 'arena', 'arena-waiting'];
 
 window.switchView = function(viewName) {
     views.forEach(v => {
@@ -2464,17 +2464,59 @@ window.equipAccessory = function(id) {
 };
 
 // ==========================================
-// 16. 1v1 即時對戰大廳 (Arena) Phase 1
+// 16. 1v1 即時對戰大廳 UI (Arena) Phase 2
 // ==========================================
-window.createArenaRoom = function() {
-    window.SilenModal.alert("【第一階段建置中】\n之後點擊這裡會自動生成一組 5 碼房間代碼，並切換到『等待對手加入』的畫面！");
+window.showArenaWaiting = function(code, isHost, hostData, guestData) {
+    window.switchView('arena-waiting');
+    document.getElementById('aw-code').innerText = code;
+    
+    // 渲染房長資訊
+    document.getElementById('aw-host-name').innerText = hostData.name;
+    document.getElementById('aw-host-img').src = hostData.photo || 'https://via.placeholder.com/65';
+    
+    // 渲染挑戰者區塊
+    const guestArea = document.getElementById('aw-guest-area');
+    const emptyArea = document.getElementById('aw-guest-empty');
+    const startBtn = document.getElementById('aw-start-btn');
+    
+    if (guestData) {
+        guestArea.classList.remove('hidden');
+        emptyArea.classList.add('hidden');
+        document.getElementById('aw-guest-name').innerText = guestData.name;
+        document.getElementById('aw-guest-img').src = guestData.photo || 'https://via.placeholder.com/65';
+        
+        if (isHost) {
+            startBtn.disabled = false;
+            startBtn.innerText = "開始對戰！";
+            startBtn.style.background = "#ff9800";
+            startBtn.style.color = "#000";
+        } else {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待房長開始...";
+            startBtn.style.background = "#333";
+            startBtn.style.color = "#aaa";
+        }
+    } else {
+        guestArea.classList.add('hidden');
+        emptyArea.classList.remove('hidden');
+        
+        if (isHost) {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待對手加入...";
+            startBtn.style.background = "#333";
+            startBtn.style.color = "#aaa";
+        } else {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待房長開始...";
+        }
+    }
 };
 
-window.joinArenaRoom = function() {
-    const code = document.getElementById('arena-join-code').value.trim().toUpperCase();
-    if(code.length !== 5) {
-        window.SilenModal.alert("請輸入完整的 5 碼房間代碼！");
-        return;
-    }
-    window.SilenModal.alert(`【第一階段建置中】\n之後系統會去資料庫尋找代碼 [${code}]，如果找到了就會直接進入對戰房！`);
+window.updateArenaWaiting = function(roomData) {
+    if (!roomData) return;
+    window.showArenaWaiting(window.currentArenaRoom, window.isArenaHost, roomData.host, roomData.guest);
+};
+
+window.startArenaMatchLogic = function() {
+    window.SilenModal.alert("【第三階段建置中】\n點擊這裡將會強制同步題庫，並把雙方拉進廝殺戰場！");
 };
