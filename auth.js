@@ -1158,3 +1158,147 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
         }
     });
 };
+
+// ==========================================
+// 1v1 即時對戰 Firebase 核心引擎 (Arena) Phase 2
+// ==========================================
+window.currentArenaRoom = null;
+window.isArenaHost = false;
+window.arenaUnsubscribe = null; 
+
+// 生成隨機 5 碼 (排除容易混淆的 0, O, I, 1)
+window.generateRoomCode = function() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
+    let code = '';
+    for(let i=0; i<5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    return code;
+};
+
+// 創建房間
+window.createArenaRoom = async function() {
+    if (!window.currentUser) { window.SilenModal.alert("請先登入才能進行對戰！"); return; }
+    
+    const code = window.generateRoomCode();
+    const roomRef = ref(rtdb, `arena_rooms/${code}`);
+    
+    const myData = {
+        uid: window.currentUser.uid,
+        name: window.currentUser.displayName || '匿名玩家',
+        photo: window.currentUser.photoURL || '',
+        score: 0 
+    };
+
+    try {
+        await set(roomRef, {
+            status: 'waiting',
+            host: myData,
+            timestamp: Date.now()
+        });
+        
+        // 如果房長意外斷線，Firebase 會自動把這個房間摧毀 (防幽靈房)
+        onDisconnect(roomRef).remove();
+
+        window.currentArenaRoom = code;
+        window.isArenaHost = true;
+        
+        if (typeof window.showArenaWaiting === 'function') {
+            window.showArenaWaiting(code, true, myData, null);
+        }
+
+        // 監聽房間變化 (等待對手加入)
+        if (window.arenaUnsubscribe) window.arenaUnsubscribe();
+        window.arenaUnsubscribe = onValue(roomRef, (snap) => {
+            if (!snap.exists()) {
+                window.handleRoomClosed();
+                return;
+            }
+            const data = snap.val();
+            if (typeof window.updateArenaWaiting === 'function') window.updateArenaWaiting(data);
+        });
+
+    } catch(e) {
+        window.SilenModal.alert("建房失敗，請檢查網路連線！");
+    }
+};
+
+// 加入房間
+window.joinArenaRoom = async function() {
+    if (!window.currentUser) { window.SilenModal.alert("請先登入才能進行對戰！"); return; }
+    const code = document.getElementById('arena-join-code').value.trim().toUpperCase();
+    if(code.length !== 5) { window.SilenModal.alert("請輸入完整的 5 碼代碼！"); return; }
+    
+    const roomRef = ref(rtdb, `arena_rooms/${code}`);
+    
+    try {
+        const snap = await get(roomRef);
+        if (!snap.exists()) {
+            window.SilenModal.alert("找不到此房間，代碼可能錯誤或房間已解散。"); return;
+        }
+        const roomData = snap.val();
+        if (roomData.status !== 'waiting' || roomData.guest) {
+            window.SilenModal.alert("房間已經在對戰中，或人數已滿！"); return;
+        }
+        
+        const myData = {
+            uid: window.currentUser.uid,
+            name: window.currentUser.displayName || '匿名玩家',
+            photo: window.currentUser.photoURL || '',
+            score: 0
+        };
+
+        // 寫入自己的資訊到 guest 欄位
+        await update(roomRef, { guest: myData });
+
+        // 如果挑戰者意外斷線，只移除 guest 欄位，不影響房長
+        onDisconnect(child(roomRef, 'guest')).remove();
+
+        window.currentArenaRoom = code;
+        window.isArenaHost = false;
+
+        if (typeof window.showArenaWaiting === 'function') {
+            window.showArenaWaiting(code, false, roomData.host, myData);
+        }
+
+        // 監聽房間變化 (等待房長按開始)
+        if (window.arenaUnsubscribe) window.arenaUnsubscribe();
+        window.arenaUnsubscribe = onValue(roomRef, (snap) => {
+            if (!snap.exists()) {
+                window.handleRoomClosed(); return;
+            }
+            const data = snap.val();
+            if (typeof window.updateArenaWaiting === 'function') window.updateArenaWaiting(data);
+        });
+
+    } catch(e) {
+        window.SilenModal.alert("加入失敗，請檢查網路連線！");
+    }
+};
+
+// 離開房間
+window.leaveArenaRoom = async function() {
+    if (!window.currentArenaRoom) return;
+    const roomRef = ref(rtdb, `arena_rooms/${window.currentArenaRoom}`);
+    
+    if (window.arenaUnsubscribe) { window.arenaUnsubscribe(); window.arenaUnsubscribe = null; }
+
+    if (window.isArenaHost) {
+        await set(roomRef, null); // 房長離開，直接摧毀房間
+    } else {
+        await update(roomRef, { guest: null }); // 對手離開，清空對手欄位
+    }
+    
+    onDisconnect(roomRef).cancel(); 
+
+    window.currentArenaRoom = null;
+    window.isArenaHost = false;
+    window.switchView('arena');
+};
+
+window.handleRoomClosed = function() {
+    if (window.arenaUnsubscribe) window.arenaUnsubscribe();
+    window.currentArenaRoom = null;
+    window.isArenaHost = false;
+    window.SilenModal.alert("房間已解散或連線中斷！").then(() => {
+        window.switchView('arena');
+    });
+};
