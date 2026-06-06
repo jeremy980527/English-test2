@@ -2472,11 +2472,15 @@ window.showArenaWaiting = function(code, isHost, hostData, guestData) {
     window.switchView('arena-waiting');
     document.getElementById('aw-code').innerText = code;
     
-    // 渲染房長資訊
+    // 渲染房長資訊與頭像框
     document.getElementById('aw-host-name').innerText = hostData.name;
     document.getElementById('aw-host-img').src = hostData.photo || 'https://via.placeholder.com/65';
+    if (hostData.frame && window.accessoriesCatalog) {
+        const item = window.accessoriesCatalog.find(a => a.id === hostData.frame);
+        if (item) { document.getElementById('aw-host-frame').src = item.imgUrl; document.getElementById('aw-host-frame').style.display = 'block'; }
+    } else { document.getElementById('aw-host-frame').style.display = 'none'; }
     
-    // 渲染挑戰者區塊
+    // 渲染挑戰者區塊與頭像框
     const guestArea = document.getElementById('aw-guest-area');
     const emptyArea = document.getElementById('aw-guest-empty');
     const startBtn = document.getElementById('aw-start-btn');
@@ -2486,6 +2490,10 @@ window.showArenaWaiting = function(code, isHost, hostData, guestData) {
         emptyArea.classList.add('hidden');
         document.getElementById('aw-guest-name').innerText = guestData.name;
         document.getElementById('aw-guest-img').src = guestData.photo || 'https://via.placeholder.com/65';
+        if (guestData.frame && window.accessoriesCatalog) {
+            const item = window.accessoriesCatalog.find(a => a.id === guestData.frame);
+            if (item) { document.getElementById('aw-guest-frame').src = item.imgUrl; document.getElementById('aw-guest-frame').style.display = 'block'; }
+        } else { document.getElementById('aw-guest-frame').style.display = 'none'; }
         
         if (isHost) {
             startBtn.disabled = false;
@@ -2525,38 +2533,94 @@ window.arenaCurrentIndex = 0;
 window.myArenaScore = 0;
 window.arenaMaxScore = 10; // 率先答對 10 題獲勝
 
-// 房長專屬：生成考卷並傳給 Firebase
+// 房長點擊開始：彈出設定視窗
 window.startArenaMatchLogic = function() {
-    let pool = window.getSelectedWordsPool();
-    if (!pool || pool.length < 10) {
-        window.SilenModal.alert("請先返回首頁，勾選您要測驗的單字庫（至少需包含 10 個單字），才能產出對戰考卷喔！");
-        return;
+    const bookSelect = document.getElementById('arena-setup-book');
+    bookSelect.innerHTML = '';
+    
+    let validBooks = window.books.filter(b => b.words.length >= 10);
+    if(validBooks.length === 0) {
+        window.SilenModal.alert("您目前的資料庫中，沒有單字量超過 10 的單字簿可供對戰！"); return;
     }
     
-    // 隨機打亂並抽出 30 題當作備用題庫
+    validBooks.forEach(b => {
+        let opt = document.createElement('option');
+        opt.value = b.id;
+        opt.innerText = `${b.name} (${b.words.length} 詞)`;
+        bookSelect.appendChild(opt);
+    });
+    
+    const overlay = document.getElementById('arena-setup-overlay');
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.classList.add('show');
+};
+
+window.closeArenaSetup = function() {
+    const overlay = document.getElementById('arena-setup-overlay');
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.classList.add('hidden'), 200);
+};
+
+// 房長確認設定：生成動態考卷並傳給 Firebase
+window.confirmArenaSetup = function() {
+    window.closeArenaSetup();
+    const bookId = document.getElementById('arena-setup-book').value;
+    const mode = document.getElementById('arena-setup-mode').value;
+    
+    let selectedBook = window.books.find(b => b.id == bookId);
+    let pool = selectedBook ? selectedBook.words : [];
+    
+    if (pool.length < 10) return;
+    
     pool.sort(() => Math.random() - 0.5);
-    let selectedWords = pool.slice(0, 30);
+    let selectedWords = pool.slice(0, 30); // 準備 30 題的庫存
     
     let quizPayload = selectedWords.map(w => {
-        let distractors = pool.filter(x => x.en !== w.en && !window.isSemanticOverlap(x, w)).sort(() => Math.random() - 0.5).slice(0, 3);
-        let options = [w.zh.join(' / '), ...distractors.map(d => d.zh.join(' / '))];
-        return {
-            q: w.en,
-            ans: w.zh.join(' / '),
-            opts: options.sort(() => Math.random() - 0.5) // 打亂選項
-        };
+        let qType = 'mcq';
+        let qMode = 'zh-to-en';
+
+        // 依據房長選擇，指派每題的考法
+        if (mode === 'comp') {
+            const rand = Math.random();
+            if (rand < 0.25) { qType = 'mcq'; qMode = 'zh-to-en'; }
+            else if (rand < 0.5) { qType = 'mcq'; qMode = 'en-to-zh'; }
+            else if (rand < 0.75) { qType = 'typing'; qMode = 'zh-to-en'; }
+            else { qType = 'typing'; qMode = 'en-to-zh'; }
+        } else if (mode === 'conn') {
+            qType = 'mcq';
+            qMode = Math.random() < 0.5 ? 'zh-to-en' : 'en-to-zh';
+        } else if (mode === 'mcq_zh_en') { qType = 'mcq'; qMode = 'zh-to-en'; }
+        else if (mode === 'mcq_en_zh') { qType = 'mcq'; qMode = 'en-to-zh'; }
+        else if (mode === 'typing_zh_en') { qType = 'typing'; qMode = 'zh-to-en'; }
+        else if (mode === 'typing_en_zh') { qType = 'typing'; qMode = 'en-to-zh'; }
+
+        let questionText, ansText, options;
+        
+        if (qMode === 'zh-to-en') {
+            questionText = w.zh.join(' / ');
+            ansText = w.en;
+            if (qType === 'mcq') {
+                let distractors = pool.filter(x => x.en !== w.en && !window.isSemanticOverlap(x, w)).sort(() => Math.random() - 0.5).slice(0, 3);
+                options = [w.en, ...distractors.map(d => d.en)].sort(() => Math.random() - 0.5);
+            }
+        } else {
+            questionText = w.en;
+            ansText = w.zh.join(' / ');
+            if (qType === 'mcq') {
+                let distractors = pool.filter(x => x.en !== w.en && !window.isSemanticOverlap(x, w)).sort(() => Math.random() - 0.5).slice(0, 3);
+                options = [w.zh.join(' / '), ...distractors.map(d => d.zh.join(' / '))].sort(() => Math.random() - 0.5);
+            }
+        }
+
+        return { type: qType, mode: qMode, q: questionText, ans: ansText, opts: options || [] };
     });
 
-    // 呼叫 auth.js 裡的函式，把考卷上傳並宣告開戰
     if (typeof window.triggerArenaStart === 'function') {
         window.triggerArenaStart(quizPayload);
-    } else {
-        // 快取防呆警告
-        window.SilenModal.alert("連線模組未更新！\n請強制重新整理網頁 (Ctrl+F5) 清除瀏覽器快取，再試一次！");
     }
 };
 
-// 雙方共用：渲染戰場介面
 window.renderArenaMatch = function(quizPayload, hostData, guestData) {
     window.arenaQuizQueue = quizPayload;
     window.arenaCurrentIndex = 0;
@@ -2574,9 +2638,7 @@ window.renderArenaMatch = function(quizPayload, hostData, guestData) {
 };
 
 window.showArenaNextQuestion = function() {
-    if (window.arenaCurrentIndex >= window.arenaQuizQueue.length) {
-        window.arenaCurrentIndex = 0; // 如果太會猜把30題寫完，直接從頭輪迴
-    }
+    if (window.arenaCurrentIndex >= window.arenaQuizQueue.length) window.arenaCurrentIndex = 0; 
     
     setDisplayState('am-interaction-area', true, 'block');
     setDisplayState('am-feedback-area', false);
@@ -2584,15 +2646,44 @@ window.showArenaNextQuestion = function() {
     let currentQ = window.arenaQuizQueue[window.arenaCurrentIndex];
     document.getElementById('am-question-display').innerText = currentQ.q;
     
-    const optArea = document.getElementById('am-options-area');
-    optArea.innerHTML = '';
-    currentQ.opts.forEach(opt => {
-        let btn = document.createElement('button');
-        btn.className = 'btn-mcq';
-        btn.innerText = opt;
-        btn.onclick = () => window.checkArenaAnswer(opt === currentQ.ans);
-        optArea.appendChild(btn);
-    });
+    const mcqArea = document.getElementById('am-mcq-area');
+    const typingArea = document.getElementById('am-typing-area');
+    
+    if (currentQ.type === 'typing') {
+        mcqArea.classList.add('hidden');
+        typingArea.classList.remove('hidden');
+        const inputEl = document.getElementById('am-typing-input');
+        inputEl.value = '';
+        setTimeout(() => inputEl.focus(), 50);
+        inputEl.onkeypress = (e) => { if(e.key === 'Enter') { e.preventDefault(); window.checkArenaTypingAnswer(); } };
+    } else {
+        mcqArea.classList.remove('hidden');
+        typingArea.classList.add('hidden');
+        mcqArea.innerHTML = '';
+        currentQ.opts.forEach(opt => {
+            let btn = document.createElement('button');
+            btn.className = 'btn-mcq';
+            btn.innerText = opt;
+            btn.onclick = () => window.checkArenaAnswer(opt === currentQ.ans);
+            mcqArea.appendChild(btn);
+        });
+    }
+};
+
+window.checkArenaTypingAnswer = function() {
+    const inputEl = document.getElementById('am-typing-input');
+    const val = inputEl.value.trim().toLowerCase();
+    const currentQ = window.arenaQuizQueue[window.arenaCurrentIndex];
+    
+    let isCorrect = false;
+    if (currentQ.mode === 'en-to-zh') {
+        const targetZhs = currentQ.ans.split(' / ').map(s => s.trim());
+        isCorrect = targetZhs.some(z => z.includes(val) && val.length > 0);
+    } else {
+        isCorrect = (val === currentQ.ans.toLowerCase());
+    }
+    
+    window.checkArenaAnswer(isCorrect);
 };
 
 window.checkArenaAnswer = function(isCorrect) {
@@ -2606,14 +2697,12 @@ window.checkArenaAnswer = function(isCorrect) {
         icon.innerText = '✔'; icon.className = 'big-icon icon-correct';
         status.innerText = '正確！血條推進'; status.className = 'result-status status-correct';
         window.myArenaScore++;
-        // 呼叫 auth.js 裡的函式，把新分數上傳
         if (typeof window.updateArenaScore === 'function') window.updateArenaScore(window.myArenaScore);
     } else {
         icon.innerText = '✘'; icon.className = 'big-icon icon-wrong';
         status.innerText = '錯誤！錯失良機'; status.className = 'result-status status-wrong';
     }
     
-    // 延遲 1 秒後進入下一題
     setTimeout(() => {
         window.arenaCurrentIndex++;
         window.showArenaNextQuestion();
