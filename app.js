@@ -2464,8 +2464,62 @@ window.equipAccessory = function(id) {
 };
 
 // ==========================================
-// 16. 1v1 即時對戰核心邏輯 (Arena) Phase 3
+// 16. 1v1 即時對戰大廳 UI 與戰場核心 (Arena)
 // ==========================================
+
+// --- 準備室大廳 (Waiting Room) UI ---
+window.showArenaWaiting = function(code, isHost, hostData, guestData) {
+    window.switchView('arena-waiting');
+    document.getElementById('aw-code').innerText = code;
+    
+    // 渲染房長資訊
+    document.getElementById('aw-host-name').innerText = hostData.name;
+    document.getElementById('aw-host-img').src = hostData.photo || 'https://via.placeholder.com/65';
+    
+    // 渲染挑戰者區塊
+    const guestArea = document.getElementById('aw-guest-area');
+    const emptyArea = document.getElementById('aw-guest-empty');
+    const startBtn = document.getElementById('aw-start-btn');
+    
+    if (guestData) {
+        guestArea.classList.remove('hidden');
+        emptyArea.classList.add('hidden');
+        document.getElementById('aw-guest-name').innerText = guestData.name;
+        document.getElementById('aw-guest-img').src = guestData.photo || 'https://via.placeholder.com/65';
+        
+        if (isHost) {
+            startBtn.disabled = false;
+            startBtn.innerText = "開始對戰！";
+            startBtn.style.background = "#ff9800";
+            startBtn.style.color = "#000";
+        } else {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待房長開始...";
+            startBtn.style.background = "#333";
+            startBtn.style.color = "#aaa";
+        }
+    } else {
+        guestArea.classList.add('hidden');
+        emptyArea.classList.remove('hidden');
+        
+        if (isHost) {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待對手加入...";
+            startBtn.style.background = "#333";
+            startBtn.style.color = "#aaa";
+        } else {
+            startBtn.disabled = true;
+            startBtn.innerText = "等待房長開始...";
+        }
+    }
+};
+
+window.updateArenaWaiting = function(roomData) {
+    if (!roomData) return;
+    window.showArenaWaiting(window.currentArenaRoom, window.isArenaHost, roomData.host, roomData.guest);
+};
+
+// --- 戰場廝殺核心 (Arena Match) ---
 window.arenaQuizQueue = [];
 window.arenaCurrentIndex = 0;
 window.myArenaScore = 0;
@@ -2474,8 +2528,8 @@ window.arenaMaxScore = 10; // 率先答對 10 題獲勝
 // 房長專屬：生成考卷並傳給 Firebase
 window.startArenaMatchLogic = function() {
     let pool = window.getSelectedWordsPool();
-    if (pool.length < 10) {
-        window.SilenModal.alert("請先到首頁勾選單字庫，且範圍內至少需包含 10 個單字才能產出考卷！");
+    if (!pool || pool.length < 10) {
+        window.SilenModal.alert("請先返回首頁，勾選您要測驗的單字庫（至少需包含 10 個單字），才能產出對戰考卷喔！");
         return;
     }
     
@@ -2496,6 +2550,9 @@ window.startArenaMatchLogic = function() {
     // 呼叫 auth.js 裡的函式，把考卷上傳並宣告開戰
     if (typeof window.triggerArenaStart === 'function') {
         window.triggerArenaStart(quizPayload);
+    } else {
+        // 快取防呆警告
+        window.SilenModal.alert("連線模組未更新！\n請強制重新整理網頁 (Ctrl+F5) 清除瀏覽器快取，再試一次！");
     }
 };
 
