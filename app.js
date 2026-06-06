@@ -2464,59 +2464,107 @@ window.equipAccessory = function(id) {
 };
 
 // ==========================================
-// 16. 1v1 即時對戰大廳 UI (Arena) Phase 2
+// 16. 1v1 即時對戰核心邏輯 (Arena) Phase 3
 // ==========================================
-window.showArenaWaiting = function(code, isHost, hostData, guestData) {
-    window.switchView('arena-waiting');
-    document.getElementById('aw-code').innerText = code;
+window.arenaQuizQueue = [];
+window.arenaCurrentIndex = 0;
+window.myArenaScore = 0;
+window.arenaMaxScore = 10; // 率先答對 10 題獲勝
+
+// 房長專屬：生成考卷並傳給 Firebase
+window.startArenaMatchLogic = function() {
+    let pool = window.getSelectedWordsPool();
+    if (pool.length < 10) {
+        window.SilenModal.alert("請先到首頁勾選單字庫，且範圍內至少需包含 10 個單字才能產出考卷！");
+        return;
+    }
     
-    // 渲染房長資訊
-    document.getElementById('aw-host-name').innerText = hostData.name;
-    document.getElementById('aw-host-img').src = hostData.photo || 'https://via.placeholder.com/65';
+    // 隨機打亂並抽出 30 題當作備用題庫
+    pool.sort(() => Math.random() - 0.5);
+    let selectedWords = pool.slice(0, 30);
     
-    // 渲染挑戰者區塊
-    const guestArea = document.getElementById('aw-guest-area');
-    const emptyArea = document.getElementById('aw-guest-empty');
-    const startBtn = document.getElementById('aw-start-btn');
-    
-    if (guestData) {
-        guestArea.classList.remove('hidden');
-        emptyArea.classList.add('hidden');
-        document.getElementById('aw-guest-name').innerText = guestData.name;
-        document.getElementById('aw-guest-img').src = guestData.photo || 'https://via.placeholder.com/65';
-        
-        if (isHost) {
-            startBtn.disabled = false;
-            startBtn.innerText = "開始對戰！";
-            startBtn.style.background = "#ff9800";
-            startBtn.style.color = "#000";
-        } else {
-            startBtn.disabled = true;
-            startBtn.innerText = "等待房長開始...";
-            startBtn.style.background = "#333";
-            startBtn.style.color = "#aaa";
-        }
-    } else {
-        guestArea.classList.add('hidden');
-        emptyArea.classList.remove('hidden');
-        
-        if (isHost) {
-            startBtn.disabled = true;
-            startBtn.innerText = "等待對手加入...";
-            startBtn.style.background = "#333";
-            startBtn.style.color = "#aaa";
-        } else {
-            startBtn.disabled = true;
-            startBtn.innerText = "等待房長開始...";
-        }
+    let quizPayload = selectedWords.map(w => {
+        let distractors = pool.filter(x => x.en !== w.en && !window.isSemanticOverlap(x, w)).sort(() => Math.random() - 0.5).slice(0, 3);
+        let options = [w.zh.join(' / '), ...distractors.map(d => d.zh.join(' / '))];
+        return {
+            q: w.en,
+            ans: w.zh.join(' / '),
+            opts: options.sort(() => Math.random() - 0.5) // 打亂選項
+        };
+    });
+
+    // 呼叫 auth.js 裡的函式，把考卷上傳並宣告開戰
+    if (typeof window.triggerArenaStart === 'function') {
+        window.triggerArenaStart(quizPayload);
     }
 };
 
-window.updateArenaWaiting = function(roomData) {
-    if (!roomData) return;
-    window.showArenaWaiting(window.currentArenaRoom, window.isArenaHost, roomData.host, roomData.guest);
+// 雙方共用：渲染戰場介面
+window.renderArenaMatch = function(quizPayload, hostData, guestData) {
+    window.arenaQuizQueue = quizPayload;
+    window.arenaCurrentIndex = 0;
+    window.myArenaScore = 0;
+    
+    document.getElementById('am-host-img').src = hostData.photo || 'https://via.placeholder.com/30';
+    document.getElementById('am-guest-img').src = guestData.photo || 'https://via.placeholder.com/30';
+    document.getElementById('am-host-score').innerText = '0';
+    document.getElementById('am-guest-score').innerText = '0';
+    document.getElementById('am-host-bar').style.width = '0%';
+    document.getElementById('am-guest-bar').style.width = '0%';
+    
+    window.switchView('arena-match');
+    window.showArenaNextQuestion();
 };
 
-window.startArenaMatchLogic = function() {
-    window.SilenModal.alert("【第三階段建置中】\n點擊這裡將會強制同步題庫，並把雙方拉進廝殺戰場！");
+window.showArenaNextQuestion = function() {
+    if (window.arenaCurrentIndex >= window.arenaQuizQueue.length) {
+        window.arenaCurrentIndex = 0; // 如果太會猜把30題寫完，直接從頭輪迴
+    }
+    
+    setDisplayState('am-interaction-area', true, 'block');
+    setDisplayState('am-feedback-area', false);
+    
+    let currentQ = window.arenaQuizQueue[window.arenaCurrentIndex];
+    document.getElementById('am-question-display').innerText = currentQ.q;
+    
+    const optArea = document.getElementById('am-options-area');
+    optArea.innerHTML = '';
+    currentQ.opts.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = 'btn-mcq';
+        btn.innerText = opt;
+        btn.onclick = () => window.checkArenaAnswer(opt === currentQ.ans);
+        optArea.appendChild(btn);
+    });
+};
+
+window.checkArenaAnswer = function(isCorrect) {
+    setDisplayState('am-interaction-area', false);
+    setDisplayState('am-feedback-area', true, 'block');
+    
+    const icon = document.getElementById('am-feedback-icon');
+    const status = document.getElementById('am-feedback-status');
+    
+    if (isCorrect) {
+        icon.innerText = '✔'; icon.className = 'big-icon icon-correct';
+        status.innerText = '正確！血條推進'; status.className = 'result-status status-correct';
+        window.myArenaScore++;
+        // 呼叫 auth.js 裡的函式，把新分數上傳
+        if (typeof window.updateArenaScore === 'function') window.updateArenaScore(window.myArenaScore);
+    } else {
+        icon.innerText = '✘'; icon.className = 'big-icon icon-wrong';
+        status.innerText = '錯誤！錯失良機'; status.className = 'result-status status-wrong';
+    }
+    
+    // 延遲 1 秒後進入下一題
+    setTimeout(() => {
+        window.arenaCurrentIndex++;
+        window.showArenaNextQuestion();
+    }, 1000);
+};
+
+window.surrenderArena = function() {
+    window.SilenModal.confirm("確定要投降離開嗎？\n(提前離開將視為戰敗，不會扣分但很丟臉)").then(agreed => {
+        if(agreed && typeof window.leaveArenaRoom === 'function') window.leaveArenaRoom();
+    });
 };
