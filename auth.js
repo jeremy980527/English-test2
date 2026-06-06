@@ -735,7 +735,7 @@ window.resetAllRankPoints = async function() {
 };
 
 // ==========================================
-// 管理員專屬：讀取即時在線玩家名單
+// 管理員專屬：讀取即時在線玩家名單 (去重升級版)
 // ==========================================
 window.refreshAdminOnlineUsers = async function() {
     if (!window.isAdmin) return;
@@ -746,7 +746,7 @@ window.refreshAdminOnlineUsers = async function() {
     
     try {
         const snap = await get(ref(rtdb, 'online_users'));
-        let list = [];
+        let uniqueUsers = new Map(); // 【全新】：用來過濾重複玩家的大腦
         let guestCount = 0;
         
         if (snap.exists()) {
@@ -755,10 +755,21 @@ window.refreshAdminOnlineUsers = async function() {
                 if (data === true || data.isGuest) {
                     guestCount++;
                 } else if (data.uid) {
-                    list.push(data);
+                    // 偵測到重複玩家時，只保留分數正常（最高）的那一個連線
+                    if (!uniqueUsers.has(data.uid)) {
+                        uniqueUsers.set(data.uid, data);
+                    } else {
+                        const existingData = uniqueUsers.get(data.uid);
+                        if ((data.score || 0) > (existingData.score || 0)) {
+                            uniqueUsers.set(data.uid, data);
+                        }
+                    }
                 }
             });
         }
+        
+        // 將 Map 轉換回原本的陣列
+        let list = Array.from(uniqueUsers.values());
         
         container.innerHTML = '';
         if (list.length === 0 && guestCount === 0) {
