@@ -43,7 +43,16 @@
     "price": 6000,
     "imgUrl": "Frame_tire_01.gif",
     "active": true
-  }
+  },
+  {
+    "id": "frame_meme_01",
+    "name": "我最討厭事後道歉",
+    "desc": "給最討厭事後道歉的你",
+    "type": "avatar_frame",
+    "price": 4500,
+    "imgUrl": "Frame_meme_01.gif",
+    "active": true
+  },
   
 ]
 
