@@ -27,7 +27,7 @@ const rtdb = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
-window.purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []; // 【修復】：提升為全域變數並準備上雲端
+window.purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []; 
 
 // =====================================
 // 即時在線陪伴系統 (防斷線重連覆蓋升級版)
@@ -36,7 +36,6 @@ const connectedRef = ref(rtdb, '.info/connected');
 const presenceRef = ref(rtdb, 'online_users');
 let mySessionRef = null;
 
-// 統一的狀態校正大腦
 window.updateMyPresence = function() {
     if (!mySessionRef) return;
     const user = window.currentUser;
@@ -63,7 +62,6 @@ onValue(connectedRef, (snap) => {
     }
 });
 
-// 左上角智能去重計數器
 onValue(presenceRef, (snap) => {
     let uniqueUids = new Set();
     let guestCount = 0;
@@ -117,7 +115,7 @@ window.logout = () => {
 function executeSignOut() {
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
-        localStorage.removeItem('sv_books_timestamp'); // 【修復】：登出時一併清空時間戳
+        localStorage.removeItem('sv_books_timestamp'); // 登出時清空時間戳
         window.books = [];
         window.location.reload(); 
     }).catch((error) => {
@@ -135,10 +133,16 @@ async function syncFromCloud(uid) {
 
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
-            const cloudTime = cloudData.lastUpdated || 0;
+            
+            // 【終極修復 1】：相容舊版 ISO 字串時間格式，強制轉為整數比對！
+            let cloudTime = cloudData.lastUpdated || 0;
+            if (typeof cloudTime === 'string') {
+                cloudTime = new Date(cloudTime).getTime();
+                if (isNaN(cloudTime)) cloudTime = 0;
+            }
+            
             const localTime = parseInt(localStorage.getItem('sv_books_timestamp')) || 0;
 
-            // 【核心修復】：精確比對時間戳。如果本地較新 (如離線操作、剛買完東西等)，則反向備份至雲端，避免被舊雲端覆蓋
             if (localTime > cloudTime && window.books && window.books.length > 0) {
                 console.log("本地存檔較新，啟動反向覆蓋雲端...");
                 syncToCloud(uid, window.books, localTime);
@@ -152,7 +156,6 @@ async function syncFromCloud(uid) {
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
             }
         } else {
-            // 新用戶或無雲端紀錄
             if (window.books && window.books.length > 0) {
                 const now = Date.now();
                 localStorage.setItem('sv_books_timestamp', now.toString());
@@ -177,20 +180,20 @@ async function syncToCloud(uid, booksData, timestamp) {
     }
 }
 
-window.addEventListener('load', () => {
-    const originalSaveData = window.saveData;
-    window.saveData = function() {
-        if (typeof originalSaveData === 'function') originalSaveData();
-        
-        // 每次本地儲存時，打上最新的時間戳戳記
-        const now = Date.now();
-        localStorage.setItem('sv_books_timestamp', now.toString());
-        
-        if (currentUser) {
-            syncToCloud(currentUser.uid, window.books, now);
-        }
-    };
-});
+// 【終極修復 2】：移除 load 監聽器，直接強制攔截 app.js 的 saveData，保證上傳觸發
+const originalSaveData = window.saveData;
+window.saveData = function() {
+    if (typeof originalSaveData === 'function') originalSaveData();
+    
+    const now = Date.now();
+    localStorage.setItem('sv_books_timestamp', now.toString());
+    
+    if (window.currentUser) {
+        syncToCloud(window.currentUser.uid, window.books, now);
+        // 【終極修復 3】：將擴充商城的購買紀錄一併上雲端，換設備再也不會消失！
+        set(ref(rtdb, `users/${window.currentUser.uid}/purchasedBundles`), window.purchasedBundles || []);
+    }
+};
 
 // =====================================
 // 全站身份驗證狀態變更 (Auth State)
@@ -232,7 +235,6 @@ onAuthStateChanged(auth, (user) => {
 
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
-        // 【修復】：加入抓取 purchasedBundles 的紀錄
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
@@ -249,7 +251,6 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // 每日簽到系統
             const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
@@ -284,7 +285,6 @@ onAuthStateChanged(auth, (user) => {
                 }, 800);
             }
 
-            // 【修復】：同步所有購物資料到本地，防止清快取後遺失
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
             window.equippedFrame = snapFrame.exists() ? snapFrame.val() : null;
             window.purchasedBundles = snapBundles.exists() ? snapBundles.val() : (JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []);
@@ -350,7 +350,7 @@ onAuthStateChanged(auth, (user) => {
 
     } else {
         window.currentUser = null;
-        window.updateMyPresence(); 
+        window.updateMyPresence();
         
         authContainer.innerHTML = ``;
         if (hasShareLink) {
@@ -375,7 +375,7 @@ window.syncAccessoriesToCloud = async function() {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        window.updateMyPresence(); 
+        window.updateMyPresence();
         
         const headerFrame = document.getElementById('header-avatar-frame');
         if (headerFrame && window.accessoriesCatalog) {
@@ -866,322 +866,6 @@ window.refreshAdminOnlineUsers = async function() {
 };
 
 // ==========================================
-// 14. 玩家市場系統 (Player Market) Phase 2
-// ==========================================
-window.currentPublishBookId = null;
-
-window.checkPublishLimit = async function() {
-    const user = window.currentUser;
-    if (!user) return { canUpload: false, remaining: 0 };
-    try {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-            let count = data.dailyUploadCount || 0;
-            let lastDate = data.lastUploadDate || '';
-            
-            if (lastDate !== today) {
-                count = 0;
-            }
-            return { canUpload: count < 3, remaining: 3 - count };
-        }
-        return { canUpload: true, remaining: 3 };
-    } catch(e) {
-        console.error("讀取額度失敗", e);
-        return { canUpload: false, remaining: 0 };
-    }
-};
-
-window.openPublishModal = function() {
-    if (!window.currentUser) {
-        window.SilenModal.alert("請先登入帳號以使用市場功能。"); return;
-    }
-
-    const eligibleBooks = window.books.filter(b => !b.isStore && b.words.length >= 10);
-    const container = document.getElementById('pub-book-list-container');
-    container.innerHTML = '';
-    
-    if (eligibleBooks.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding:20px; line-height: 1.6;">您目前沒有符合條件的單字簿可供上架！<br>(為了維持市場品質，請確保題庫內至少包含 10 個單字)</div>';
-    } else {
-        eligibleBooks.forEach(b => {
-            const div = document.createElement('div');
-            div.className = 'card book-item';
-            div.style.cursor = 'pointer';
-            div.style.marginBottom = '0';
-            div.innerHTML = `<strong>${b.name}</strong> <span style="font-size:0.8rem; color:var(--text-sub)">(${b.words.length} 詞)</span>`;
-            div.onclick = () => window.selectBookToPublish(b.id);
-            container.appendChild(div);
-        });
-    }
-
-    document.getElementById('pub-step-1').classList.remove('hidden');
-    document.getElementById('pub-step-2').classList.add('hidden');
-    
-    const overlay = document.getElementById('silen-publish-overlay');
-    overlay.classList.remove('hidden');
-    void overlay.offsetWidth;
-    overlay.classList.add('show');
-};
-
-window.selectBookToPublish = function(bookId) {
-    const book = window.books.find(b => b.id === bookId);
-    if (!book) return;
-    
-    window.currentPublishBookId = bookId;
-    document.getElementById('pub-book-name').innerText = book.name;
-    document.getElementById('pub-price').value = 100;
-    document.getElementById('pub-desc').value = '';
-    document.getElementById('btn-confirm-pub').disabled = true;
-    document.getElementById('pub-limit-text').innerText = "正在檢查每日額度...";
-    
-    document.getElementById('pub-step-1').classList.add('hidden');
-    document.getElementById('pub-step-2').classList.remove('hidden');
-    
-    window.checkPublishLimit().then(res => {
-        const txt = document.getElementById('pub-limit-text');
-        if (res.canUpload) {
-            txt.innerText = `今日上架額度剩餘: ${res.remaining} / 3`;
-            txt.style.color = '#4caf50';
-            document.getElementById('btn-confirm-pub').disabled = false;
-        } else {
-            txt.innerText = `今日上架額度已達上限 (3 / 3)，請明日再來！`;
-            txt.style.color = '#ff4444';
-        }
-    });
-};
-
-window.backToPublishList = function() {
-    document.getElementById('pub-step-2').classList.add('hidden');
-    document.getElementById('pub-step-1').classList.remove('hidden');
-};
-
-window.closePublishModal = function() {
-    const overlay = document.getElementById('silen-publish-overlay');
-    overlay.classList.remove('show');
-    setTimeout(() => overlay.classList.add('hidden'), 200);
-};
-
-window.confirmPublish = function() {
-    const bookId = window.currentPublishBookId;
-    const price = parseInt(document.getElementById('pub-price').value);
-    const desc = document.getElementById('pub-desc').value.trim();
-    
-    if (isNaN(price) || price < 50) {
-        window.SilenModal.alert("定價最低需為 50 點數。"); return;
-    }
-    if (!desc) {
-        window.SilenModal.alert("請輸入簡單的商品介紹。"); return;
-    }
-    
-    const book = window.books.find(b => b.id === bookId);
-    if (!book) {
-        window.SilenModal.alert("找不到指定的單字簿。"); return;
-    }
-
-    window.closePublishModal();
-    if (typeof window.executePublishToMarket === 'function') {
-        window.executePublishToMarket(book, price, desc);
-    }
-};
-
-window.executePublishToMarket = async function(book, price, desc) {
-    const user = window.currentUser;
-    if (!user) return;
-    
-    window.SilenModal.alert("上架處理中，請稍候...");
-    try {
-        const userRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userRef);
-        let data = docSnap.exists() ? docSnap.data() : {};
-        const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-        
-        let count = data.dailyUploadCount || 0;
-        let lastDate = data.lastUploadDate || '';
-        
-        if (lastDate !== today) {
-            count = 0;
-        }
-        
-        if (count >= 3) {
-            window.SilenModal.alert("您今日的上架額度已用盡，請明日再來！");
-            return;
-        }
-        
-        const cleanWords = book.words.map(w => ({
-            en: w.en,
-            zh: w.zh,
-            pos: w.pos || ''
-        }));
-
-        const marketRef = collection(db, "market_books");
-        await addDoc(marketRef, {
-            authorUid: user.uid,
-            authorName: user.displayName || '匿名玩家',
-            bookName: book.name,
-            description: desc,
-            price: price,
-            wordCount: cleanWords.length,
-            words: cleanWords,
-            salesCount: 0,
-            timestamp: Date.now()
-        });
-        
-        await updateDoc(userRef, {
-            dailyUploadCount: count + 1,
-            lastUploadDate: today
-        });
-        
-        window.SilenModal.alert("上架成功！\n您的單字簿已發布至玩家交易市場。").then(() => {
-            window.openMarket();
-        });
-        
-    } catch(e) {
-        console.error("上架失敗", e);
-        window.SilenModal.alert("上架失敗，請檢查網路連線。");
-    }
-};
-
-window.openMarket = async function() {
-    window.switchView('market');
-    const el = document.getElementById('market-my-score');
-    if(el) el.innerText = window.myStorePoints || 0;
-
-    const container = document.getElementById('market-catalog-area');
-    container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">正在從伺服器載入市場資料...</div>';
-
-    try {
-        const marketRef = collection(db, "market_books");
-        const q = fsQuery(marketRef, fsOrderBy("timestamp", "desc"), fsLimit(50));
-        const querySnapshot = await getDocs(q);
-
-        let books = [];
-        querySnapshot.forEach((docSnap) => {
-            books.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        window.renderMarketCatalog(books);
-    } catch (e) {
-        console.error("載入市場失敗", e);
-        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: #ff4444; letter-spacing: 1px;">載入失敗，請檢查網路連線或資料庫權限。</div>';
-    }
-};
-
-window.renderMarketCatalog = function(marketBooks) {
-    const container = document.getElementById('market-catalog-area');
-    container.innerHTML = '';
-
-    if (marketBooks.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 0; color: var(--text-sub); letter-spacing: 1px;">目前市場上還沒有任何商品，快去上架第一本吧！</div>';
-        return;
-    }
-
-    marketBooks.forEach(book => {
-        const card = document.createElement('div');
-        card.className = 'store-card';
-        
-        const isOwned = window.books.some(b => b.marketId === book.id);
-        const myUid = window.currentUser ? window.currentUser.uid : '';
-
-        let btnHtml = '';
-        if (isOwned) {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>已擁有</button>`;
-        } else if (book.authorUid === myUid) {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#333; color:#aaa; border:1px solid #444;" disabled>您的商品</button>`;
-        } else {
-            btnHtml = `<button class="btn btn-small" style="margin:0; background:#fff; color:#000;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`;
-        }
-
-        const safeBookName = book.bookName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const safeAuthorName = book.authorName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const safeDesc = book.description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-        card.innerHTML = `
-            <div class="store-header">
-                <h4 class="store-title">${safeBookName}</h4>
-                <div style="font-size: 0.8rem; color: #ff9800; border: 1px solid #ff9800; padding: 2px 6px; border-radius: 4px;">銷量: ${book.salesCount || 0}</div>
-            </div>
-            <div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px; display:flex; align-items:center; gap:5px;">
-                <span style="background:#222; padding:2px 8px; border-radius:10px;">創作者: ${safeAuthorName}</span>
-            </div>
-            <div class="store-desc">${safeDesc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${book.wordCount} 個單字)</span></div>
-            <div style="display: flex; justify-content: flex-end; align-items: center;">
-                ${btnHtml}
-            </div>
-        `;
-        container.appendChild(card);
-    });
-};
-
-window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
-    const user = window.currentUser;
-    if (!user) {
-        window.SilenModal.alert("請先登入！"); return;
-    }
-
-    if (window.myStorePoints < price) {
-        window.SilenModal.alert(`點數不足！\n\n購買此單字包需要 ${price} 點數，您目前只有 ${window.myStorePoints} 點數。`);
-        return;
-    }
-
-    window.SilenModal.confirm(`確定要花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
-        if (agreed) {
-            window.SilenModal.alert("交易處理中，請稍候...");
-
-            try {
-                const docRef = doc(db, "market_books", marketBookId);
-                const docSnap = await getDoc(docRef);
-                if (!docSnap.exists()) {
-                    window.SilenModal.alert("此商品已不存在。"); return;
-                }
-                const bookData = docSnap.data();
-
-                window.myStorePoints -= price;
-                const el1 = document.getElementById('market-my-score');
-                const el2 = document.getElementById('store-my-score');
-                if(el1) el1.innerText = window.myStorePoints;
-                if(el2) el2.innerText = window.myStorePoints;
-                
-                await set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
-
-                const sellerRevenue = Math.floor(price * 0.8);
-                const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
-                const sellerSnap = await get(sellerRef);
-                const currentSellerPoints = sellerSnap.exists() ? sellerSnap.val() : 0;
-                await set(sellerRef, currentSellerPoints + sellerRevenue);
-
-                await updateDoc(docRef, {
-                    salesCount: (bookData.salesCount || 0) + 1
-                });
-
-                window.books.push({
-                    id: Date.now(),
-                    name: bookData.bookName,
-                    tag: "玩家市集",
-                    isGSAT: false,
-                    isPhrase: false, 
-                    isStore: false, 
-                    marketId: marketBookId,
-                    words: bookData.words
-                });
-
-                window.saveData(); 
-                
-                window.SilenModal.alert(`交易成功！\n\n「${bookName}」已加入您的題庫中。\n(賣家將獲得扣除 20% 稅金後的 ${sellerRevenue} 點數)`).then(() => {
-                    window.openMarket(); 
-                });
-
-            } catch (e) {
-                console.error("交易失敗", e);
-                window.SilenModal.alert("交易失敗，請檢查網路連線。");
-            }
-        }
-    });
-};
-
-// ==========================================
 // 1v1 即時對戰 Firebase 核心引擎 (Arena) Phase 3
 // ==========================================
 window.currentArenaRoom = null;
@@ -1292,7 +976,6 @@ window.updateArenaScore = async function(newScore) {
     await set(scoreRef, newScore);
 };
 
-// 結算與發獎勵 (純娛樂模式，拔除牌位積分)
 window.declareArenaWinner = async function(roomData, winnerRole) {
     if (window.arenaUnsubscribe) { window.arenaUnsubscribe(); window.arenaUnsubscribe = null; }
     const myRole = window.isArenaHost ? 'host' : 'guest';
