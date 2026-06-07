@@ -1019,33 +1019,37 @@
 </div>
 
 <div id="arena-setup-overlay" class="hidden">
-    <div class="silen-modal-box" style="max-width: 400px; width: 90%;">
-        <h3 style="margin-top:0; color:var(--text-main);">對戰設定</h3>
-        
-        <div style="margin-bottom: 15px; text-align:left;">
-            <label style="color:var(--text-sub); font-size:0.85rem;">選擇單字簿 (需大於 10 個字)</label>
-            <select id="arena-setup-book" class="form-dropdown" style="width:100%; padding:10px; background:var(--bg-color); color:#fff; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
-            </select>
-        </div>
-        
-        <div style="margin-bottom: 25px; text-align:left;">
-            <label style="color:var(--text-sub); font-size:0.85rem;">選擇對戰模式</label>
-            <select id="arena-setup-mode" class="form-dropdown" style="width:100%; padding:10px; background:var(--bg-color); color:#fff; border:1px solid var(--border); border-radius:6px; margin-top:5px;">
-                <option value="comp">綜合挑戰 (全題型隨機混戰)</option>
-                <option value="conn">連接力挑戰 (雙向選擇題)</option>
-                <option value="mcq_zh_en">選擇題 (中選英)</option>
-                <option value="mcq_en_zh">選擇題 (英選中)</option>
-                <option value="typing_zh_en">拼打模式 (中翻英)</option>
-                <option value="typing_en_zh">拼打模式 (英翻中)</option>
-            </select>
-        </div>
-        
-        <div class="flex-row">
-            <button class="btn btn-outline" style="flex:1;" onclick="window.closeArenaSetup()">取消</button>
-            <button class="btn" style="flex:1; background:#ff9800; color:#000;" onclick="window.confirmArenaSetup()">確認出題</button>
+        <div class="silen-modal-box" style="max-width: 400px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+            <h3 style="margin-top:0; color:var(--text-main); margin-bottom: 15px;">對戰設定</h3>
+            
+            <div style="text-align:left; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px;">選擇單字簿 (依標籤分類)</label>
+                <!-- 拔除原生 select，變成帶有標籤的漂亮列表 -->
+                <div id="arena-setup-book-list" style="flex: 1; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 250px;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 25px; text-align:left;">
+                <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px; display: block;">選擇對戰模式</label>
+                <div class="custom-dropdown form-dropdown" id="arena-mode-dropdown">
+                    <div class="dropdown-selected" id="arena-mode-selected" onclick="window.toggleDropdown('arena-mode-options', event)">綜合大亂鬥 (全題型隨機) ▾</div>
+                    <div class="dropdown-options hidden" id="arena-mode-options">
+                        <div class="dropdown-option" onclick="window.setArenaMode('comp', '綜合大亂鬥 (全題型隨機)')">綜合大亂鬥 (全題型隨機)</div>
+                        <div class="dropdown-option" onclick="window.setArenaMode('conn', '連接力挑戰 (雙向選擇題)')">連接力挑戰 (雙向選擇題)</div>
+                        <div class="dropdown-option" onclick="window.setArenaMode('mcq_zh_en', '選擇題 (中翻英)')">選擇題 (中翻英)</div>
+                        <div class="dropdown-option" onclick="window.setArenaMode('mcq_en_zh', '選擇題 (英翻中)')">選擇題 (英翻中)</div>
+                        <div class="dropdown-option" onclick="window.setArenaMode('typing_zh_en', '拼打模式 (中翻英)')">拼打模式 (中翻英)</div>
+                        <div class="dropdown-option" onclick="window.setArenaMode('typing_en_zh', '拼打模式 (英翻中)')">拼打模式 (英翻中)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-row" style="margin-top: auto;">
+                <button class="btn btn-outline" style="flex:1;" onclick="window.closeArenaSetup()">取消</button>
+                <button class="btn" style="flex:1; background:#ff9800; color:#000;" onclick="window.confirmArenaSetup()">確認出題</button>
+            </div>
         </div>
     </div>
-</div>
 
 <script src="app.js?v=1052"></script>
 <script type="module" src="auth.js?v=1047"></script>
