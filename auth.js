@@ -94,9 +94,7 @@ window.logout = () => {
 };
 
 function executeSignOut() {
-    // 【修復】：登出前手動砍掉在線節點，終結幽靈人口
     if (mySessionRef) set(mySessionRef, null);
-    
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
         localStorage.removeItem('sv_books_timestamp'); 
@@ -120,13 +118,11 @@ window.syncFromCloud = async function(uid) {
     try {
         const docRef = doc(db, "users", uid);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             let cloudTime = cloudData.lastUpdated || 0;
             if (typeof cloudTime === 'string') cloudTime = new Date(cloudTime).getTime() || 0;
             const localTime = parseInt(localStorage.getItem('sv_books_timestamp')) || 0;
-
             if (localTime > cloudTime && window.books && window.books.length > 0) {
                 window.syncToCloud(uid, window.books, localTime);
             } else if (cloudData && cloudData.books) {
@@ -222,19 +218,20 @@ onAuthStateChanged(auth, (user) => {
 
             let dbData = docSnapAdminDb.exists() ? docSnapAdminDb.data() : {};
             let lastDate = dbData.lastCheckInDate || '';
-            let streak = dbData.checkInStreak || 0;
 
             if (lastDate !== todayStr && !window.isGuestMode && !hasShareLink) {
-                const token = await user.getIdToken();
-                const res = await fetch(`${API_BASE}/api/checkin`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    window.myStorePoints = data.newPoints;
-                    setTimeout(() => window.SilenModal.alert(`🎉 每日簽到成功！\n這是您連續簽到的第 ${data.streak} 天。\n已為您發放 ${data.rewardPoints} 點商城點數！`), 800);
-                }
+                try {
+                    const token = await user.getIdToken();
+                    const res = await fetch(`${API_BASE}/api/checkin`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.myStorePoints = data.newPoints;
+                        setTimeout(() => window.SilenModal.alert(`🎉 每日簽到成功！\n這是您連續簽到的第 ${data.streak} 天。\n已為您發放 ${data.rewardPoints} 點商城點數！`), 800);
+                    }
+                } catch(e) { console.warn("簽到 API 失敗", e); }
             }
 
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
@@ -280,11 +277,9 @@ onAuthStateChanged(auth, (user) => {
             mainHeader.classList.remove('hidden');
         } else {
             mainHeader.classList.add('hidden');
-            // 【修復】：強制霸王硬上弓顯示 landing 畫面，破解登出卡黑屏的問題
             const landingView = document.getElementById('view-landing');
             if (landingView) {
                 document.querySelectorAll('.container > div').forEach(el => {
-                    el.classList.add('hidden');
                     el.style.setProperty('display', 'none', 'important');
                 });
                 landingView.classList.remove('hidden');
@@ -331,15 +326,13 @@ window.applyAvatarFrame = function(frameId) {
 };
 
 // =====================================
-// 排行榜與雙軌分數同步邏輯 (解鎖分離上傳版)
+// 排行榜與雙軌分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     if (!window.currentUser || typeof rtdb === 'undefined') return;
     const uid = window.currentUser.uid;
-    
     try { await set(ref(rtdb, `users/${uid}/storePoints`), storePoints); } catch(e) { console.warn("商城點數同步延遲", e); }
     try { await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
-    
     try {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}`), {
@@ -350,7 +343,6 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
             timestamp: Date.now()
         });
     } catch(e) { console.warn("排行榜同步延遲", e); }
-    
     window.updateMyPresence(); 
 };
 
@@ -608,7 +600,6 @@ window.executePublishToMarket = async function(book, price, desc) {
         const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
         let count = data.lastUploadDate === today ? (data.dailyUploadCount || 0) : 0;
         if (count >= 3) return window.SilenModal.alert("今日上架額度已用盡！");
-        
         const cleanWords = book.words.map(w => ({ en: w.en, zh: w.zh, pos: w.pos || '' }));
         await addDoc(collection(db, "market_books"), {
             authorUid: window.currentUser.uid, authorName: window.currentUser.displayName || '匿名玩家',
@@ -653,43 +644,33 @@ window.renderMarketCatalog = function(marketBooks) {
 window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！需要 ${price} 點數。`);
-    
     window.SilenModal.confirm(`花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
         if (agreed) {
             window.SilenModal.alert("交易中...");
-            const originalPoints = window.myStorePoints;
-            window.myStorePoints -= price;
-            document.getElementById('market-my-score').innerText = window.myStorePoints;
-            
             try {
                 const docRef = doc(db, "market_books", marketBookId);
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) throw new Error("商品已下架");
-                
-            const token = await window.currentUser.getIdToken();
-            const tradeRes = await fetch(`${API_BASE}/api/trade`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sellerUid: authorUid, amount: Math.floor(price * 0.8), itemId: marketBookId })
-            });
-            const tradeData = await tradeRes.json();
-            if (!tradeData.success) return window.SilenModal.alert("交易失敗：" + (tradeData.error || "未知錯誤"));
-            window.myStorePoints = tradeData.buyerNewPoints;
-            document.getElementById('market-my-score').innerText = window.myStorePoints;
+
+                const token = await window.currentUser.getIdToken();
+                const tradeRes = await fetch(`${API_BASE}/api/trade`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sellerUid: authorUid, amount: Math.floor(price * 0.8), itemId: marketBookId })
+                });
+                const tradeData = await tradeRes.json();
+                if (!tradeData.success) return window.SilenModal.alert("交易失敗：" + (tradeData.error || "未知錯誤"));
+                window.myStorePoints = tradeData.buyerNewPoints;
+                document.getElementById('market-my-score').innerText = window.myStorePoints;
 
                 updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 }).catch(()=>{});
-
+                const sellerRevenue = Math.floor(price * 0.8);
                 window.books.push({ id: Date.now(), name: docSnap.data().bookName, tag: "玩家市集", isGSAT: false, isPhrase: false, isStore: false, marketId: marketBookId, words: docSnap.data().words });
                 window.saveData(); 
-                
                 window.SilenModal.alert(`交易成功！\n賣家將獲得 ${sellerRevenue} 點數`).then(() => window.openMarket());
-                
             } catch (e) { 
                 console.error("交易異常終止", e);
-                window.myStorePoints = originalPoints;
-                document.getElementById('market-my-score').innerText = window.myStorePoints;
-                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), originalPoints).catch(()=>{});
-                window.SilenModal.alert("交易失敗，點數已全額退還！\n原因：" + e.message); 
+                window.SilenModal.alert("交易失敗！\n原因：" + e.message); 
             }
         }
     });
@@ -726,41 +707,25 @@ window.renderAccessoriesCatalog = function(catalog) {
 window.purchaseAccessory = async function(id, price, name) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！`);
-    
     window.SilenModal.confirm(`花費 ${price} 點數購買「${name}」嗎？`).then(async agreed => {
         if (agreed) {
-<<<<<<< HEAD
-            
-            const token = await window.currentUser.getIdToken();
-            const purchRes = await fetch(`${API_BASE}/api/purchase`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itemId: id, price: price })
-            });
-            const purchData = await purchRes.json();
-            if (!purchData.success) return window.SilenModal.alert("購買失敗：" + (purchData.error || "未知錯誤"));
-            window.myStorePoints = purchData.newPoints;
-            window.purchasedAccessories.push(id);
-            localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
-            window.syncAccessoriesToCloud();
-            window.SilenModal.alert(`購買成功！`).then(() => window.openAccessoriesStore());
-=======
-            const originalPoints = window.myStorePoints;
-            window.myStorePoints -= price;
-            document.getElementById('acc-my-score').innerText = window.myStorePoints;
-            
             try {
-                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
+                const token = await window.currentUser.getIdToken();
+                const purchRes = await fetch(`${API_BASE}/api/purchase`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId: id, price: price })
+                });
+                const purchData = await purchRes.json();
+                if (!purchData.success) return window.SilenModal.alert("購買失敗：" + (purchData.error || "未知錯誤"));
+                window.myStorePoints = purchData.newPoints;
                 window.purchasedAccessories.push(id);
                 localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
                 window.syncAccessoriesToCloud();
                 window.SilenModal.alert(`購買成功！`).then(() => window.openAccessoriesStore());
             } catch(e) {
-                window.myStorePoints = originalPoints;
-                document.getElementById('acc-my-score').innerText = window.myStorePoints;
-                window.SilenModal.alert("雲端連線失敗，點數已退還！");
+                window.SilenModal.alert("購買失敗，請檢查連線。");
             }
->>>>>>> f9d29ea776cdae44985d7e88752ee24ac07ebace
         }
     });
 };
@@ -859,3 +824,4 @@ window.handleOpponentFled = function() {
     window.currentArenaRoom = null; window.isArenaHost = false; window.matchStarted = false;
     window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，您贏得了這場對決！").then(() => window.switchView('arena'));
 };
+
