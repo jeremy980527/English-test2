@@ -20,6 +20,7 @@ const firebaseConfig = {
     databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
+const API_BASE = 'http://45.32.26.246:3000';
 const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
@@ -226,14 +227,16 @@ onAuthStateChanged(auth, (user) => {
             let streak = dbData.checkInStreak || 0;
 
             if (lastDate !== todayStr && !window.isGuestMode && !hasShareLink) {
-                streak = (lastDate === yesterdayStr) ? (streak % 7) + 1 : 1;
-                const rewards = [0, 200, 300, 400, 500, 650, 800, 1300];
-                const rewardPoints = rewards[streak];
-                window.myStorePoints += rewardPoints;
-                
-                set(ref(rtdb, `users/${user.uid}/storePoints`), window.myStorePoints);
-                setDoc(doc(db, "users", user.uid), { lastCheckInDate: todayStr, checkInStreak: streak }, { merge: true });
-                setTimeout(() => window.SilenModal.alert(`🎉 每日簽到成功！\n這是您連續簽到的第 ${streak} 天。\n已為您發放 ${rewardPoints} 點商城點數！`), 800);
+                const token = await user.getIdToken();
+                const res = await fetch(`${API_BASE}/api/checkin`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.myStorePoints = data.newPoints;
+                    setTimeout(() => window.SilenModal.alert(`🎉 每日簽到成功！\n這是您連續簽到的第 ${data.streak} 天。\n已為您發放 ${data.rewardPoints} 點商城點數！`), 800);
+                }
             }
 
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
@@ -638,14 +641,17 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) return window.SilenModal.alert("商品已不存在。");
                 
-                window.myStorePoints -= price;
+                
+                const token = await window.currentUser.getIdToken();
+                const tradeRes = await fetch(`${API_BASE}/api/trade`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sellerUid: authorUid, amount: Math.floor(price * 0.8), itemId: marketBookId })
+                });
+                const tradeData = await tradeRes.json();
+                if (!tradeData.success) return window.SilenModal.alert("交易失敗：" + (tradeData.error || "未知錯誤"));
+                window.myStorePoints = tradeData.buyerNewPoints;
                 document.getElementById('market-my-score').innerText = window.myStorePoints;
-                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
-
-                const sellerRevenue = Math.floor(price * 0.8);
-                const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
-                const sellerSnap = await get(sellerRef);
-                await set(sellerRef, (sellerSnap.exists() ? sellerSnap.val() : 0) + sellerRevenue);
 
                 await updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 });
 
@@ -685,13 +691,21 @@ window.renderAccessoriesCatalog = function(catalog) {
     });
 };
 
-window.purchaseAccessory = function(id, price, name) {
+window.purchaseAccessory = async function(id, price, name) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！`);
     window.SilenModal.confirm(`花費 ${price} 點數購買「${name}」嗎？`).then(agreed => {
         if (agreed) {
-            window.myStorePoints -= price;
-            if (typeof window.addStorePoints === 'function') window.addStorePoints(0, true);
+            
+            const token = await window.currentUser.getIdToken();
+            const purchRes = await fetch(`${API_BASE}/api/purchase`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId: id, price: price })
+            });
+            const purchData = await purchRes.json();
+            if (!purchData.success) return window.SilenModal.alert("購買失敗：" + (purchData.error || "未知錯誤"));
+            window.myStorePoints = purchData.newPoints;
             window.purchasedAccessories.push(id);
             localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
             window.syncAccessoriesToCloud();
