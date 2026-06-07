@@ -338,6 +338,7 @@
         </div>
         <div class="practice-area" style="margin-top: 10px;">
             <div class="card" style="padding: 15px; margin-bottom: 20px; border-color: var(--border);">
+                <!-- 血條 1 -->
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
                     <img id="am-host-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ff9800; margin-right: 10px; object-fit: cover;">
                     <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
@@ -345,6 +346,7 @@
                     </div>
                     <span id="am-host-score" style="margin-left: 10px; font-weight: bold; color: #ff9800; width: 30px; text-align: right;">0</span>
                 </div>
+                <!-- 血條 2 -->
                 <div style="display: flex; align-items: center;">
                     <img id="am-guest-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #4caf50; margin-right: 10px; object-fit: cover;">
                     <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
@@ -358,11 +360,20 @@
             <div id="am-interaction-area">
                 <div class="question-text" id="am-question-display" style="font-size: 2.2rem; margin-bottom: 30px;">Loading...</div>
                 
+                <!-- 選擇題區塊 -->
                 <div class="mcq-grid" id="am-mcq-area"></div>
                 
+                <!-- 拼打輸入區塊 -->
                 <div id="am-typing-area" class="hidden" style="display:flex; flex-direction:column; gap:15px; align-items:center;">
                     <input type="text" id="am-typing-input" placeholder="輸入答案 (直接 Enter 送出)..." autocomplete="off" style="width: 100%; text-align: center; font-size: 1.2rem;">
                     <button class="btn" style="width: 100%; background: #fff; color: #000;" onclick="window.checkArenaTypingAnswer()">送出答案</button>
+                </div>
+
+                <!-- 拼圖區塊 (全新加入) -->
+                <div id="am-puzzle-area" class="hidden" style="display:flex; flex-direction:column; align-items:center; width: 100%;">
+                    <div id="am-puzzle-ans" class="puzzle-container" style="margin-bottom: 15px;"></div>
+                    <div style="width: 80%; border-bottom: 1px solid var(--border); margin-bottom: 15px;"></div>
+                    <div id="am-puzzle-pool" class="puzzle-container"></div>
                 </div>
             </div>
             
