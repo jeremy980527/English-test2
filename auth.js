@@ -666,27 +666,16 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) throw new Error("商品已下架");
                 
-<<<<<<< HEAD
-                
-                const token = await window.currentUser.getIdToken();
-                const tradeRes = await fetch(`${API_BASE}/api/trade`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sellerUid: authorUid, amount: Math.floor(price * 0.8), itemId: marketBookId })
-                });
-                const tradeData = await tradeRes.json();
-                if (!tradeData.success) return window.SilenModal.alert("交易失敗：" + (tradeData.error || "未知錯誤"));
-                window.myStorePoints = tradeData.buyerNewPoints;
-                document.getElementById('market-my-score').innerText = window.myStorePoints;
-=======
-                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
-
-                const sellerRevenue = Math.floor(price * 0.8);
-                const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
-                get(sellerRef).then(snap => {
-                    set(sellerRef, (snap.exists() ? snap.val() : 0) + sellerRevenue).catch(()=>{});
-                }).catch(()=>{});
->>>>>>> f9d29ea776cdae44985d7e88752ee24ac07ebace
+            const token = await window.currentUser.getIdToken();
+            const tradeRes = await fetch(`${API_BASE}/api/trade`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sellerUid: authorUid, amount: Math.floor(price * 0.8), itemId: marketBookId })
+            });
+            const tradeData = await tradeRes.json();
+            if (!tradeData.success) return window.SilenModal.alert("交易失敗：" + (tradeData.error || "未知錯誤"));
+            window.myStorePoints = tradeData.buyerNewPoints;
+            document.getElementById('market-my-score').innerText = window.myStorePoints;
 
                 updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 }).catch(()=>{});
 
