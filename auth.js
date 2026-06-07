@@ -93,6 +93,9 @@ window.logout = () => {
 };
 
 function executeSignOut() {
+    // 【修復】：登出前手動砍掉在線節點，終結幽靈人口
+    if (mySessionRef) set(mySessionRef, null);
+    
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
         localStorage.removeItem('sv_books_timestamp'); 
@@ -270,8 +273,23 @@ onAuthStateChanged(auth, (user) => {
         window.currentUser = null;
         window.updateMyPresence();
         authContainer.innerHTML = ``;
-        if (hasShareLink) mainHeader.classList.remove('hidden');
-        else { mainHeader.classList.add('hidden'); if (typeof window.switchView === 'function') window.switchView('landing'); }
+        if (hasShareLink) {
+            mainHeader.classList.remove('hidden');
+        } else {
+            mainHeader.classList.add('hidden');
+            // 【修復】：強制霸王硬上弓顯示 landing 畫面，破解登出卡黑屏的問題
+            const landingView = document.getElementById('view-landing');
+            if (landingView) {
+                document.querySelectorAll('.container > div').forEach(el => {
+                    el.classList.add('hidden');
+                    el.style.setProperty('display', 'none', 'important');
+                });
+                landingView.classList.remove('hidden');
+                landingView.style.setProperty('display', 'block', 'important');
+            } else if (typeof window.switchView === 'function') {
+                window.switchView('landing');
+            }
+        }
     }
 });
 
@@ -316,7 +334,6 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     if (!window.currentUser || typeof rtdb === 'undefined') return;
     const uid = window.currentUser.uid;
     
-    // 【終極修復】：將三個上傳動作分離。即便一個失敗，其他依然會成功寫入！
     try { await set(ref(rtdb, `users/${uid}/storePoints`), storePoints); } catch(e) { console.warn("商城點數同步延遲", e); }
     try { await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
     
@@ -630,7 +647,6 @@ window.renderMarketCatalog = function(marketBooks) {
     });
 };
 
-// 【終極修復】：C2C 防呆回溯機制 (確保錢不會憑空消失，且無視無關緊要的報錯)
 window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！需要 ${price} 點數。`);
@@ -639,36 +655,30 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
         if (agreed) {
             window.SilenModal.alert("交易中...");
             const originalPoints = window.myStorePoints;
-            window.myStorePoints -= price; // 先扣本地畫面
+            window.myStorePoints -= price;
             document.getElementById('market-my-score').innerText = window.myStorePoints;
             
             try {
-                // 1. 檢查商品是否存在 (Firestore)
                 const docRef = doc(db, "market_books", marketBookId);
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) throw new Error("商品已下架");
                 
-                // 2. 扣除雲端買家的錢 (RTDB)
                 await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
 
-                // 3. 給賣家錢 (若被規則擋下，不阻斷交易)
                 const sellerRevenue = Math.floor(price * 0.8);
                 const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
                 get(sellerRef).then(snap => {
                     set(sellerRef, (snap.exists() ? snap.val() : 0) + sellerRevenue).catch(()=>{});
                 }).catch(()=>{});
 
-                // 4. 增加銷量 (若被 Firestore 擋下，不阻斷交易)
                 updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 }).catch(()=>{});
 
-                // 5. 確保發放商品
                 window.books.push({ id: Date.now(), name: docSnap.data().bookName, tag: "玩家市集", isGSAT: false, isPhrase: false, isStore: false, marketId: marketBookId, words: docSnap.data().words });
                 window.saveData(); 
                 
                 window.SilenModal.alert(`交易成功！\n賣家將獲得 ${sellerRevenue} 點數`).then(() => window.openMarket());
                 
             } catch (e) { 
-                // 發生嚴重錯誤（商品不存在等），進行「自動退款」
                 console.error("交易異常終止", e);
                 window.myStorePoints = originalPoints;
                 document.getElementById('market-my-score').innerText = window.myStorePoints;
@@ -680,7 +690,7 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
 };
 
 // ==========================================
-// 15. 外觀飾品與官方擴充包系統
+// 15. 外觀飾品系統
 // ==========================================
 window.openAccessoriesStore = async function() {
     window.switchView('accessories');
@@ -707,7 +717,6 @@ window.renderAccessoriesCatalog = function(catalog) {
     });
 };
 
-// 【防呆回溯機制】：外觀購買
 window.purchaseAccessory = function(id, price, name) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！`);
