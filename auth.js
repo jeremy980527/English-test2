@@ -27,6 +27,7 @@ const rtdb = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
 let currentUser = null;
+window.purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []; // 【修復】：提升為全域變數並準備上雲端
 
 // =====================================
 // 即時在線陪伴系統 (防斷線重連覆蓋升級版)
@@ -116,6 +117,7 @@ window.logout = () => {
 function executeSignOut() {
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
+        localStorage.removeItem('sv_books_timestamp'); // 【修復】：登出時一併清空時間戳
         window.books = [];
         window.location.reload(); 
     }).catch((error) => {
@@ -124,7 +126,7 @@ function executeSignOut() {
 }
 
 // =====================================
-// 雲端與本地端資料備份同步引擎
+// 雲端與本地端資料備份同步引擎 (防回溯智能版)
 // =====================================
 async function syncFromCloud(uid) {
     try {
@@ -133,15 +135,28 @@ async function syncFromCloud(uid) {
 
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
-            if (cloudData && cloudData.books) {
+            const cloudTime = cloudData.lastUpdated || 0;
+            const localTime = parseInt(localStorage.getItem('sv_books_timestamp')) || 0;
+
+            // 【核心修復】：精確比對時間戳。如果本地較新 (如離線操作、剛買完東西等)，則反向備份至雲端，避免被舊雲端覆蓋
+            if (localTime > cloudTime && window.books && window.books.length > 0) {
+                console.log("本地存檔較新，啟動反向覆蓋雲端...");
+                syncToCloud(uid, window.books, localTime);
+            } else if (cloudData && cloudData.books) {
+                // 雲端較新，正常覆蓋本地
                 window.books = cloudData.books;
                 localStorage.setItem('sv_books', JSON.stringify(window.books));
+                localStorage.setItem('sv_books_timestamp', cloudTime.toString());
+                
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
             }
         } else {
+            // 新用戶或無雲端紀錄
             if (window.books && window.books.length > 0) {
-                syncToCloud(uid, window.books);
+                const now = Date.now();
+                localStorage.setItem('sv_books_timestamp', now.toString());
+                syncToCloud(uid, window.books, now);
             }
         }
     } catch (error) {
@@ -149,12 +164,13 @@ async function syncFromCloud(uid) {
     }
 }
 
-async function syncToCloud(uid, booksData) {
+async function syncToCloud(uid, booksData, timestamp) {
     if (!uid) return;
+    const ts = timestamp || Date.now();
     try {
         await setDoc(doc(db, "users", uid), {
             books: booksData,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: ts
         }, { merge: true });
     } catch (error) {
         console.error("雲端備份錯誤:", error);
@@ -165,8 +181,13 @@ window.addEventListener('load', () => {
     const originalSaveData = window.saveData;
     window.saveData = function() {
         if (typeof originalSaveData === 'function') originalSaveData();
+        
+        // 每次本地儲存時，打上最新的時間戳戳記
+        const now = Date.now();
+        localStorage.setItem('sv_books_timestamp', now.toString());
+        
         if (currentUser) {
-            syncToCloud(currentUser.uid, window.books);
+            syncToCloud(currentUser.uid, window.books, now);
         }
     };
 });
@@ -211,14 +232,16 @@ onAuthStateChanged(auth, (user) => {
 
         const weekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
 
+        // 【修復】：加入抓取 purchasedBundles 的紀錄
         Promise.all([
             get(ref(rtdb, `users/${user.uid}/storePoints`)),
             get(ref(rtdb, `leaderboard/week_${weekId}/${user.uid}/score`)),
             get(ref(rtdb, `users/${user.uid}/isAdmin`)),
             getDoc(doc(db, "users", user.uid)),
             get(ref(rtdb, `users/${user.uid}/purchasedAccessories`)), 
-            get(ref(rtdb, `users/${user.uid}/equippedFrame`)) 
-        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame]) => {
+            get(ref(rtdb, `users/${user.uid}/equippedFrame`)),
+            get(ref(rtdb, `users/${user.uid}/purchasedBundles`)) 
+        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame, snapBundles]) => {
             
             const currentStore = snapStore.exists() ? snapStore.val() : 0;
             const trueSeasonScore = snapLb.exists() ? snapLb.val() : 0;
@@ -226,7 +249,7 @@ onAuthStateChanged(auth, (user) => {
             window.myRankPoints = trueSeasonScore;
             window.myStorePoints = currentStore;
 
-            // ★ 每日簽到系統 ★
+            // 每日簽到系統
             const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
@@ -261,9 +284,13 @@ onAuthStateChanged(auth, (user) => {
                 }, 800);
             }
 
+            // 【修復】：同步所有購物資料到本地，防止清快取後遺失
             window.purchasedAccessories = snapAcc.exists() ? snapAcc.val() : [];
             window.equippedFrame = snapFrame.exists() ? snapFrame.val() : null;
+            window.purchasedBundles = snapBundles.exists() ? snapBundles.val() : (JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []);
+            
             localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
+            localStorage.setItem('sv_purchased_bundles', JSON.stringify(window.purchasedBundles));
             
             if (typeof window.applyAvatarFrame === 'function') {
                 window.applyAvatarFrame(window.equippedFrame);
@@ -323,7 +350,7 @@ onAuthStateChanged(auth, (user) => {
 
     } else {
         window.currentUser = null;
-        window.updateMyPresence();
+        window.updateMyPresence(); 
         
         authContainer.innerHTML = ``;
         if (hasShareLink) {
@@ -348,7 +375,7 @@ window.syncAccessoriesToCloud = async function() {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}/frame`), window.equippedFrame || '');
         
-        window.updateMyPresence();
+        window.updateMyPresence(); 
         
         const headerFrame = document.getElementById('header-avatar-frame');
         if (headerFrame && window.accessoriesCatalog) {
@@ -534,7 +561,7 @@ window.updateCloudUserName = async function(newName) {
             }
         }
 
-        window.updateMyPresence();
+        window.updateMyPresence(); 
 
         if (btn) btn.innerText = "更改名稱";
         window.SilenModal.alert(`改名成功！\n\n您在排行榜上的 ID 已更新為「${newName}」。`);
