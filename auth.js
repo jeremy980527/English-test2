@@ -209,7 +209,7 @@ onAuthStateChanged(auth, (user) => {
             get(ref(rtdb, `users/${user.uid}/purchasedAccessories`)), 
             get(ref(rtdb, `users/${user.uid}/equippedFrame`)),
             get(ref(rtdb, `users/${user.uid}/purchasedBundles`)) 
-        ]).then(([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame, snapBundles]) => {
+        ]).then(async ([snapStore, snapLb, snapAdminRtdb, docSnapAdminDb, snapAcc, snapFrame, snapBundles]) => {
             
             window.myRankPoints = snapLb.exists() ? snapLb.val() : 0;
             window.myStorePoints = snapStore.exists() ? snapStore.val() : 0;
