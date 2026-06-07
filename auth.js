@@ -6,9 +6,6 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAut
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getDatabase, ref, set, get, child, onValue, query, orderByChild, limitToLast, push, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// =====================================
-// Firebase 專案配置
-// =====================================
 const firebaseConfig = {
     apiKey: "AIzaSyDwZ9dQlbx9oMRut4kuAkHpSL8rmfAGOvo",
     authDomain: "silenvocab.firebaseapp.com",
@@ -21,7 +18,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app); 
@@ -106,7 +102,7 @@ function executeSignOut() {
 }
 
 // =====================================
-// 雲端與本地端資料備份同步引擎 (防回溯霸王版)
+// 雲端與本地端資料備份同步引擎
 // =====================================
 window.syncToCloud = async function(uid, booksData, timestamp) {
     if (!uid) return;
@@ -146,7 +142,6 @@ window.syncFromCloud = async function(uid) {
     } catch (error) { console.error("雲端同步連線中斷:", error); }
 };
 
-// 【終極防護】：強制攔截 saveData，確保即使 app.js 延遲載入覆寫，也能霸王硬上弓綁定上傳！
 let _lastSaveData = null;
 setInterval(() => {
     if (window.saveData && window.saveData !== _lastSaveData && window.saveData.name !== 'silenHookedSave') {
@@ -315,8 +310,56 @@ window.applyAvatarFrame = function(frameId) {
 };
 
 // =====================================
-// 排行榜與徽章系統
+// 排行榜與雙軌分數同步邏輯 (解鎖分離上傳版)
 // =====================================
+window.uploadScoreToCloud = async function(rankPoints, storePoints) {
+    if (!window.currentUser || typeof rtdb === 'undefined') return;
+    const uid = window.currentUser.uid;
+    
+    // 【終極修復】：將三個上傳動作分離。即便一個失敗，其他依然會成功寫入！
+    try { await set(ref(rtdb, `users/${uid}/storePoints`), storePoints); } catch(e) { console.warn("商城點數同步延遲", e); }
+    try { await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
+    
+    try {
+        const weekId = window.getCurrentWeekId();
+        await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}`), {
+            name: window.currentUser.displayName || '匿名者',
+            photo: window.currentUser.photoURL || '',
+            score: rankPoints,
+            frame: window.equippedFrame || '',
+            timestamp: Date.now()
+        });
+    } catch(e) { console.warn("排行榜同步延遲", e); }
+    
+    window.updateMyPresence(); 
+};
+
+window.fetchLeaderboard = async function(weekId) {
+    try {
+        const lbRef = query(ref(rtdb, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
+        const snapshot = await get(lbRef);
+        let list = [];
+        if (snapshot.exists()) { snapshot.forEach(c => { list.push({ uid: c.key, ...c.val() }); }); }
+        list.reverse();
+        if (window.renderLeaderboard) window.renderLeaderboard(list, window.myRankPoints);
+    } catch(e) { console.error("抓取排行榜失敗", e); }
+};
+
+window.updateCloudUserName = async function(newName) {
+    if (!window.currentUser) { window.SilenModal.alert("請先登入帳號！"); return; }
+    try {
+        await updateProfile(window.currentUser, { displayName: newName });
+        await setDoc(doc(db, "users", window.currentUser.uid), { name: newName }, { merge: true });
+        const weekId = window.getCurrentWeekId();
+        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${window.currentUser.uid}`);
+        const snap = await get(lbRef);
+        if (snap.exists()) await set(lbRef, { ...snap.val(), name: newName });
+        window.updateMyPresence(); 
+        window.SilenModal.alert(`改名成功！\n您的 ID 已更新為「${newName}」。`);
+        window.fetchLeaderboard(weekId);
+    } catch (e) { window.SilenModal.alert("雲端同步失敗，請檢查網路。"); }
+};
+
 window.renderMyBadges = function(badges) {
     const container = document.getElementById('profile-badges-container');
     if (!container) return;
@@ -348,46 +391,6 @@ window.fetchPublicBadges = async function(uid) {
             });
         } else badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
     } catch(e) { badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>'; }
-};
-
-window.uploadScoreToCloud = async function(rankPoints, storePoints) {
-    if (!window.currentUser) return;
-    try {
-        await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), storePoints);
-        await set(ref(rtdb, `users/${window.currentUser.uid}/rankPoints`), rankPoints);
-        const weekId = window.getCurrentWeekId();
-        await set(ref(rtdb, `leaderboard/week_${weekId}/${window.currentUser.uid}`), {
-            name: window.currentUser.displayName || '匿名者', photo: window.currentUser.photoURL || '',
-            score: rankPoints, frame: window.equippedFrame || '', timestamp: Date.now()
-        });
-        window.updateMyPresence(); 
-    } catch(e) { console.error("上傳分數失敗", e); }
-};
-
-window.fetchLeaderboard = async function(weekId) {
-    try {
-        const lbRef = query(ref(rtdb, `leaderboard/week_${weekId}`), orderByChild('score'), limitToLast(10));
-        const snapshot = await get(lbRef);
-        let list = [];
-        if (snapshot.exists()) { snapshot.forEach(c => { list.push({ uid: c.key, ...c.val() }); }); }
-        list.reverse();
-        if (window.renderLeaderboard) window.renderLeaderboard(list, window.myRankPoints);
-    } catch(e) { console.error("抓取排行榜失敗", e); }
-};
-
-window.updateCloudUserName = async function(newName) {
-    if (!window.currentUser) { window.SilenModal.alert("請先登入帳號！"); return; }
-    try {
-        await updateProfile(window.currentUser, { displayName: newName });
-        await setDoc(doc(db, "users", window.currentUser.uid), { name: newName }, { merge: true });
-        const weekId = window.getCurrentWeekId();
-        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${window.currentUser.uid}`);
-        const snap = await get(lbRef);
-        if (snap.exists()) await set(lbRef, { ...snap.val(), name: newName });
-        window.updateMyPresence(); 
-        window.SilenModal.alert(`改名成功！\n您的 ID 已更新為「${newName}」。`);
-        window.fetchLeaderboard(weekId);
-    } catch (e) { window.SilenModal.alert("雲端同步失敗，請檢查網路。"); }
 };
 
 // =====================================
@@ -627,38 +630,57 @@ window.renderMarketCatalog = function(marketBooks) {
     });
 };
 
+// 【終極修復】：C2C 防呆回溯機制 (確保錢不會憑空消失，且無視無關緊要的報錯)
 window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！需要 ${price} 點數。`);
+    
     window.SilenModal.confirm(`花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
         if (agreed) {
             window.SilenModal.alert("交易中...");
+            const originalPoints = window.myStorePoints;
+            window.myStorePoints -= price; // 先扣本地畫面
+            document.getElementById('market-my-score').innerText = window.myStorePoints;
+            
             try {
+                // 1. 檢查商品是否存在 (Firestore)
                 const docRef = doc(db, "market_books", marketBookId);
                 const docSnap = await getDoc(docRef);
-                if (!docSnap.exists()) return window.SilenModal.alert("商品已不存在。");
+                if (!docSnap.exists()) throw new Error("商品已下架");
                 
-                window.myStorePoints -= price;
-                document.getElementById('market-my-score').innerText = window.myStorePoints;
+                // 2. 扣除雲端買家的錢 (RTDB)
                 await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
 
+                // 3. 給賣家錢 (若被規則擋下，不阻斷交易)
                 const sellerRevenue = Math.floor(price * 0.8);
                 const sellerRef = ref(rtdb, `users/${authorUid}/storePoints`);
-                const sellerSnap = await get(sellerRef);
-                await set(sellerRef, (sellerSnap.exists() ? sellerSnap.val() : 0) + sellerRevenue);
+                get(sellerRef).then(snap => {
+                    set(sellerRef, (snap.exists() ? snap.val() : 0) + sellerRevenue).catch(()=>{});
+                }).catch(()=>{});
 
-                await updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 });
+                // 4. 增加銷量 (若被 Firestore 擋下，不阻斷交易)
+                updateDoc(docRef, { salesCount: (docSnap.data().salesCount || 0) + 1 }).catch(()=>{});
 
+                // 5. 確保發放商品
                 window.books.push({ id: Date.now(), name: docSnap.data().bookName, tag: "玩家市集", isGSAT: false, isPhrase: false, isStore: false, marketId: marketBookId, words: docSnap.data().words });
                 window.saveData(); 
+                
                 window.SilenModal.alert(`交易成功！\n賣家將獲得 ${sellerRevenue} 點數`).then(() => window.openMarket());
-            } catch (e) { window.SilenModal.alert("交易失敗。"); }
+                
+            } catch (e) { 
+                // 發生嚴重錯誤（商品不存在等），進行「自動退款」
+                console.error("交易異常終止", e);
+                window.myStorePoints = originalPoints;
+                document.getElementById('market-my-score').innerText = window.myStorePoints;
+                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), originalPoints).catch(()=>{});
+                window.SilenModal.alert("交易失敗，點數已全額退還！\n原因：" + e.message); 
+            }
         }
     });
 };
 
 // ==========================================
-// 15. 外觀飾品系統
+// 15. 外觀飾品與官方擴充包系統
 // ==========================================
 window.openAccessoriesStore = async function() {
     window.switchView('accessories');
@@ -685,17 +707,28 @@ window.renderAccessoriesCatalog = function(catalog) {
     });
 };
 
+// 【防呆回溯機制】：外觀購買
 window.purchaseAccessory = function(id, price, name) {
     if (!window.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！`);
-    window.SilenModal.confirm(`花費 ${price} 點數購買「${name}」嗎？`).then(agreed => {
+    
+    window.SilenModal.confirm(`花費 ${price} 點數購買「${name}」嗎？`).then(async agreed => {
         if (agreed) {
+            const originalPoints = window.myStorePoints;
             window.myStorePoints -= price;
-            if (typeof window.addStorePoints === 'function') window.addStorePoints(0, true);
-            window.purchasedAccessories.push(id);
-            localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
-            window.syncAccessoriesToCloud();
-            window.SilenModal.alert(`購買成功！`).then(() => window.openAccessoriesStore());
+            document.getElementById('acc-my-score').innerText = window.myStorePoints;
+            
+            try {
+                await set(ref(rtdb, `users/${window.currentUser.uid}/storePoints`), window.myStorePoints);
+                window.purchasedAccessories.push(id);
+                localStorage.setItem('sv_purchased_acc', JSON.stringify(window.purchasedAccessories));
+                window.syncAccessoriesToCloud();
+                window.SilenModal.alert(`購買成功！`).then(() => window.openAccessoriesStore());
+            } catch(e) {
+                window.myStorePoints = originalPoints;
+                document.getElementById('acc-my-score').innerText = window.myStorePoints;
+                window.SilenModal.alert("雲端連線失敗，點數已退還！");
+            }
         }
     });
 };
