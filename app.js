@@ -3112,25 +3112,44 @@ window.switchCampaignLevel = function(level) {
     }
 };
 
-document.getElementById('campaign-target-months')?.addEventListener('input', function(e) {
+const VOCAB_BASE_URL = 'https://raw.githubusercontent.com/jeremy980527/English-test2/main/';
+
+async function fetchVocabLevel(level) {
+    let res = await fetch(`${VOCAB_BASE_URL}vocabularylv${level}.json?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`找不到 vocabularylv${level}.json`);
+    return await res.json();
+}
+
+document.getElementById('campaign-target-months')?.addEventListener('input', async function(e) {
     let months = parseInt(e.target.value);
     if (isNaN(months) || months < 1) months = 1;
     if (months > 12) months = 12;
-    
-    let totalDays = months * 30;
-    let totalWords = 1080; 
-    let parts = 6; 
-    
-    let wordsPerLevel = Math.ceil(totalWords / totalDays);
-    let levelsPerPart = Math.ceil(totalDays / parts);
-    
-    document.getElementById('campaign-survey-result').innerHTML = 
-        `分析完畢！為在 ${months} 個月內達標，共分 ${parts} 大階段。<br>
-         每天推演 1 關，每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerLevel}</strong> 個單字。`;
-         
-    window.tempCampaignPlan = { 
-        months, totalDays, wordsPerLevel, levelsPerPart, currentLevel: 1 
-    };
+
+    let resultEl = document.getElementById('campaign-survey-result');
+    resultEl.innerHTML = `<span style="color:var(--text-sub)">正在讀取題庫...</span>`;
+
+    try {
+        let words = await fetchVocabLevel(window.currentCampaignLevel);
+        let totalWords = words.length;
+        let totalDays = months * 30;
+        let parts = 6;
+
+        let wordsPerNode = Math.ceil(totalWords / totalDays);
+        let nodesPerPart = Math.ceil(totalDays / parts);
+
+        resultEl.innerHTML = `
+            分析完畢！Lv.${window.currentCampaignLevel} 共有 <strong style="color:#00bcd4">${totalWords}</strong> 個單字。<br>
+            為在 ${months} 個月內達標，共分 ${parts} 大階段。<br>
+            每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerNode}</strong> 個單字，每階段約 ${nodesPerPart} 關。
+        `;
+
+        window.tempCampaignPlan = {
+            months, totalDays, totalWords, wordsPerNode,
+            nodesPerPart, levelsPerPart: nodesPerPart, currentLevel: 1
+        };
+    } catch(e) {
+        resultEl.innerHTML = `<span style="color:#ff4444">題庫載入失敗，請確認網路連線。</span>`;
+    }
 });
 
 window.closeCampaignSurvey = function() {
