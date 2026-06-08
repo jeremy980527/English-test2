@@ -985,7 +985,15 @@ window.finalizeMasterySession = function() {
     pendingMasteredWords = [];
 };
 
-window.setupMasteryMode = function(type) {
+window.setupMasteryMode = function(mode) {
+    // 【新增這段豁免邏輯】
+    // 如果是闖關模式，直接跳過「選單字簿」的檢查
+    if (!window.isCampaignMode) {
+        if (!window.currentBook || !window.currentBook.words || window.currentBook.words.length === 0) {
+            window.SilenModal.alert("請先選取單字簿！");
+            return;
+        }
+    }
     let words = window.getPracticeWords(); if(!words || words.length === 0) return;
     masteryModeType = type; pendingMasteredWords = []; 
     masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered, pos: w.pos || '' })); 
