@@ -979,8 +979,18 @@ window.finalizeMasterySession = function() {
     if (typeof window.updateProfileStats === 'function') window.updateProfileStats();
     if (typeof window.saveData === 'function') window.saveData(); 
 
-    if (typeof window.addRankPoints === 'function' && totalPoints > 0) {
-        window.addRankPoints(totalPoints, true);
+    if (window.isCampaignMode) {
+        const multiplierMap = { 1: 50, 2: 70, 3: 90, 4: 110, 5: 130, 6: 150 };
+        const pointsPerWord = multiplierMap[window.currentCampaignLevel] || 50;
+        const campaignRankPoints = pendingMasteredWords.length * pointsPerWord;
+        if (campaignRankPoints > 0 && typeof window.addRankPoints === 'function') {
+            window.addRankPoints(campaignRankPoints, true);
+            setTimeout(() => window.SilenModal.alert(`🏆 關卡完成！\n獲得 ${campaignRankPoints} 牌位積分！`), 300);
+        }
+    } else {
+        if (typeof window.addRankPoints === 'function' && totalPoints > 0) {
+            window.addRankPoints(totalPoints, true);
+        }
     }
     pendingMasteredWords = [];
 };
