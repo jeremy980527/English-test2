@@ -3172,8 +3172,20 @@ document.getElementById('campaign-target-months')?.addEventListener('input', asy
         const wordsPerNode = Math.ceil(totalWords / (nodesPerPart * parts));
 
         resultEl.innerHTML = `
-            分析完畢！Lv.${window.currentCampaignLevel} 共有 <strong style="color:#00bcd4">${totalWords}</strong> 個單字。<br>
-            為在 ${months} 個月內達標，每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerNode}</strong> 個單字。
+            <div style="width: 100%; background: rgba(0,188,212,0.08); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 16px 20px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                    <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">題庫總量</span>
+                    <span style="font-size: 1rem; color: #00bcd4; font-weight: 600;">${totalWords} 個單字</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                    <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">學習期限</span>
+                    <span style="font-size: 1rem; color: var(--text-main); font-weight: 600;">${months} 個月</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">每關單字數</span>
+                    <span style="font-size: 1.2rem; color: #fff; font-weight: 700;">${wordsPerNode} 個</span>
+                </div>
+            </div>
         `;
 
         window.tempCampaignPlan = {
