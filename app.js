@@ -3261,11 +3261,11 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
             let startIdx = (nodeIndex - 1) * data.wordsPerNode;
             targetWords = allWords.slice(startIdx, startIdx + data.wordsPerNode);
         } else if (type === 'midterm') {
-            let partStart = (part - 1) * data.levelsPerPart * data.wordsPerLevel;
-            targetWords = allWords.slice(partStart, partStart + (data.wordsPerLevel * Math.floor(data.levelsPerPart / 2)));
+            let partStart = (part - 1) * data.nodesPerPart * data.wordsPerNode;
+            targetWords = allWords.slice(partStart, partStart + (data.wordsPerNode * Math.floor(data.nodesPerPart / 2)));
         } else if (type === 'final') {
-            let partStart = (part - 1) * data.levelsPerPart * data.wordsPerLevel;
-            targetWords = allWords.slice(partStart, partStart + (data.wordsPerLevel * data.levelsPerPart));
+            let partStart = (part - 1) * data.nodesPerPart * data.wordsPerNode;
+            targetWords = allWords.slice(partStart, partStart + (data.wordsPerNode * data.nodesPerPart));
         }
 
         if(targetWords.length === 0) targetWords = allWords.slice(0, 10);
