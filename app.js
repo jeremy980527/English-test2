@@ -3322,6 +3322,21 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
 
         window.setupMasteryMode('comprehensive');
 
+        window.isCampaignMode = true;
+        window.campaignCurrentType = type;
+        window.campaignCurrentNode = nodeIndex;
+        
+        // 關鍵：將此暫時的闖關單字簿存入 currentBook，且「不」放進 window.books 陣列 (避免它出現在你的單字庫清單中)
+        window.currentBook = {
+            id: 'campaign_temp',
+            name: type === 'normal' ? `闖關 Lv.${nodeIndex}` : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
+            words: targetWords
+        };
+        
+        // 直接啟動模式，不經過選單
+        document.getElementById('silen-modal-overlay').classList.add('hidden');
+        window.setupMasteryMode('comprehensive');
+
     } catch(e) {
         console.error("載入題庫失敗:", e);
         window.SilenModal.alert(`無法載入學測題庫！\n請確認網路連線正常。`);
