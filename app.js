@@ -3063,57 +3063,73 @@ window.surrenderArena = function() {
 
 
 // ==========================================
-// 18. 學測闖關地圖系統 (Campaign Mode)
+// 18. 學測闖關地圖系統 (多 Level 獨立進度版)
 // ==========================================
 
-window.campaignData = JSON.parse(localStorage.getItem('sv_campaign_data')) || null;
+window.campaignData = JSON.parse(localStorage.getItem('sv_campaign_data')) || {};
+// 舊版單一進度資料轉移 (防呆機制，將舊資料自動移入 lv1)
+if (window.campaignData.months) {
+    let oldData = JSON.parse(JSON.stringify(window.campaignData));
+    window.campaignData = { lv1: oldData };
+    localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+}
+
 window.isCampaignMode = false;
 window.campaignCurrentType = 'normal';
-// 預設挑戰等級為 1，未來如果你在畫面上加入選擇等級的按鈕，只要更改這個變數即可
 window.currentCampaignLevel = 1; 
 
-// --- 1. 攔截畫面切換，自動觸發問卷或渲染地圖 ---
+// --- 1. 攔截畫面切換 ---
 const originalSwitchView = window.switchView;
 window.switchView = function(viewId) {
     originalSwitchView(viewId);
     if (viewId === 'campaign') {
-        if (!window.campaignData) {
-            // 第一次進入，強制顯示問卷彈窗
-            const overlay = document.getElementById('campaign-survey-overlay');
-            overlay.classList.remove('hidden');
-            setTimeout(() => overlay.classList.add('show'), 10);
-            // 觸發一次預設值的計算
-            document.getElementById('campaign-target-months').dispatchEvent(new Event('input'));
-        } else {
-            window.renderCampaignMap();
-        }
+        window.switchCampaignLevel(window.currentCampaignLevel);
     }
 };
 
-// --- 2. 問卷即時計算邏輯 ---
+// --- 2. 切換 Level 與問卷邏輯 ---
+window.switchCampaignLevel = function(level) {
+    window.currentCampaignLevel = level;
+    document.getElementById('campaign-level-title-text').innerText = `學測 Lv.${level} 征服計畫`;
+    
+    // 隱藏下拉選單
+    const optionsEl = document.getElementById('campaign-level-options');
+    if (optionsEl) optionsEl.classList.add('hidden');
+
+    if (!window.campaignData['lv' + level]) {
+        // 尚未建立計畫，顯示問卷
+        document.getElementById('campaign-survey-title').innerText = `建立 Lv.${level} 專屬路線`;
+        document.getElementById('campaign-survey-desc').innerHTML = `學測 Lv.${level} 包含大量核心單字。<br>你希望花多少時間征服它？`;
+        
+        const overlay = document.getElementById('campaign-survey-overlay');
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.add('show'), 10);
+        
+        document.getElementById('campaign-target-months').dispatchEvent(new Event('input'));
+    } else {
+        // 已有資料，直接渲染地圖
+        window.renderCampaignMap();
+    }
+};
+
 document.getElementById('campaign-target-months')?.addEventListener('input', function(e) {
     let months = parseInt(e.target.value);
     if (isNaN(months) || months < 1) months = 1;
-    if (months > 12) months = 12; // 極限一年
+    if (months > 12) months = 12;
     
     let totalDays = months * 30;
     let totalWords = 1080; 
-    let parts = 6; // 固定 6 大部分
+    let parts = 6; 
     
-    // 計算每關單字與每部分關卡數
     let wordsPerLevel = Math.ceil(totalWords / totalDays);
     let levelsPerPart = Math.ceil(totalDays / parts);
     
     document.getElementById('campaign-survey-result').innerHTML = 
         `分析完畢！為在 ${months} 個月內達標，共分 ${parts} 大階段。<br>
-         每天推演 1 關，每關包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerLevel}</strong> 個全新單字。`;
+         每天推演 1 關，每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerLevel}</strong> 個單字。`;
          
     window.tempCampaignPlan = { 
-        months, 
-        totalDays, 
-        wordsPerLevel, 
-        levelsPerPart, 
-        currentLevel: 1 
+        months, totalDays, wordsPerLevel, levelsPerPart, currentLevel: 1 
     };
 });
 
@@ -3121,12 +3137,13 @@ window.closeCampaignSurvey = function() {
     const overlay = document.getElementById('campaign-survey-overlay');
     overlay.classList.remove('show');
     setTimeout(() => overlay.classList.add('hidden'), 200);
-    window.goHome(); // 稍後再說就回首頁
+    window.goHome(); 
 };
 
 window.confirmCampaignPlan = function() {
     if (!window.tempCampaignPlan) return;
-    window.campaignData = window.tempCampaignPlan;
+    // 將問卷結果存入對應的 Level
+    window.campaignData['lv' + window.currentCampaignLevel] = window.tempCampaignPlan;
     localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
     
     const overlay = document.getElementById('campaign-survey-overlay');
@@ -3134,6 +3151,8 @@ window.confirmCampaignPlan = function() {
     setTimeout(() => {
         overlay.classList.add('hidden');
         window.renderCampaignMap();
+        // 觸發雲端存檔同步
+        if (window.currentUser && typeof window.saveData === 'function') window.saveData();
     }, 200);
 };
 
@@ -3141,34 +3160,30 @@ window.confirmCampaignPlan = function() {
 window.renderCampaignMap = function() {
     const container = document.getElementById('campaign-map-container');
     container.innerHTML = '';
-    let data = window.campaignData;
+    let data = window.campaignData['lv' + window.currentCampaignLevel];
+    if(!data) return;
     let globalNodeIndex = 1;
 
     for (let p = 1; p <= 6; p++) {
-        // 渲染 Part 分隔線
         let divider = document.createElement('div');
         divider.className = 'campaign-part-divider';
         divider.innerHTML = `<span>PART 0${p}</span>`;
         container.appendChild(divider);
 
-        // 渲染該 Part 內的關卡
         for (let l = 1; l <= data.levelsPerPart; l++) {
             let isMidterm = (l === Math.floor(data.levelsPerPart / 2));
             let isFinal = (l === data.levelsPerPart);
 
-            // 1. 一般關卡
-            container.appendChild(createNodeHTML(globalNodeIndex, 'normal', p, l));
+            container.appendChild(createNodeHTML(globalNodeIndex, 'normal', p, l, data));
             globalNodeIndex++;
 
-            // 2. 插入期中考分支 (菱形 Boss)
             if (isMidterm) {
-                container.appendChild(createNodeHTML(globalNodeIndex, 'midterm', p, l));
+                container.appendChild(createNodeHTML(globalNodeIndex, 'midterm', p, l, data));
                 globalNodeIndex++;
             }
 
-            // 3. 插入期末考分支 (菱形 Boss)
             if (isFinal) {
-                container.appendChild(createNodeHTML(globalNodeIndex, 'final', p, l));
+                container.appendChild(createNodeHTML(globalNodeIndex, 'final', p, l, data));
                 globalNodeIndex++;
             }
         }
@@ -3176,7 +3191,6 @@ window.renderCampaignMap = function() {
 
     document.getElementById('campaign-progress-text').innerText = `目前進度：第 ${data.currentLevel} 關 / 總計 ${globalNodeIndex - 1} 關`;
 
-    // 平滑滾動至當前進度
     setTimeout(() => {
         let currentEl = document.querySelector('.campaign-node.current');
         if (currentEl) {
@@ -3185,9 +3199,7 @@ window.renderCampaignMap = function() {
     }, 300);
 };
 
-// 建立單顆節點的輔助函式
-function createNodeHTML(nodeIdx, type, part, level) {
-    let data = window.campaignData;
+function createNodeHTML(nodeIdx, type, part, level, data) {
     let statusClass = nodeIdx < data.currentLevel ? 'completed' : (nodeIdx === data.currentLevel ? 'current' : 'locked');
     let isBoss = type !== 'normal';
     
@@ -3197,7 +3209,6 @@ function createNodeHTML(nodeIdx, type, part, level) {
     let content = isBoss ? (type === 'midterm' ? '期中' : '期末') : nodeIdx;
     node.innerHTML = `<span class="node-content">${content}</span>`;
     
-    // 如果關卡已解鎖或已完成，綁定點擊事件
     if (statusClass !== 'locked') {
         node.onclick = () => window.startCampaignNode(nodeIdx, type, part, level);
     } else {
@@ -3208,7 +3219,8 @@ function createNodeHTML(nodeIdx, type, part, level) {
 
 // --- 4. 啟動關卡與題海切割 ---
 window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
-    if (nodeIndex < window.campaignData.currentLevel) {
+    let data = window.campaignData['lv' + window.currentCampaignLevel];
+    if (nodeIndex < data.currentLevel) {
         let replay = await window.SilenModal.confirm("✅ 該關卡已完美通關！\n是否要重新複習一次？(複習無額外獎勵)");
         if(!replay) return;
     }
@@ -3216,64 +3228,59 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
     window.SilenModal.alert("正在為您部署專屬題庫，請稍候...");
     
     try {
-        // 【核心修改】動態抓取學測等級題庫，例如 vocabularylv1.json
-        const level = window.currentCampaignLevel || 1;
-        let res = await fetch(`vocabularylv${level}.json`); 
+        let res = await fetch(`vocabularylv${window.currentCampaignLevel}.json`); 
         let allWords = [];
         if(res.ok) {
             allWords = await res.json();
         } else {
-            throw new Error(`找不到題庫：vocabularylv${level}.json`);
+            throw new Error(`找不到題庫：vocabularylv${window.currentCampaignLevel}.json`);
         }
 
-        let data = window.campaignData;
         let targetWords = [];
         
-        // 根據題型動態切割題庫
         if (type === 'normal') {
-            // 只取當天分配到的量
             let startIdx = ((nodeIndex - 1) % data.levelsPerPart) * data.wordsPerLevel; 
             targetWords = allWords.slice(startIdx, startIdx + data.wordsPerLevel);
         } else if (type === 'midterm') {
-            // 取本 Part 的前半段總和
             let partStart = (part - 1) * data.levelsPerPart * data.wordsPerLevel;
             targetWords = allWords.slice(partStart, partStart + (data.wordsPerLevel * Math.floor(data.levelsPerPart / 2)));
         } else if (type === 'final') {
-            // 取本 Part 全部總和
             let partStart = (part - 1) * data.levelsPerPart * data.wordsPerLevel;
             targetWords = allWords.slice(partStart, partStart + (data.wordsPerLevel * data.levelsPerPart));
         }
 
-        // 防呆：如果題庫不夠分了
         if(targetWords.length === 0) targetWords = allWords.slice(0, 10);
 
-        // 啟動變數
         window.isCampaignMode = true;
         window.campaignCurrentType = type;
         window.campaignCurrentNode = nodeIndex;
         
-        // 偽裝成普通單字簿，強制注入綜合精通模式
-        window.currentBook = {
+        // 建立暫時的單字簿
+        let tempBook = {
             id: 'campaign_temp',
             name: type === 'normal' ? `闖關 Lv.${nodeIndex}` : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
             words: targetWords
         };
+        window.currentBook = tempBook;
+
+        // 【防呆防報錯】確保舊有的 setupMasteryMode 能在背包裡找到這本書
+        let existingIndex = window.books.findIndex(b => b.id === 'campaign_temp');
+        if (existingIndex !== -1) window.books[existingIndex] = tempBook;
+        else window.books.push(tempBook);
         
         document.getElementById('silen-modal-overlay').classList.add('hidden');
         
-        // 高壓視覺氛圍切換
         if(type === 'midterm' || type === 'final') {
-            document.getElementById('mastery-progress-bar').style.background = '#ff9800'; // 大考變為警戒橘色
+            document.getElementById('mastery-progress-bar').style.background = '#ff9800'; 
         } else {
-            document.getElementById('mastery-progress-bar').style.background = '#00bcd4'; // 一般關卡變為科技藍
+            document.getElementById('mastery-progress-bar').style.background = '#00bcd4'; 
         }
 
-        // 直接進入大亂鬥
         window.setupMasteryMode('comprehensive');
         
     } catch(e) {
         console.error("載入題庫失敗:", e);
-        window.SilenModal.alert(`無法載入學測題庫！\n請確認您的 GitHub 根目錄是否有 vocabularylv${window.currentCampaignLevel || 1}.json 檔案。`);
+        window.SilenModal.alert(`無法載入學測題庫！\n請確認您的 GitHub 根目錄是否有 vocabularylv${window.currentCampaignLevel}.json 檔案。`);
     }
 };
 
@@ -3281,20 +3288,18 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
 const originalQuitPractice = window.quitPractice;
 window.quitPractice = function() {
     if (window.isCampaignMode) {
-        // 檢查是否是在「通關成功」的畫面按下的結束
         const successArea = document.getElementById('mastery-success-area');
         const isVictory = !successArea.classList.contains('hidden');
+        let data = window.campaignData['lv' + window.currentCampaignLevel];
         
-        if (isVictory && window.campaignCurrentNode === window.campaignData.currentLevel) {
-            // 推進度
-            window.campaignData.currentLevel++;
+        if (isVictory && window.campaignCurrentNode === data.currentLevel) {
+            data.currentLevel++;
             localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+            if (window.currentUser && typeof window.saveData === 'function') window.saveData();
             
-            // 給予史詩級獎勵
             let type = window.campaignCurrentType;
             let pts = type === 'normal' ? 400 : (type === 'midterm' ? 1500 : 3000);
             
-            // 呼叫我們 auth.js 寫好的防作弊後端 API 加分
             if (typeof window.addStorePoints === 'function') {
                 window.addStorePoints(pts, 'campaign', 1, true); 
             }
@@ -3302,11 +3307,13 @@ window.quitPractice = function() {
             window.SilenModal.alert(`🎉 闖關成功！\n\n您已征服此關卡，並獲得了 ${pts} 點商城點數獎勵！`);
         }
         
-        // 清理狀態並返回地圖
+        // 離開時把暫存的書清掉，保持玩家背包乾淨
+        window.books = window.books.filter(b => b.id !== 'campaign_temp');
+        
         window.isCampaignMode = false;
         originalQuitPractice();
         window.switchView('campaign');
     } else {
-        originalQuitPractice(); // 如果不是闖關模式，正常退出
+        originalQuitPractice(); 
     }
 };
