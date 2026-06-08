@@ -1663,22 +1663,52 @@ window.addRankPoints = function(points, force = false) {
     }
 };
 
-window.addStorePoints = function(points, force = false) {
+window.addStorePoints = async function(points, force = false) {
     if (isGuestMode) return; 
+    
+    // 前端防連點保護（維持原有的防呆機制）
     const now = Date.now();
     if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
     window.lastStoreScoreTime = now;
 
-    window.myStorePoints += points;
-    const elStore = document.getElementById('stat-store-points');
-    const elStoreMyScore = document.getElementById('store-my-score');
-    if (elStore) elStore.innerText = window.myStorePoints;
-    if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+    try {
+        // 取得目前的 Firebase 使用者 Token
+        const user = auth.currentUser;
+        if (!user) return;
+        const idToken = await user.getIdToken();
 
-    if (typeof window.uploadScoreToCloud === 'function') {
-        window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+        // 呼叫你的 VPS 後端 API
+        const response = await fetch(`${API_BASE}/api/addpoints`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ amount: points })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 後端更新成功，同步更新前端畫面與變數
+            window.myStorePoints = result.newPoints;
+            const elStore = document.getElementById('stat-store-points');
+            const elStoreMyScore = document.getElementById('store-my-score');
+            if (elStore) elStore.innerText = window.myStorePoints;
+            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+            
+            // 這裡只需上傳牌位分數 (rankPoints)，因為 storePoints 已由後端處理
+            if (typeof window.uploadScoreToCloud === 'function') {
+                window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+            }
+        } else {
+            console.error("加分失敗:", result.error);
+        }
+    } catch (error) {
+        console.error("呼叫加分 API 發生錯誤:", error);
     }
 };
+
 
 window.openLeaderboard = async function() {
     window.switchView('leaderboard');
