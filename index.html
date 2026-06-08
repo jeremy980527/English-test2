@@ -248,12 +248,26 @@
             <button class="btn-icon" onclick="window.goHome()">返回</button>
             <div class="nav-bar-right"><span style="font-weight: 500; letter-spacing: 1px; color: #00bcd4;">學測闖關地圖</span></div>
         </div>
+        
         <div class="section-header" style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
-            <h2 style="margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: var(--text-main);">學測 Lv.1 征服計畫</h2>
+            <div class="custom-dropdown form-dropdown" id="campaign-level-dropdown" style="display: inline-block; width: auto; border: none; background: transparent; padding: 0;">
+                <div class="dropdown-selected" onclick="window.toggleDropdown('campaign-level-options', event)" style="font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; color: var(--text-main); border: none; background: transparent; justify-content: center; padding: 5px 15px;">
+                    <span id="campaign-level-title-text">學測 Lv.1 征服計畫</span> ▾
+                </div>
+                <div class="dropdown-options hidden" id="campaign-level-options" style="width: 240px; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(1)">學測 Lv.1 征服計畫</div>
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(2)">學測 Lv.2 征服計畫</div>
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(3)">學測 Lv.3 征服計畫</div>
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(4)">學測 Lv.4 征服計畫</div>
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(5)">學測 Lv.5 征服計畫</div>
+                    <div class="dropdown-option" onclick="window.switchCampaignLevel(6)">學測 Lv.6 征服計畫</div>
+                </div>
+            </div>
             <div style="font-size: 0.85rem; color: var(--text-sub); margin-top: 5px;" id="campaign-progress-text">
                 進度: 載入中...
             </div>
         </div>
+
 
         <div id="campaign-map-container" style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px 0 60px 0; display: flex; flex-direction: column; align-items: center; gap: 40px;">
             </div>
