@@ -985,15 +985,7 @@ window.finalizeMasterySession = function() {
     pendingMasteredWords = [];
 };
 
-window.setupMasteryMode = function(mode) {
-    // 【新增這段豁免邏輯】
-    // 如果是闖關模式，直接跳過「選單字簿」的檢查
-    if (!window.isCampaignMode) {
-        if (!window.currentBook || !window.currentBook.words || window.currentBook.words.length === 0) {
-            window.SilenModal.alert("請先選取單字簿！");
-            return;
-        }
-    }
+window.setupMasteryMode = function(type) {
     let words = window.getPracticeWords(); if(!words || words.length === 0) return;
     masteryModeType = type; pendingMasteredWords = []; 
     masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered, pos: w.pos || '' })); 
@@ -3320,21 +3312,6 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
             document.getElementById('mastery-progress-bar').style.background = '#00bcd4';
         }
 
-        window.setupMasteryMode('comprehensive');
-
-        window.isCampaignMode = true;
-        window.campaignCurrentType = type;
-        window.campaignCurrentNode = nodeIndex;
-        
-        // 關鍵：將此暫時的闖關單字簿存入 currentBook，且「不」放進 window.books 陣列 (避免它出現在你的單字庫清單中)
-        window.currentBook = {
-            id: 'campaign_temp',
-            name: type === 'normal' ? `闖關 Lv.${nodeIndex}` : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
-            words: targetWords
-        };
-        
-        // 直接啟動模式，不經過選單
-        document.getElementById('silen-modal-overlay').classList.add('hidden');
         window.setupMasteryMode('comprehensive');
 
     } catch(e) {
