@@ -3209,20 +3209,36 @@ window.closeCampaignSurvey = function() {
 
 window.confirmCampaignPlan = function() {
     if (!window.tempCampaignPlan) return;
-    // 將問卷結果存入對應的 Level
     window.campaignData['lv' + window.currentCampaignLevel] = window.tempCampaignPlan;
     localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+    
+    document.getElementById('btn-edit-campaign')?.classList.remove('hidden');
     
     const overlay = document.getElementById('campaign-survey-overlay');
     overlay.classList.remove('show');
     setTimeout(() => {
         overlay.classList.add('hidden');
         window.renderCampaignMap();
-        // 觸發雲端存檔同步
         if (window.currentUser && typeof window.saveData === 'function') window.saveData();
     }, 200);
 };
 
+window.editCampaignPlan = function() {
+    const lv = window.currentCampaignLevel;
+    window.SilenModal.prompt('請輸入新的學習月數（1 ~ 12）', 
+        (window.tempCampaignPlan?.months || 2).toString()
+    ).then(val => {
+        if (!val) return;
+        let months = parseInt(val);
+        if (isNaN(months) || months < 1) months = 1;
+        if (months > 12) months = 12;
+        const el = document.getElementById('campaign-target-months');
+        if (el) {
+            el.value = months;
+            el.dispatchEvent(new Event('input'));
+        }
+    });
+};
 // --- 3. 渲染極簡闖關地圖 ---
 window.renderCampaignMap = function() {
     const container = document.getElementById('campaign-map-container');
