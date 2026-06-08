@@ -3274,7 +3274,7 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
 
     try {
         const allWords = (await window.fetchCampaignVocab(window.currentCampaignLevel))
-            .map(w => ({ en: w.word, zh: w.chinese, pos: w.pos || '' }));
+            .map(w => ({ en: w.word, zh: [w.chinese], pos: w.pos || '' }));
         const wordsPerNode = data.wordsPerNode || 10;
         let targetWords = [];
 
