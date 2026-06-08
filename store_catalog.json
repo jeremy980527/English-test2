@@ -1,57 +1,12 @@
 [
   {
-    "id": "bundle_travel",
-    "name": "出國與入境實用包",
-    "desc": "過海關、機場報到必備核心字彙。",
-    "subBundles": [
-      {
-        "id": "bundle_travel-1",
-        "name": "Part 1: 旅行文件與證件",
-        "price": 200,
-        "wordCount": 17
-      },
-      {
-        "id": "bundle_travel-2",
-        "name": "Part 2: 機場與航班",
-        "price": 200,
-        "wordCount": 23
-      },
-      {
-        "id": "bundle_travel-3",
-        "name": "Part 3: 海關與入境程序",
-        "price": 200,
-        "wordCount": 18
-      },
-      {
-        "id": "bundle_travel-4",
-        "name": "Part 4: 行李與交通",
-        "price": 200,
-        "wordCount": 11
-      },
-      {
-        "id": "bundle_travel-5",
-        "name": "Part 5: 住宿",
-        "price": 200,
-        "wordCount": 13
-      },
-      {
-        "id": "bundle_travel-6",
-        "name": "Part 6: 貨幣與購物",
-        "price": 200,
-        "wordCount": 10
-      },
-      {
-        "id": "bundle_travel-7",
-        "name": "Part 7: 健康與安全",
-        "price": 200,
-        "wordCount": 9
-      },
-      {
-        "id": "bundle_travel-8",
-        "name": "Part 8: 常用動詞、單字與片語",
-        "price": 300,
-        "wordCount": 31
-      }
-    ]
+    "id": "bundle_hotel_mega_01",
+    "name": "飯店與觀光英語",
+    "desc": "包含飯店基本詞彙、房型設施、入住退房等 8 大子分類。領取後系統將自動為您整理成 8 本獨立單字簿。",
+    "price": 500,
+    "imgUrl": "https://via.placeholder.com/150?text=Hotel+English",
+    "fileUrl": "hotel.json", 
+    "wordCount": 85,
+    "tag": "飯店英文"
   }
 ]
