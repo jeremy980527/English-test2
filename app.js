@@ -3304,6 +3304,9 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
         if (existingIndex !== -1) window.books[existingIndex] = tempBook;
         else window.books.push(tempBook);
 
+        selectedBookIds.clear();
+        selectedBookIds.add('campaign_temp');
+
         document.getElementById('silen-modal-overlay').classList.add('hidden');
 
         if (type === 'midterm' || type === 'final') {
