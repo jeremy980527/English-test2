@@ -3317,3 +3317,132 @@ window.quitPractice = function() {
         originalQuitPractice(); 
     }
 };
+
+
+// ==========================================
+// 19. 終極修復補丁 (對戰掛載 JSON & 地圖切換強化)
+// ==========================================
+
+// --- 修復 1: 強化地圖切換邏輯 (防呆與確保彈窗) ---
+window.switchCampaignLevel = function(level) {
+    window.currentCampaignLevel = level;
+    document.getElementById('campaign-level-title-text').innerText = `學測 Lv.${level} 征服計畫`;
+    
+    // 強制隱藏下拉選單
+    const optionsEl = document.getElementById('campaign-level-options');
+    if (optionsEl) optionsEl.classList.add('hidden');
+
+    // 防呆：確保 campaignData 絕對是個正常的物件
+    if (!window.campaignData || typeof window.campaignData !== 'object') {
+        window.campaignData = {};
+    }
+
+    // 判斷該等級是否已經填過問卷
+    if (!window.campaignData['lv' + level]) {
+        // 尚未建立計畫，顯示該 Level 的專屬問卷
+        document.getElementById('campaign-survey-title').innerText = `建立 Lv.${level} 專屬路線`;
+        document.getElementById('campaign-survey-desc').innerHTML = `學測 Lv.${level} 包含大量核心單字。<br>你希望花多少時間征服它？`;
+        
+        // 確保地圖先清空，避免殘留畫面
+        document.getElementById('campaign-map-container').innerHTML = '';
+        document.getElementById('campaign-progress-text').innerText = '準備建立計畫...';
+
+        const overlay = document.getElementById('campaign-survey-overlay');
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.add('show'), 10);
+        
+        // 觸發運算
+        let inputEl = document.getElementById('campaign-target-months');
+        if(inputEl) inputEl.dispatchEvent(new Event('input'));
+    } else {
+        // 已有資料，正常渲染地圖
+        window.renderCampaignMap();
+    }
+};
+
+// --- 修復 2: 1v1 對戰大廳強制植入官方 JSON 題庫 ---
+window.startArenaMatchLogic = function() {
+    if (!window.isArenaHost) return;
+    
+    const listEl = document.getElementById('arena-setup-book-list');
+    listEl.innerHTML = '';
+    
+    // 【核心新增】: 強制植入 6 個官方學測題庫選項
+    for(let i=1; i<=6; i++) {
+        let div = document.createElement('div');
+        div.className = 'book-item';
+        // 加上酷炫的 UI 樣式
+        div.style.padding = '12px'; div.style.cursor = 'pointer'; 
+        div.style.marginBottom = '8px'; div.style.borderRadius = '8px';
+        div.style.border = '2px solid var(--border)'; div.style.background = 'rgba(0, 188, 212, 0.05)';
+        
+        div.innerHTML = `<div style="font-weight:bold; color:#00bcd4; font-size: 1.05rem;">[官方] 學測 Lv.${i}</div><div style="font-size:0.8rem; color:var(--text-sub);">從官方庫隨機抽取 20 題對決</div>`;
+        
+        div.onclick = function() {
+            document.querySelectorAll('#arena-setup-book-list .book-item').forEach(el => el.style.borderColor = 'var(--border)');
+            div.style.borderColor = '#00bcd4'; // 選中時顯示科技藍邊框
+            window.arenaSelectedBookId = `gsat_lv${i}`; // 標記為官方 JSON
+        };
+        listEl.appendChild(div);
+    }
+
+    // 接著載入玩家自建的單字簿 (保留原本功能)
+    window.books.forEach(b => {
+        if(b.words.length < 5) return; // 題目太少不給選
+        let div = document.createElement('div');
+        div.className = 'book-item';
+        div.style.padding = '12px'; div.style.cursor = 'pointer';
+        div.style.marginBottom = '8px'; div.style.borderRadius = '8px';
+        div.style.border = '2px solid var(--border)';
+        
+        div.innerHTML = `<div style="font-weight:bold; color:var(--text-main);">${b.name}</div><div style="font-size:0.8rem; color:var(--text-sub);">玩家自建 (${b.words.length} 詞)</div>`;
+        div.onclick = function() {
+            document.querySelectorAll('#arena-setup-book-list .book-item').forEach(el => el.style.borderColor = 'var(--border)');
+            div.style.borderColor = '#ff9800'; // 自建題庫選中顯示橘色邊框
+            window.arenaSelectedBookId = b.id;
+        };
+        listEl.appendChild(div);
+    });
+
+    window.arenaSelectedBookId = null;
+    document.getElementById('arena-setup-overlay').classList.remove('hidden');
+    setTimeout(()=> document.getElementById('arena-setup-overlay').classList.add('show'), 10);
+};
+
+// --- 修復 3: 攔截房長出題，讓系統去抓取 JSON ---
+window.confirmArenaSetup = async function() {
+    if (!window.arenaSelectedBookId) return window.SilenModal.alert("請先選擇要對戰的單字簿！");
+    
+    let selectedWords = [];
+    
+    // 如果選中了剛剛植入的官方學測 JSON
+    if (typeof window.arenaSelectedBookId === 'string' && window.arenaSelectedBookId.startsWith('gsat_lv')) {
+        let level = window.arenaSelectedBookId.replace('gsat_lv', '');
+        window.SilenModal.alert(`正在連線下載學測 Lv.${level} 題庫...`);
+        try {
+            let res = await fetch(`vocabularylv${level}.json`);
+            if(!res.ok) throw new Error("fetch failed");
+            let allWords = await res.json();
+            // 對戰機制：將龐大題庫隨機打亂，抽取 20 題來拼勝負
+            selectedWords = allWords.sort(() => 0.5 - Math.random()).slice(0, 20);
+            document.getElementById('silen-modal-overlay').classList.add('hidden'); // 關閉下載提示
+        } catch(e) {
+            return window.SilenModal.alert(`題庫載入失敗！\n請確認 vocabularylv${level}.json 是否存在。`);
+        }
+    } else {
+        // 如果選了本地自建單字簿
+        let book = window.books.find(b => b.id === window.arenaSelectedBookId);
+        if(!book) return;
+        selectedWords = book.words.sort(() => 0.5 - Math.random()).slice(0, 20);
+    }
+
+    let mode = window.arenaSelectedMode || 'comp';
+    
+    // 關閉對戰設定彈窗
+    document.getElementById('arena-setup-overlay').classList.remove('show');
+    setTimeout(()=> document.getElementById('arena-setup-overlay').classList.add('hidden'), 200);
+    
+    // 啟動對決
+    let payload = { words: selectedWords, mode: mode };
+    window.triggerArenaStart(payload);
+};
