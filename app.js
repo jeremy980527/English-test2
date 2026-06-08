@@ -3273,7 +3273,8 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
     window.SilenModal.alert("正在為您部署專屬題庫，請稍候...");
 
     try {
-        const allWords = await window.fetchCampaignVocab(window.currentCampaignLevel);
+        const allWords = (await window.fetchCampaignVocab(window.currentCampaignLevel))
+            .map(w => ({ en: w.word, zh: w.chinese, pos: w.pos || '' }));
         const wordsPerNode = data.wordsPerNode || 10;
         let targetWords = [];
 
