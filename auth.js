@@ -28,17 +28,22 @@ let currentUser = null;
 window.purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []; 
 
 // =====================================
-// 即時在線陪伴系統
+// 即時在線陪伴系統 (單一 UID 綁定防幽靈版)
 // =====================================
 const connectedRef = ref(rtdb, '.info/connected');
-const presenceRef = ref(rtdb, 'online_users');
 let mySessionRef = null;
 
 window.updateMyPresence = function() {
-    if (!mySessionRef) return;
-    const user = window.currentUser;
+    const user = window.currentUser || auth.currentUser;
     if (user) {
-        update(mySessionRef, {
+        // 【核心修改】：不再用隨機 push()，而是直接綁定玩家的專屬 UID
+        mySessionRef = ref(rtdb, `online_users/${user.uid}`);
+        
+        // 設定當伺服器確認斷線時，刪除這個節點
+        onDisconnect(mySessionRef).remove();
+        
+        // 寫入上線狀態
+        set(mySessionRef, {
             uid: user.uid,
             name: user.displayName || '匿名者',
             photo: user.photoURL || '',
@@ -47,33 +52,34 @@ window.updateMyPresence = function() {
             isGuest: false,
             timestamp: Date.now()
         });
-    } else {
-        set(mySessionRef, { isGuest: true, timestamp: Date.now() });
     }
 };
 
 onValue(connectedRef, (snap) => {
     if (snap.val() === true) {
-        mySessionRef = push(presenceRef);
-        onDisconnect(mySessionRef).remove();
         window.updateMyPresence();
     }
 });
 
-onValue(presenceRef, (snap) => {
-    let uniqueUids = new Set();
-    let guestCount = 0;
+onValue(ref(rtdb, 'online_users'), (snap) => {
+    let realCount = 0;
     if (snap.exists()) {
         snap.forEach(childSnap => {
             const data = childSnap.val();
-            if (data === true || data.isGuest) guestCount++;
-            else if (data.uid) uniqueUids.add(data.uid); 
+            // 只計算有 UID 且格式正確的在線玩家
+            if (data && data.uid) realCount++; 
         });
     }
-    let realCount = uniqueUids.size + guestCount;
     if (realCount === 0) realCount = 1; 
     const countEl = document.getElementById('online-count');
     if (countEl) countEl.innerText = realCount;
+});
+
+// 【核心防護】：當玩家直接關閉分頁或滑掉網頁時，強制瞬間清除在線狀態
+window.addEventListener('beforeunload', () => {
+    if (mySessionRef) {
+        set(mySessionRef, null);
+    }
 });
 
 // =====================================
