@@ -17,6 +17,7 @@ const firebaseConfig = {
     databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
+// 綁定你的 Vultr VPS Cloudflare Tunnel
 const API_BASE = 'https://api.tralingo.app';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -36,13 +37,8 @@ let mySessionRef = null;
 window.updateMyPresence = function() {
     const user = window.currentUser || auth.currentUser;
     if (user) {
-        // 【核心修改】：不再用隨機 push()，而是直接綁定玩家的專屬 UID
         mySessionRef = ref(rtdb, `online_users/${user.uid}`);
-        
-        // 設定當伺服器確認斷線時，刪除這個節點
         onDisconnect(mySessionRef).remove();
-        
-        // 寫入上線狀態
         set(mySessionRef, {
             uid: user.uid,
             name: user.displayName || '匿名者',
@@ -66,7 +62,6 @@ onValue(ref(rtdb, 'online_users'), (snap) => {
     if (snap.exists()) {
         snap.forEach(childSnap => {
             const data = childSnap.val();
-            // 只計算有 UID 且格式正確的在線玩家
             if (data && data.uid) realCount++; 
         });
     }
@@ -75,11 +70,9 @@ onValue(ref(rtdb, 'online_users'), (snap) => {
     if (countEl) countEl.innerText = realCount;
 });
 
-// 【核心防護】：當玩家直接關閉分頁或滑掉網頁時，強制瞬間清除在線狀態
+// 當玩家直接關閉分頁或滑掉網頁時，強制瞬間清除在線狀態
 window.addEventListener('beforeunload', () => {
-    if (mySessionRef) {
-        set(mySessionRef, null);
-    }
+    if (mySessionRef) set(mySessionRef, null);
 });
 
 // =====================================
@@ -104,7 +97,9 @@ function executeSignOut() {
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
         localStorage.removeItem('sv_books_timestamp'); 
+        localStorage.removeItem('sv_campaign_data'); // 清除本地闖關紀錄
         window.books = [];
+        window.campaignData = null;
         window.location.reload(); 
     }).catch(e => console.error("登出失敗:", e));
 }
@@ -116,7 +111,10 @@ window.syncToCloud = async function(uid, booksData, timestamp) {
     if (!uid) return;
     const ts = timestamp || Date.now();
     try {
-        await setDoc(doc(db, "users", uid), { books: booksData, lastUpdated: ts }, { merge: true });
+        let dataObj = { books: booksData, lastUpdated: ts };
+        // 確保闖關紀錄一併存入 Firebase Firestore
+        if (window.campaignData) dataObj.campaignData = window.campaignData;
+        await setDoc(doc(db, "users", uid), dataObj, { merge: true });
     } catch (error) { console.error("雲端備份錯誤:", error); }
 };
 
@@ -129,6 +127,8 @@ window.syncFromCloud = async function(uid) {
             let cloudTime = cloudData.lastUpdated || 0;
             if (typeof cloudTime === 'string') cloudTime = new Date(cloudTime).getTime() || 0;
             const localTime = parseInt(localStorage.getItem('sv_books_timestamp')) || 0;
+
+            // 1. 同步單字庫
             if (localTime > cloudTime && window.books && window.books.length > 0) {
                 window.syncToCloud(uid, window.books, localTime);
             } else if (cloudData && cloudData.books) {
@@ -138,6 +138,24 @@ window.syncFromCloud = async function(uid) {
                 if (typeof window.renderBookList === 'function') window.renderBookList();
                 if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
             }
+
+            // 2. 同步學測闖關地圖進度
+            if (cloudData.campaignData) {
+                if (!window.campaignData || cloudData.campaignData.currentLevel > window.campaignData.currentLevel) {
+                    // 雲端進度超前，覆蓋本地
+                    window.campaignData = cloudData.campaignData;
+                    localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+                    // 若玩家正處於闖關畫面，立即重新渲染地圖
+                    const viewCampaign = document.getElementById('view-campaign');
+                    if (viewCampaign && !viewCampaign.classList.contains('hidden') && typeof window.renderCampaignMap === 'function') {
+                        window.renderCampaignMap();
+                    }
+                } else if (window.campaignData && window.campaignData.currentLevel > cloudData.campaignData.currentLevel) {
+                    // 本地進度超前，推上雲端
+                    window.syncToCloud(uid, window.books, Date.now());
+                }
+            }
+
         } else {
             if (window.books && window.books.length > 0) {
                 const now = Date.now();
@@ -220,8 +238,7 @@ onAuthStateChanged(auth, (user) => {
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
             const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toLocaleDateString('zh-TW', tzOptions);
-
+            
             let dbData = docSnapAdminDb.exists() ? docSnapAdminDb.data() : {};
             let lastDate = dbData.lastCheckInDate || '';
 
@@ -296,6 +313,54 @@ onAuthStateChanged(auth, (user) => {
         }
     }
 });
+
+// =====================================
+// 17. 伺服器端防作弊加分系統 API
+// =====================================
+window.addStorePoints = async function(points, mode = 'normal', correctCount = 1, force = false) {
+    if (window.isGuestMode) return; 
+    
+    const now = Date.now();
+    if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
+    window.lastStoreScoreTime = now;
+
+    try {
+        const user = window.currentUser || auth.currentUser; 
+        if (!user) return;
+        const idToken = await user.getIdToken();
+
+        const response = await fetch(`${API_BASE}/api/addpoints`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ 
+                amount: points, 
+                mode: mode, 
+                correctCount: correctCount 
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            window.myStorePoints = result.newPoints;
+            const elStore = document.getElementById('stat-store-points');
+            const elStoreMyScore = document.getElementById('store-my-score');
+            if (elStore) elStore.innerText = window.myStorePoints;
+            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+            
+            if (typeof window.uploadScoreToCloud === 'function') {
+                window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+            }
+        } else {
+            console.error("加分遭伺服器拒絕:", result.error);
+        }
+    } catch (error) {
+        console.error("呼叫加分 API 發生錯誤:", error);
+    }
+};
 
 // =====================================
 // 飾品系統 Firebase 同步
@@ -829,58 +894,4 @@ window.handleOpponentFled = function() {
     if (window.arenaUnsubscribe) window.arenaUnsubscribe();
     window.currentArenaRoom = null; window.isArenaHost = false; window.matchStarted = false;
     window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，您贏得了這場對決！").then(() => window.switchView('arena'));
-};
-
-// =====================================
-// 17. 伺服器端防作弊加分系統 API
-// =====================================
-window.addStorePoints = async function(points, mode = 'normal', correctCount = 1, force = false) {
-    if (window.isGuestMode) return; 
-    
-    // 防連點機制
-    const now = Date.now();
-    if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
-    window.lastStoreScoreTime = now;
-
-    try {
-        const user = window.currentUser; 
-        if (!user) return;
-        
-        // 取得 Firebase Token 以通過後端驗證
-        const idToken = await user.getIdToken();
-
-        // 呼叫你的 Vultr 後端 API，並附帶防作弊比對參數
-        const response = await fetch(`${API_BASE}/api/addpoints`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({ 
-                amount: points, 
-                mode: mode, 
-                correctCount: correctCount 
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // 後端核准，同步更新前端畫面
-            window.myStorePoints = result.newPoints;
-            const elStore = document.getElementById('stat-store-points');
-            const elStoreMyScore = document.getElementById('store-my-score');
-            if (elStore) elStore.innerText = window.myStorePoints;
-            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
-            
-            // 將牌位分數也順便同步到 Firebase
-            if (typeof window.uploadScoreToCloud === 'function') {
-                window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
-            }
-        } else {
-            console.error("加分遭伺服器拒絕:", result.error);
-        }
-    } catch (error) {
-        console.error("呼叫加分 API 發生錯誤:", error);
-    }
 };
