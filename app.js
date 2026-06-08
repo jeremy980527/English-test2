@@ -3120,35 +3120,49 @@ async function fetchVocabLevel(level) {
     return await res.json();
 }
 
+const GSAT_RAW_URL = 'https://raw.githubusercontent.com/jeremy980527/English-test2/main/';
+
+window.campaignVocabCache = {};
+
+window.fetchCampaignVocab = async function(level) {
+    if (window.campaignVocabCache[level]) return window.campaignVocabCache[level];
+    const res = await fetch(`${GSAT_RAW_URL}vocabularylv${level}.json?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`找不到 vocabularylv${level}.json`);
+    const data = await res.json();
+    window.campaignVocabCache[level] = data;
+    return data;
+};
+
 document.getElementById('campaign-target-months')?.addEventListener('input', async function(e) {
     let months = parseInt(e.target.value);
     if (isNaN(months) || months < 1) months = 1;
     if (months > 12) months = 12;
 
-    let resultEl = document.getElementById('campaign-survey-result');
+    const resultEl = document.getElementById('campaign-survey-result');
     resultEl.innerHTML = `<span style="color:var(--text-sub)">正在讀取題庫...</span>`;
 
     try {
-        let words = await fetchVocabLevel(window.currentCampaignLevel);
-        let totalWords = words.length;
-        let totalDays = months * 30;
-        let parts = 6;
-
-        let wordsPerNode = Math.ceil(totalWords / totalDays);
-        let nodesPerPart = Math.ceil(totalDays / parts);
+        const words = await window.fetchCampaignVocab(window.currentCampaignLevel);
+        const totalWords = words.length;
+        const totalDays = months * 30;
+        const parts = 6;
+        const nodesPerPart = Math.ceil(totalDays / parts);
+        const wordsPerNode = Math.ceil(totalWords / (nodesPerPart * parts));
 
         resultEl.innerHTML = `
             分析完畢！Lv.${window.currentCampaignLevel} 共有 <strong style="color:#00bcd4">${totalWords}</strong> 個單字。<br>
-            為在 ${months} 個月內達標，共分 ${parts} 大階段。<br>
-            每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerNode}</strong> 個單字，每階段約 ${nodesPerPart} 關。
+            為在 ${months} 個月內達標，每關約包含 <strong style="color:#00bcd4; font-size:1.1rem;">${wordsPerNode}</strong> 個單字。
         `;
 
         window.tempCampaignPlan = {
-            months, totalDays, totalWords, wordsPerNode,
-            nodesPerPart, levelsPerPart: nodesPerPart, currentLevel: 1
+            months, totalDays, totalWords,
+            wordsPerNode, nodesPerPart,
+            levelsPerPart: nodesPerPart,
+            currentLevel: 1
         };
-    } catch(e) {
-        resultEl.innerHTML = `<span style="color:#ff4444">題庫載入失敗，請確認網路連線。</span>`;
+    } catch(err) {
+        resultEl.innerHTML = `<span style="color:#ff4444">題庫讀取失敗，請確認網路連線。</span>`;
+        console.error(err);
     }
 });
 
@@ -3241,65 +3255,68 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
     let data = window.campaignData['lv' + window.currentCampaignLevel];
     if (nodeIndex < data.currentLevel) {
         let replay = await window.SilenModal.confirm("✅ 該關卡已完美通關！\n是否要重新複習一次？(複習無額外獎勵)");
-        if(!replay) return;
+        if (!replay) return;
     }
 
     window.SilenModal.alert("正在為您部署專屬題庫，請稍候...");
-    
+
     try {
-        let res = await fetch(`${VOCAB_BASE_URL}vocabularylv${window.currentCampaignLevel}.json?t=${Date.now()}`);
-        let allWords = [];
-        if(res.ok) {
-            allWords = await res.json();
-        } else {
-            throw new Error(`找不到題庫：vocabularylv${window.currentCampaignLevel}.json`);
-        }
-
+        const allWords = await window.fetchCampaignVocab(window.currentCampaignLevel);
+        const wordsPerNode = data.wordsPerNode || 10;
         let targetWords = [];
-        
+
         if (type === 'normal') {
-            let startIdx = (nodeIndex - 1) * data.wordsPerNode;
-            targetWords = allWords.slice(startIdx, startIdx + data.wordsPerNode);
+            // 每關從對應位置切割，不重複
+            const startIdx = (nodeIndex - 1) * wordsPerNode;
+            targetWords = allWords.slice(startIdx, startIdx + wordsPerNode);
         } else if (type === 'midterm') {
-            let partStart = (part - 1) * data.nodesPerPart * data.wordsPerNode;
-            targetWords = allWords.slice(partStart, partStart + (data.wordsPerNode * Math.floor(data.nodesPerPart / 2)));
+            // 期中考：該 part 前半段的單字
+            const partStart = (part - 1) * data.nodesPerPart * wordsPerNode;
+            const midCount = Math.floor(data.nodesPerPart / 2) * wordsPerNode;
+            targetWords = allWords.slice(partStart, partStart + midCount);
+            // 隨機抽取最多 20 題
+            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 20);
         } else if (type === 'final') {
-            let partStart = (part - 1) * data.nodesPerPart * data.wordsPerNode;
-            targetWords = allWords.slice(partStart, partStart + (data.wordsPerNode * data.nodesPerPart));
+            // 期末考：整個 part 的單字
+            const partStart = (part - 1) * data.nodesPerPart * wordsPerNode;
+            const fullCount = data.nodesPerPart * wordsPerNode;
+            targetWords = allWords.slice(partStart, partStart + fullCount);
+            // 隨機抽取最多 30 題
+            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 30);
         }
 
-        if(targetWords.length === 0) targetWords = allWords.slice(0, 10);
+        if (targetWords.length === 0) targetWords = allWords.slice(0, wordsPerNode);
 
         window.isCampaignMode = true;
         window.campaignCurrentType = type;
         window.campaignCurrentNode = nodeIndex;
-        
-        // 建立暫時的單字簿
-        let tempBook = {
+
+        const tempBook = {
             id: 'campaign_temp',
-            name: type === 'normal' ? `闖關 Lv.${nodeIndex}` : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
+            name: type === 'normal'
+                ? `闖關 第${nodeIndex}關`
+                : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
             words: targetWords
         };
         window.currentBook = tempBook;
 
-        // 【防呆防報錯】確保舊有的 setupMasteryMode 能在背包裡找到這本書
-        let existingIndex = window.books.findIndex(b => b.id === 'campaign_temp');
+        const existingIndex = window.books.findIndex(b => b.id === 'campaign_temp');
         if (existingIndex !== -1) window.books[existingIndex] = tempBook;
         else window.books.push(tempBook);
-        
+
         document.getElementById('silen-modal-overlay').classList.add('hidden');
-        
-        if(type === 'midterm' || type === 'final') {
-            document.getElementById('mastery-progress-bar').style.background = '#ff9800'; 
+
+        if (type === 'midterm' || type === 'final') {
+            document.getElementById('mastery-progress-bar').style.background = '#ff9800';
         } else {
-            document.getElementById('mastery-progress-bar').style.background = '#00bcd4'; 
+            document.getElementById('mastery-progress-bar').style.background = '#00bcd4';
         }
 
         window.setupMasteryMode('comprehensive');
-        
+
     } catch(e) {
         console.error("載入題庫失敗:", e);
-        window.SilenModal.alert(`無法載入學測題庫！\n請確認您的 GitHub 根目錄是否有 vocabularylv${window.currentCampaignLevel}.json 檔案。`);
+        window.SilenModal.alert(`無法載入學測題庫！\n請確認網路連線正常。`);
     }
 };
 
