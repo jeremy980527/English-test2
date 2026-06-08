@@ -825,3 +825,56 @@ window.handleOpponentFled = function() {
     window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，您贏得了這場對決！").then(() => window.switchView('arena'));
 };
 
+// =====================================
+// 17. 伺服器端防作弊加分系統 API
+// =====================================
+window.addStorePoints = async function(points, mode = 'normal', correctCount = 1, force = false) {
+    if (window.isGuestMode) return; 
+    
+    // 防連點機制
+    const now = Date.now();
+    if (!force && window.lastStoreScoreTime && now - window.lastStoreScoreTime < 500) return;
+    window.lastStoreScoreTime = now;
+
+    try {
+        const user = window.currentUser; 
+        if (!user) return;
+        
+        // 取得 Firebase Token 以通過後端驗證
+        const idToken = await user.getIdToken();
+
+        // 呼叫你的 Vultr 後端 API，並附帶防作弊比對參數
+        const response = await fetch(`${API_BASE}/api/addpoints`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ 
+                amount: points, 
+                mode: mode, 
+                correctCount: correctCount 
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 後端核准，同步更新前端畫面
+            window.myStorePoints = result.newPoints;
+            const elStore = document.getElementById('stat-store-points');
+            const elStoreMyScore = document.getElementById('store-my-score');
+            if (elStore) elStore.innerText = window.myStorePoints;
+            if (elStoreMyScore) elStoreMyScore.innerText = window.myStorePoints;
+            
+            // 將牌位分數也順便同步到 Firebase
+            if (typeof window.uploadScoreToCloud === 'function') {
+                window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints);
+            }
+        } else {
+            console.error("加分遭伺服器拒絕:", result.error);
+        }
+    } catch (error) {
+        console.error("呼叫加分 API 發生錯誤:", error);
+    }
+};
