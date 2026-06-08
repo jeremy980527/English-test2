@@ -2271,6 +2271,7 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
             window.SilenModal.alert("正在從伺服器下載單字包，請稍候...");
             
             try {
+                // 這裡會去抓取你的 GitHub JSON 檔案 (例如 hotel.json)
                 const res = await fetch(subBundleId + ".json?t=" + Date.now());
                 if (!res.ok) throw new Error("Bundle fetch failed");
                 const bundleData = await res.json();
@@ -2288,23 +2289,46 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
                     localStorage.setItem('sv_purchased_bundles', JSON.stringify(purchasedBundles));
                 }
 
-                window.books.push({
-                    id: Date.now(),
-                    name: subBundleName,
-                    tag: "官方擴充",
-                    isGSAT: false,
-                    isPhrase: false, 
-                    isStore: true,  
-                    bundleId: subBundleId,
-                    words: bundleData
-                });
+                // 【核心修改：自動判斷並拆解 MEGA JSON】
+                if (!Array.isArray(bundleData) && typeof bundleData === 'object') {
+                    // 如果是你的新版分類型 JSON (例如 hotel.json)
+                    // 為了防止重新下載時產生重複，先清除舊的同 ID 題庫
+                    window.books = window.books.filter(b => b.bundleId !== subBundleId);
+                    
+                    // 遍歷所有子分類 (例如：酒店基本詞彙、房型與設施)
+                    for (const [subTopicName, wordsArray] of Object.entries(bundleData)) {
+                        window.books.push({
+                            id: Date.now() + Math.random(), // 確保多本同時生成的 ID 不會撞號
+                            name: subTopicName,             // 單字簿名稱 = 子分類名
+                            tag: subBundleName.split(' ')[0], // 取主標題當 Tag (例如 "飯店英文")
+                            isGSAT: false,
+                            isPhrase: false, 
+                            isStore: true,  
+                            bundleId: subBundleId,
+                            words: wordsArray
+                        });
+                    }
+                } else {
+                    // 如果是舊版的一般陣列 JSON (相容舊有設計)
+                    window.books = window.books.filter(b => b.bundleId !== subBundleId);
+                    window.books.push({
+                        id: Date.now(),
+                        name: subBundleName,
+                        tag: "官方擴充",
+                        isGSAT: false,
+                        isPhrase: false, 
+                        isStore: true,  
+                        bundleId: subBundleId,
+                        words: bundleData
+                    });
+                }
 
                 window.saveData();
                 window.renderStoreCatalog(window.currentCatalogData);
                 const parentBundleId = subBundleId.split('-')[0];
                 window.toggleSubBundles(parentBundleId);
                 
-                window.SilenModal.alert(`下載成功！\n\n「${subBundleName}」已加入您的擴充庫中。`).then(() => {
+                window.SilenModal.alert(`下載成功！\n\n已為您將單字庫自動分類並匯入完畢。`).then(() => {
                     window.setLibMode('store', '商城擴充庫');
                     window.openBookSelect();
                 });
@@ -2316,6 +2340,7 @@ window.purchaseBundle = function(subBundleId, price, subBundleName) {
         }
     });
 };
+
 
 // ==========================================
 // 14. 玩家市場系統 (Player Market) Phase 2
