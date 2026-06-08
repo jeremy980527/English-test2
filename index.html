@@ -114,9 +114,10 @@
         .acc-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 5px; }
         .acc-desc { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 15px; height: 32px; overflow: hidden; }
 
-        #silen-publish-overlay, #arena-setup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
-        #silen-publish-overlay.show, #arena-setup-overlay.show { opacity: 1; pointer-events: auto; }
-        #silen-publish-overlay.hidden, #arena-setup-overlay.hidden { display: none !important; }
+        /* 闖關地圖與彈窗共用設定 */
+        #silen-publish-overlay, #arena-setup-overlay, #campaign-survey-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+        #silen-publish-overlay.show, #arena-setup-overlay.show, #campaign-survey-overlay.show { opacity: 1; pointer-events: auto; }
+        #silen-publish-overlay.hidden, #arena-setup-overlay.hidden, #campaign-survey-overlay.hidden { display: none !important; }
         
         .silen-modal-box::-webkit-scrollbar, #pub-book-list-container::-webkit-scrollbar { display: none; }
         .silen-modal-box, #pub-book-list-container { scrollbar-width: none; -ms-overflow-style: none; }
@@ -127,6 +128,20 @@
         .pos-toggle-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
         .pos-btn { padding: 4px 12px; background: transparent; border: 1px solid #555; color: var(--text-sub); border-radius: 15px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; user-select: none; }
         .pos-btn.active { background: #ff9800; color: #000; border-color: #ff9800; font-weight: bold; }
+
+        /* 學測闖關地圖專屬 CSS */
+        .campaign-node { width: 55px; height: 55px; border-radius: 50%; border: 3px solid var(--border); background: var(--bg-color); display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--text-sub); position: relative; z-index: 2; cursor: pointer; transition: 0.3s; margin: 20px 0; }
+        .campaign-node.locked { opacity: 0.4; cursor: not-allowed; }
+        .campaign-node.current { border-color: #00bcd4; color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.4); animation: pulse-cyan 2s infinite; }
+        .campaign-node.completed { background: #00bcd4; border-color: #00bcd4; color: #000; }
+        .campaign-node.boss { border-radius: 12px; transform: rotate(45deg); width: 50px; height: 50px; border-color: #ff9800; color: #ff9800; }
+        .campaign-node.boss.completed { background: #ff9800; color: #000; }
+        .campaign-node.boss .node-content { transform: rotate(-45deg); }
+        .campaign-line { position: absolute; width: 4px; background: var(--border); z-index: 1; left: 50%; transform: translateX(-50%); top: -40px; bottom: -40px; }
+        .campaign-line.active { background: #00bcd4; }
+        .campaign-part-divider { width: 100%; text-align: center; border-bottom: 2px dashed #444; line-height: 0.1em; margin: 40px 0; z-index: 2; }
+        .campaign-part-divider span { background: var(--bg-color); padding: 0 15px; color: var(--text-sub); font-size: 0.85rem; letter-spacing: 2px; }
+        @keyframes pulse-cyan { 0% { box-shadow: 0 0 0 0 rgba(0, 188, 212, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 188, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 188, 212, 0); } }
 
     </style>
 </head>
@@ -149,6 +164,9 @@
         <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();">擴充商城庫</div>
         <div class="sidebar-item" onclick="window.openAccessoriesStore(); window.toggleSidebar();" style="border-left: 3px solid #f1c40f; color: #f1c40f;">外觀飾品店</div>
         <div class="sidebar-item" onclick="window.openMarket(); window.toggleSidebar();" style="border-left: 3px solid #ff9800; color: #ff9800;">玩家市場 (C2C)</div>
+        
+        <div class="sidebar-item" onclick="window.switchView('campaign'); window.toggleSidebar();" style="border-left: 3px solid #00bcd4; color: #00bcd4;">學測闖關地圖</div>
+        
         <div class="sidebar-item" onclick="window.switchView('arena'); window.toggleSidebar();">1v1 對戰大廳</div>
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
@@ -223,6 +241,22 @@
                 <div style="text-align: center; color: var(--text-sub); font-size: 0.85rem; letter-spacing: 0.5px;">片語/商城庫模式已啟動，其他單字模式已隱藏。</div>
             </div>
         </div>
+    </div>
+
+    <div id="view-campaign" class="hidden">
+        <div class="nav-bar">
+            <button class="btn-icon" onclick="window.goHome()">返回</button>
+            <div class="nav-bar-right"><span style="font-weight: 500; letter-spacing: 1px; color: #00bcd4;">學測闖關地圖</span></div>
+        </div>
+        <div class="section-header" style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
+            <h2 style="margin: 0; font-size: 1.5rem; letter-spacing: 2px; color: var(--text-main);">學測 Lv.1 征服計畫</h2>
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-top: 5px;" id="campaign-progress-text">
+                進度: 載入中...
+            </div>
+        </div>
+
+        <div id="campaign-map-container" style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px 0 60px 0; display: flex; flex-direction: column; align-items: center; gap: 40px;">
+            </div>
     </div>
 
     <div id="view-market" class="hidden">
@@ -338,7 +372,6 @@
         </div>
         <div class="practice-area" style="margin-top: 10px;">
             <div class="card" style="padding: 15px; margin-bottom: 20px; border-color: var(--border);">
-                <!-- 血條 1 -->
                 <div style="display: flex; align-items: center; margin-bottom: 10px;">
                     <img id="am-host-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ff9800; margin-right: 10px; object-fit: cover;">
                     <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
@@ -346,7 +379,6 @@
                     </div>
                     <span id="am-host-score" style="margin-left: 10px; font-weight: bold; color: #ff9800; width: 30px; text-align: right;">0</span>
                 </div>
-                <!-- 血條 2 -->
                 <div style="display: flex; align-items: center;">
                     <img id="am-guest-img" src="" style="width: 30px; height: 30px; border-radius: 50%; border: 2px solid #4caf50; margin-right: 10px; object-fit: cover;">
                     <div style="flex: 1; background: #222; height: 12px; border-radius: 6px; overflow: hidden; position: relative;">
@@ -360,16 +392,13 @@
             <div id="am-interaction-area">
                 <div class="question-text" id="am-question-display" style="font-size: 2.2rem; margin-bottom: 30px;">Loading...</div>
                 
-                <!-- 選擇題區塊 -->
                 <div class="mcq-grid" id="am-mcq-area"></div>
                 
-                <!-- 拼打輸入區塊 -->
                 <div id="am-typing-area" class="hidden" style="display:flex; flex-direction:column; gap:15px; align-items:center;">
                     <input type="text" id="am-typing-input" placeholder="輸入答案 (直接 Enter 送出)..." autocomplete="off" style="width: 100%; text-align: center; font-size: 1.2rem;">
                     <button class="btn" style="width: 100%; background: #fff; color: #000;" onclick="window.checkArenaTypingAnswer()">送出答案</button>
                 </div>
 
-                <!-- 拼圖區塊 (全新加入) -->
                 <div id="am-puzzle-area" class="hidden" style="display:flex; flex-direction:column; align-items:center; width: 100%;">
                     <div id="am-puzzle-ans" class="puzzle-container" style="margin-bottom: 15px;"></div>
                     <div style="width: 80%; border-bottom: 1px solid var(--border); margin-bottom: 15px;"></div>
@@ -1019,37 +1048,65 @@
 </div>
 
 <div id="arena-setup-overlay" class="hidden">
-        <div class="silen-modal-box" style="max-width: 400px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
-            <h3 style="margin-top:0; color:var(--text-main); margin-bottom: 15px;">對戰設定</h3>
-            
-            <div style="text-align:left; flex: 1; display: flex; flex-direction: column; min-height: 0;">
-                <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px;">選擇單字簿 (依標籤分類)</label>
-                <!-- 拔除原生 select，變成帶有標籤的漂亮列表 -->
-                <div id="arena-setup-book-list" style="flex: 1; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 250px;">
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 25px; text-align:left;">
-                <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px; display: block;">選擇對戰模式</label>
-                <div class="custom-dropdown form-dropdown" id="arena-mode-dropdown">
-                    <div class="dropdown-selected" id="arena-mode-selected" onclick="window.toggleDropdown('arena-mode-options', event)">綜合大亂鬥 (全題型隨機) ▾</div>
-                    <div class="dropdown-options hidden" id="arena-mode-options">
-                        <div class="dropdown-option" onclick="window.setArenaMode('comp', '綜合大亂鬥 (全題型隨機)')">綜合大亂鬥 (全題型隨機)</div>
-                        <div class="dropdown-option" onclick="window.setArenaMode('conn', '連接力挑戰 (雙向選擇題)')">連接力挑戰 (雙向選擇題)</div>
-                        <div class="dropdown-option" onclick="window.setArenaMode('mcq_zh_en', '選擇題 (中翻英)')">選擇題 (中翻英)</div>
-                        <div class="dropdown-option" onclick="window.setArenaMode('mcq_en_zh', '選擇題 (英翻中)')">選擇題 (英翻中)</div>
-                        <div class="dropdown-option" onclick="window.setArenaMode('typing_zh_en', '拼打模式 (中翻英)')">拼打模式 (中翻英)</div>
-                        <div class="dropdown-option" onclick="window.setArenaMode('typing_en_zh', '拼打模式 (英翻中)')">拼打模式 (英翻中)</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex-row" style="margin-top: auto;">
-                <button class="btn btn-outline" style="flex:1;" onclick="window.closeArenaSetup()">取消</button>
-                <button class="btn" style="flex:1; background:#ff9800; color:#000;" onclick="window.confirmArenaSetup()">確認出題</button>
+    <div class="silen-modal-box" style="max-width: 400px; width: 90%; max-height: 85vh; display: flex; flex-direction: column;">
+        <h3 style="margin-top:0; color:var(--text-main); margin-bottom: 15px;">對戰設定</h3>
+        
+        <div style="text-align:left; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+            <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px;">選擇單字簿 (依標籤分類)</label>
+            <div id="arena-setup-book-list" style="flex: 1; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 250px;">
             </div>
         </div>
+        
+        <div style="margin-bottom: 25px; text-align:left;">
+            <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px; display: block;">選擇對戰模式</label>
+            <div class="custom-dropdown form-dropdown" id="arena-mode-dropdown">
+                <div class="dropdown-selected" id="arena-mode-selected" onclick="window.toggleDropdown('arena-mode-options', event)">綜合大亂鬥 (全題型隨機) ▾</div>
+                <div class="dropdown-options hidden" id="arena-mode-options">
+                    <div class="dropdown-option" onclick="window.setArenaMode('comp', '綜合大亂鬥 (全題型隨機)')">綜合大亂鬥 (全題型隨機)</div>
+                    <div class="dropdown-option" onclick="window.setArenaMode('conn', '連接力挑戰 (雙向選擇題)')">連接力挑戰 (雙向選擇題)</div>
+                    <div class="dropdown-option" onclick="window.setArenaMode('mcq_zh_en', '選擇題 (中翻英)')">選擇題 (中翻英)</div>
+                    <div class="dropdown-option" onclick="window.setArenaMode('mcq_en_zh', '選擇題 (英翻中)')">選擇題 (英翻中)</div>
+                    <div class="dropdown-option" onclick="window.setArenaMode('typing_zh_en', '拼打模式 (中翻英)')">拼打模式 (中翻英)</div>
+                    <div class="dropdown-option" onclick="window.setArenaMode('typing_en_zh', '拼打模式 (英翻中)')">拼打模式 (英翻中)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex-row" style="margin-top: auto;">
+            <button class="btn btn-outline" style="flex:1;" onclick="window.closeArenaSetup()">取消</button>
+            <button class="btn" style="flex:1; background:#ff9800; color:#000;" onclick="window.confirmArenaSetup()">確認出題</button>
+        </div>
     </div>
+</div>
+
+<div id="campaign-survey-overlay" class="hidden">
+    <div class="silen-modal-box" style="max-width: 350px; text-align: center; padding: 40px 25px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; color: var(--text-main); letter-spacing: 1px;">建立專屬學習路線</h3>
+        <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 30px; line-height: 1.6; letter-spacing: 0.5px;">
+            學測 Lv.1 共有 1080 個核心單字。<br>
+            你希望花多少時間征服它？
+        </p>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+            <input type="number" id="campaign-target-months" min="1" max="12" value="2" 
+                   style="width: 80px; text-align: center; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.2rem; font-weight: bold;">
+            <span style="font-size: 1.1rem; color: var(--text-main);">個月</span>
+        </div>
+        
+        <div style="font-size: 0.8rem; color: #ff9800; margin-bottom: 25px; letter-spacing: 0.5px;">
+            * 系統建議值為 2 ~ 3 個月
+        </div>
+
+        <div id="campaign-survey-result" style="font-size: 0.9rem; color: #00bcd4; margin-bottom: 30px; min-height: 40px; display: flex; align-items: center; justify-content: center; line-height: 1.5; font-weight: 500;">
+            請輸入月份以進行分析...
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <button class="btn btn-outline" style="flex: 1; margin: 0;" onclick="window.closeCampaignSurvey()">稍後</button>
+            <button class="btn" style="flex: 2; margin: 0; background: #fff; color: #000; font-weight: bold;" id="btn-confirm-campaign" onclick="window.confirmCampaignPlan()">確認路線</button>
+        </div>
+    </div>
+</div>
 
 <script src="app.js?v=1057"></script>
 <script type="module" src="auth.js?v=1058"></script>
