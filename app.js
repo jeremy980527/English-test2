@@ -986,7 +986,19 @@ window.finalizeMasterySession = function() {
 };
 
 window.setupMasteryMode = function(type) {
-    let words = window.getPracticeWords(); if(!words || words.length === 0) return;
+    let words;
+    if (window.isCampaignMode && window.currentBook) {
+        words = window.currentBook.words.map(w => ({
+            ...w, bookId: 'campaign_temp', isGSAT: true,
+            bookTag: `Lv${window.currentCampaignLevel}`,
+            bookLength: window.currentBook.words.length,
+            mastered: w.mastered || false, scored: false, pos: w.pos || ''
+        }));
+    } else {
+        words = window.getPracticeWords();
+    }
+    if (!words || words.length === 0) return;
+    
     masteryModeType = type; pendingMasteredWords = []; 
     masteryPool = words.map(w => ({ en: w.en, zh: w.zh, level: 0, delay: 0, isGSAT: w.isGSAT, bookTag: w.bookTag, bookLength: w.bookLength, bookId: w.bookId, mastered: w.mastered, pos: w.pos || '' })); 
     masteryPool.sort(() => Math.random() - 0.5);
