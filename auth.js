@@ -17,7 +17,7 @@ const firebaseConfig = {
     databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
-const API_BASE = 'http://45.32.26.246:3000';
+const API_BASE = 'https://api.tralingo.app';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
