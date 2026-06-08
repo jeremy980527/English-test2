@@ -3420,7 +3420,9 @@ window.confirmArenaSetup = async function() {
         let level = window.arenaSelectedBookId.replace('gsat_lv', '');
         window.SilenModal.alert(`正在連線下載學測 Lv.${level} 題庫...`);
         try {
-            let res = await fetch(`vocabularylv${level}.json`);
+            // 請將這裡的 '/English-test2/' 改成你 GitHub 專案的資料夾名稱
+            let res = await fetch(`https://github.com/jeremy980527/English-test2/blob/main/vocabularylv${window.currentCampaignLevel}.json?t=${Date.now()}`);
+            //https://github.com/jeremy980527/English-test2/blob/main/vocabularylv1.json
             if(!res.ok) throw new Error("fetch failed");
             let allWords = await res.json();
             // 對戰機制：將龐大題庫隨機打亂，抽取 20 題來拼勝負
