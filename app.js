@@ -3247,7 +3247,7 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
     window.SilenModal.alert("正在為您部署專屬題庫，請稍候...");
     
     try {
-        let res = await fetch(`vocabularylv${window.currentCampaignLevel}.json`); 
+        let res = await fetch(`${VOCAB_BASE_URL}vocabularylv${window.currentCampaignLevel}.json?t=${Date.now()}`);
         let allWords = [];
         if(res.ok) {
             allWords = await res.json();
