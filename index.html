@@ -114,7 +114,6 @@
         .acc-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 5px; }
         .acc-desc { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 15px; height: 32px; overflow: hidden; }
 
-        /* 闖關地圖與彈窗共用設定 */
         #silen-publish-overlay, #arena-setup-overlay, #campaign-survey-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
         #silen-publish-overlay.show, #arena-setup-overlay.show, #campaign-survey-overlay.show { opacity: 1; pointer-events: auto; }
         #silen-publish-overlay.hidden, #arena-setup-overlay.hidden, #campaign-survey-overlay.hidden { display: none !important; }
@@ -122,14 +121,12 @@
         .silen-modal-box::-webkit-scrollbar, #pub-book-list-container::-webkit-scrollbar { display: none; }
         .silen-modal-box, #pub-book-list-container { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* 提示系統與詞性按鈕 CSS */
         .help-icon { display: inline-flex; justify-content: center; align-items: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; font-size: 0.75rem; cursor: pointer; margin-left: 8px; vertical-align: middle; transition: 0.2s; font-weight: bold; user-select: none; }
         .help-icon:hover { background: #ff9800; color: #000; }
         .pos-toggle-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
         .pos-btn { padding: 4px 12px; background: transparent; border: 1px solid #555; color: var(--text-sub); border-radius: 15px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; user-select: none; }
         .pos-btn.active { background: #ff9800; color: #000; border-color: #ff9800; font-weight: bold; }
 
-        /* 學測闖關地圖專屬 CSS */
         .campaign-node { width: 55px; height: 55px; border-radius: 50%; border: 3px solid var(--border); background: var(--bg-color); display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--text-sub); position: relative; z-index: 2; cursor: pointer; transition: 0.3s; margin: 20px 0; }
         .campaign-node.locked { opacity: 0.4; cursor: not-allowed; }
         .campaign-node.current { border-color: #00bcd4; color: #00bcd4; box-shadow: 0 0 15px rgba(0, 188, 212, 0.4); animation: pulse-cyan 2s infinite; }
@@ -142,6 +139,10 @@
         .campaign-part-divider { width: 100%; text-align: center; border-bottom: 2px dashed #444; line-height: 0.1em; margin: 40px 0; z-index: 2; }
         .campaign-part-divider span { background: var(--bg-color); padding: 0 15px; color: var(--text-sub); font-size: 0.85rem; letter-spacing: 2px; }
         @keyframes pulse-cyan { 0% { box-shadow: 0 0 0 0 rgba(0, 188, 212, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(0, 188, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 188, 212, 0); } }
+
+        /* 匯出選單樣式 */
+        .export-menu { position: absolute; top: 100%; right: 50px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 5px; padding: 8px; z-index: 1000; }
+        .export-menu.hidden { display: none !important; }
 
     </style>
 </head>
@@ -158,19 +159,25 @@
         <div id="sb-user-name" style="font-weight: 600; font-size: 1.2rem; letter-spacing: 0.5px; margin-bottom: 5px;">訪客</div>
         <div style="font-size: 0.85rem; color: var(--text-sub); letter-spacing: 0.5px;">查看個人主頁與成就</div>
     </div>
+    
     <div class="sidebar-menu">
         <div class="sidebar-item" onclick="window.goHome(); window.toggleSidebar();">首頁 Dashboard</div>
         <div class="sidebar-item" onclick="window.openBookSelect(); window.toggleSidebar();">單字 / 片語庫</div>
-        <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();">擴充商城庫</div>
-        <div class="sidebar-item" onclick="window.openAccessoriesStore(); window.toggleSidebar();" style="border-left: 3px solid #f1c40f; color: #f1c40f;">外觀飾品店</div>
-        <div class="sidebar-item" onclick="window.openMarket(); window.toggleSidebar();" style="border-left: 3px solid #ff9800; color: #ff9800;">玩家市場 (C2C)</div>
         
-        <div class="sidebar-item" onclick="window.switchView('campaign'); window.toggleSidebar();" style="border-left: 3px solid #00bcd4; color: #00bcd4;">學測闖關地圖</div>
+        <div class="sidebar-item sidebar-submenu-toggle" onclick="window.toggleSidebarSubmenu(event)">
+            <span>🛍️ 商店與市集</span> <span class="arrow">▾</span>
+        </div>
+        <div id="sidebar-shop-menu" class="sidebar-submenu">
+            <div class="sidebar-item" onclick="window.openStore(); window.toggleSidebar();">官方擴充商城</div>
+            <div class="sidebar-item" onclick="window.openMarket(); window.toggleSidebar();">玩家市場 (C2C)</div>
+            <div class="sidebar-item" onclick="window.openAccessoriesStore(); window.toggleSidebar();">外觀飾品店</div>
+        </div>
         
+        <div class="sidebar-item" onclick="window.switchView('campaign'); window.toggleSidebar();">學測闖關地圖</div>
         <div class="sidebar-item" onclick="window.switchView('arena'); window.toggleSidebar();">1v1 對戰大廳</div>
         <div class="sidebar-item" onclick="if(window.openLeaderboard) window.openLeaderboard(); else window.switchView('leaderboard'); window.toggleSidebar();">每週排行</div>
         <div class="sidebar-item" onclick="window.SilenSettings.open(); window.toggleSidebar();">系統設定</div>
-        <div id="sidebar-admin-btn" class="sidebar-item" style="display: none; border-left: 3px solid #fff;" onclick="window.switchView('admin'); if(window.refreshAdminOnlineUsers) window.refreshAdminOnlineUsers(); window.toggleSidebar();">系統管理後台</div>
+        <div id="sidebar-admin-btn" class="sidebar-item" style="display: none;" onclick="window.switchView('admin'); if(window.refreshAdminOnlineUsers) window.refreshAdminOnlineUsers(); window.toggleSidebar();">系統管理後台</div>
     </div>
 </div>
 
@@ -250,7 +257,6 @@
                 <button class="btn-icon" onclick="window.openEditCampaignPlan()" style="color: #ff9800; border: 1px solid #ff9800; padding: 4px 12px; border-radius: 15px; font-size: 0.85rem;">修改計畫</button>
             </div>
         </div>
-        
         <div class="section-header" style="text-align: center; margin-bottom: 20px; padding-top: 20px;">
             <div class="custom-dropdown form-dropdown" id="campaign-level-dropdown" style="display: inline-block; width: auto; border: none; background: transparent; padding: 0;">
                 <div class="dropdown-selected" onclick="window.toggleDropdown('campaign-level-options', event)" style="font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; color: var(--text-main); border: none; background: transparent; justify-content: center; padding: 5px 15px;">
@@ -270,9 +276,7 @@
             </div>
         </div>
 
-
-        <div id="campaign-map-container" style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px 0 60px 0; display: flex; flex-direction: column; align-items: center; gap: 40px;">
-            </div>
+        <div id="campaign-map-container" style="position: relative; width: 100%; max-width: 400px; margin: 0 auto; padding: 20px 0 60px 0; display: flex; flex-direction: column; align-items: center; gap: 40px;"></div>
     </div>
 
     <div id="view-market" class="hidden">
@@ -407,14 +411,11 @@
 
             <div id="am-interaction-area">
                 <div class="question-text" id="am-question-display" style="font-size: 2.2rem; margin-bottom: 30px;">Loading...</div>
-                
                 <div class="mcq-grid" id="am-mcq-area"></div>
-                
                 <div id="am-typing-area" class="hidden" style="display:flex; flex-direction:column; gap:15px; align-items:center;">
                     <input type="text" id="am-typing-input" placeholder="輸入答案 (直接 Enter 送出)..." autocomplete="off" style="width: 100%; text-align: center; font-size: 1.2rem;">
                     <button class="btn" style="width: 100%; background: #fff; color: #000;" onclick="window.checkArenaTypingAnswer()">送出答案</button>
                 </div>
-
                 <div id="am-puzzle-area" class="hidden" style="display:flex; flex-direction:column; align-items:center; width: 100%;">
                     <div id="am-puzzle-ans" class="puzzle-container" style="margin-bottom: 15px;"></div>
                     <div style="width: 80%; border-bottom: 1px solid var(--border); margin-bottom: 15px;"></div>
@@ -693,7 +694,7 @@
             <h2 id="edit-book-title" style="font-size: 1.1rem; font-weight: 400; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">編輯題庫</h2>
             <div class="nav-bar-right">
                 <button class="btn-icon" onclick="window.toggleExportMenu(event)">匯出</button>
-                <div id="export-menu" class="export-menu">
+                <div id="export-menu" class="export-menu hidden">
                     <button class="btn btn-outline btn-small" style="width:100%; margin:0;" onclick="window.exportBook('copy')">複製文字</button>
                     <button class="btn btn-outline btn-small" style="width:100%; margin:0;" onclick="window.exportBook('download')">下載文字檔</button>
                 </div>
@@ -790,7 +791,10 @@
                 <div id="mastery-l0-en" style="font-size: 2.5rem; font-weight: 600; color: var(--text-main); margin-bottom: 10px; letter-spacing: 0.5px;">Word</div>
                 <div id="mastery-l0-zh" style="font-size: 1.2rem; color: var(--text-sub); letter-spacing: 0.5px;">翻譯</div>
             </div>
-            <button class="btn" id="mastery-btn-l0" style="padding: 15px; background: #fff; color: #000;" onclick="window.masteryL0Next()">下一步</button>
+            <div class="flex-row" style="gap: 15px; margin-top: 0;">
+                <button class="btn btn-outline" style="flex: 1; padding: 15px; margin: 0;" onclick="window.skipMasteryL0()">跳過暖身</button>
+                <button class="btn" id="mastery-btn-l0" style="flex: 2; padding: 15px; background: #fff; color: #000; margin: 0;" onclick="window.masteryL0Next()">下一步</button>
+            </div>
         </div>
 
         <div id="mastery-mcq-area" class="hidden practice-area" style="margin-top:0;">
@@ -876,7 +880,7 @@
                 </div>
                 <button class="btn btn-next-big" style="background: #fff; color: #000;" onclick="window.handleNextClick()">下一個</button>
             </div>
-            <div class="progress-text" id="progress-display"></div>
+            <div class="text-sub" id="progress-display" style="font-size: 0.85rem; margin-top: 15px; text-align: center;"></div>
         </div>
     </div>
 
@@ -904,7 +908,7 @@
                 </div>
                 <button class="btn btn-next-big" style="background: #fff; color: #000;" onclick="window.handleMcqNextClick()">下一個</button>
             </div>
-            <div class="progress-text" id="mcq-progress-display"></div>
+            <div class="text-sub" id="mcq-progress-display" style="font-size: 0.85rem; margin-top: 15px; text-align: center;"></div>
         </div>
     </div>
 
@@ -929,13 +933,13 @@
                 <div class="answer-reveal" id="speaking-heard-text" style="color:var(--text-sub); font-size:1rem;"></div>
                 <button class="btn btn-next-big" style="background: #fff; color: #000;" onclick="window.handleSpeakingNextClick()">下一個</button>
             </div>
-            <div class="progress-text" id="speaking-progress"></div>
+            <div class="text-sub" id="speaking-progress" style="font-size: 0.85rem; margin-top: 15px; text-align: center;"></div>
         </div>
     </div>
 
     <div id="view-puzzle" class="hidden">
         <div class="nav-bar">
-            <button class="btn-icon btn-quit" onclick="window.quitPractice()">結束</button>
+            <button class="btn-icon" onclick="window.quitPractice()">結束</button>
             <div class="nav-bar-right">
                 <span style="color:var(--text-sub); letter-spacing: 0.5px;">拼圖</span>
                 <span id="puzzle-seq-badge" class="mode-badge hidden">循序漸進</span>
@@ -953,7 +957,7 @@
                 <button class="btn" style="background: #fff; color: #000;" onclick="window.checkPuzzleState(true)">送出</button>
             </div>
             <div class="result-msg" id="puzzle-message"></div>
-            <div class="progress-text" id="puzzle-progress"></div>
+            <div class="text-sub" id="puzzle-progress" style="font-size: 0.85rem; margin-top: 15px; text-align: center;"></div>
         </div>
     </div>
 
@@ -990,7 +994,7 @@
                 <button class="btn btn-outline" onclick="window.prevYouglishCard()">上一個</button>
                 <button class="btn" style="background: #fff; color: #000;" onclick="window.nextYouglishCard()">下一個單字</button>
             </div>
-            <div class="progress-text" id="yg-progress"></div>
+            <div class="text-sub" id="yg-progress" style="font-size: 0.85rem; margin-top: 15px; text-align: center;"></div>
         </div>
     </div>
 
@@ -1069,8 +1073,7 @@
         
         <div style="text-align:left; flex: 1; display: flex; flex-direction: column; min-height: 0;">
             <label style="color:var(--text-sub); font-size:0.85rem; margin-bottom: 8px;">選擇單字簿 (依標籤分類)</label>
-            <div id="arena-setup-book-list" style="flex: 1; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 250px;">
-            </div>
+            <div id="arena-setup-book-list" style="flex: 1; overflow-y: auto; background: var(--bg-color); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 250px;"></div>
         </div>
         
         <div style="margin-bottom: 25px; text-align:left;">
@@ -1096,35 +1099,30 @@
 </div>
 
 <div id="campaign-survey-overlay" class="hidden">
-    <div class="silen-modal-box" style="max-width: 360px; text-align: center; padding: 35px 28px;">
-        
-        <div style="font-size: 0.75rem; letter-spacing: 3px; color: var(--text-sub); margin-bottom: 12px; text-transform: uppercase;">學習路線設定</div>
-        <h3 id="campaign-survey-title" style="margin: 0 0 8px 0; font-size: 1.4rem; font-weight: 300; color: var(--text-main); letter-spacing: 2px;">建立專屬路線</h3>
-        <p id="campaign-survey-desc" style="font-size: 0.85rem; color: var(--text-sub); margin: 0 0 28px 0; line-height: 1.7; letter-spacing: 0.5px;">
-            你希望花多少時間征服這個 Level？
+    <div class="silen-modal-box" style="max-width: 350px; text-align: center; padding: 40px 25px;">
+        <h3 id="campaign-survey-title" style="margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; color: var(--text-main); letter-spacing: 1px;">建立專屬學習路線</h3>
+        <p id="campaign-survey-desc" style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 30px; line-height: 1.6; letter-spacing: 0.5px;">
+            學測 Lv.1 共有 1080 個核心單字。<br>
+            你希望花多少時間征服它？
         </p>
-
-        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
-            <button onclick="let el=document.getElementById('campaign-target-months'); el.value=Math.max(1,parseInt(el.value||2)-1); el.dispatchEvent(new Event('input'));" 
-                style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-main); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">−</button>
-            <div style="text-align: center;">
-                <input type="number" id="campaign-target-months" min="1" max="12" value="2" 
-                       style="width: 70px; text-align: center; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.6rem; font-weight: 600; -moz-appearance: textfield;">
-            </div>
-            <button onclick="let el=document.getElementById('campaign-target-months'); el.value=Math.min(12,parseInt(el.value||2)+1); el.dispatchEvent(new Event('input'));" 
-                style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-main); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">＋</button>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px;">
+            <input type="number" id="campaign-target-months" min="1" max="12" value="2" 
+                   style="width: 80px; text-align: center; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-main); font-size: 1.2rem; font-weight: bold;">
+            <span style="font-size: 1.1rem; color: var(--text-main);">個月</span>
         </div>
-        <div style="font-size: 1rem; color: var(--text-main); margin-bottom: 6px;">個月</div>
-        <div style="font-size: 0.75rem; color: #ff9800; margin-bottom: 24px; letter-spacing: 0.5px;">建議 2 ～ 3 個月</div>
-
-        <div id="campaign-survey-result" style="margin-bottom: 28px; min-height: 80px; display: flex; align-items: center; justify-content: center;">
-            <span style="font-size: 0.85rem; color: var(--text-sub); letter-spacing: 0.5px;">請輸入月份以進行分析...</span>
+        
+        <div style="font-size: 0.8rem; color: #ff9800; margin-bottom: 25px; letter-spacing: 0.5px;">
+            * 系統建議值為 2 ~ 3 個月
         </div>
 
-        <div style="display: flex; gap: 12px;">
-            <button class="btn btn-outline" style="flex: 1; margin: 0; font-size: 0.9rem;" onclick="window.closeCampaignSurvey()">稍後</button>
-            <button class="btn btn-outline" style="flex: 1; margin: 0; font-size: 0.9rem;" id="btn-edit-campaign" onclick="window.editCampaignPlan()" class="hidden">更改期限</button>
-            <button class="btn" style="flex: 2; margin: 0; background: #fff; color: #000; font-weight: 600; font-size: 0.95rem;" id="btn-confirm-campaign" onclick="window.confirmCampaignPlan()">確認路線</button>
+        <div id="campaign-survey-result" style="font-size: 0.9rem; color: #00bcd4; margin-bottom: 30px; min-height: 40px; display: flex; align-items: center; justify-content: center; line-height: 1.5; font-weight: 500;">
+            請輸入月份以進行 analysis...
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <button class="btn btn-outline" style="flex: 1; margin: 0;" onclick="window.closeCampaignSurvey()">稍後</button>
+            <button class="btn" style="flex: 2; margin: 0; background: #fff; color: #000; font-weight: bold;" id="btn-confirm-campaign" onclick="window.confirmCampaignPlan()">確認路線</button>
         </div>
     </div>
 </div>
