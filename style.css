@@ -718,3 +718,97 @@ input[type="checkbox"] { accent-color: #ffffff; transform: scale(1.1); }
 .checkbox-wrapper:hover input[type="checkbox"] {
     border-color: var(--accent);
 }
+
+/* ========================================================= */
+/* 💎 頂級 UX 升級：Liquid Glass、微動效與畫面呼吸感 */
+/* ========================================================= */
+
+/* 1. Liquid Glass (毛玻璃) 卡片質感 */
+.card, .store-card, .acc-card, .silen-modal-box {
+    background: rgba(20, 20, 20, 0.45) !important; /* 半透明深色底 */
+    backdrop-filter: blur(16px) saturate(120%); /* 核心：玻璃模糊與色彩增艷 */
+    -webkit-backdrop-filter: blur(16px) saturate(120%); /* 支援 Safari */
+    border: 1px solid rgba(255, 255, 255, 0.08) !important; /* 極微弱的玻璃邊緣反光 */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important; /* 深邃陰影襯托立體感 */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* 2. 卡片懸浮光暈 (Hover Glow) */
+.store-card:hover, .acc-card:hover, .book-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 3. 按鈕的 3D 觸覺回饋 (Micro-interactions) */
+.btn {
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+.btn:hover {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.15) !important; /* 按鈕微泛光 */
+}
+.btn:active {
+    transform: scale(0.96) translateY(2px) !important; /* 點擊時瞬間微縮+下沉 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important; /* 陰影縮小，模擬壓下實體鍵 */
+    opacity: 0.8;
+}
+
+/* 4. 畫面切換的「呼吸感」(Fade In & Slide Up) */
+/* 只要畫面移除 hidden 類別，就會自動觸發這個優雅的浮現動畫 */
+div[id^="view-"]:not(.hidden) {
+    animation: viewFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes viewFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 5. 側邊導覽列 (Sidebar) 極簡白化與收納匣樣式 */
+.sidebar {
+    background: rgba(15, 15, 15, 0.85) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.sidebar-item {
+    border-left: 3px solid transparent !important; /* 移除所有預設顏色 */
+    color: var(--text-sub) !important; /* 預設偏灰 */
+}
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-left: 3px solid #fff !important; /* 統一變成白色指示線 */
+    color: #fff !important;
+}
+.sidebar-submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    background: rgba(0, 0, 0, 0.3); /* 子選單底色更深一點點 */
+}
+.sidebar-submenu.expanded {
+    max-height: 250px; /* 展開高度 */
+}
+.sidebar-submenu .sidebar-item {
+    padding-left: 45px; /* 子選項向右縮進 */
+    font-size: 0.95rem;
+}
+.sidebar-submenu-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.sidebar-submenu-toggle .arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+}
+.sidebar-submenu-toggle.expanded .arrow {
+    transform: rotate(180deg);
+}
