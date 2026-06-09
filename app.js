@@ -3578,18 +3578,24 @@ window.toggleSidebarSubmenu = function(event) {
     submenu.classList.toggle('expanded');
 };
 
-// --- 2. 綜合精通模式：跳過 Lv 0 暖身機制 ---
+// --- 2. 綜合精通與片語模式：真正跳過整個 Lv 0 暖身機制 ---
 window.skipMasteryL0 = function() {
-    // 將暖身進度指標直接推到最後一題，模擬「已全數看完」的狀態
-    if (window.currentBook && window.currentBook.words) {
-        window.masteryL0Index = window.currentBook.words.length;
-    } else {
-        window.masteryL0Index = 999; 
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // 核心修正：遍歷整個題池，將「所有」還在 Lv 0 的單字/片語，一口氣全部升級到 Lv 1
+    if (masteryPool && masteryPool.length > 0) {
+        masteryPool.forEach(w => {
+            if (w.level === 0) {
+                w.level = 1;
+            }
+        });
     }
     
-    // 呼叫原本的下一步邏輯，系統會自動判定暖身結束，並平滑過渡到 Lv 1 視覺辨識
-    if (typeof window.masteryL0Next === 'function') {
-        window.masteryL0Next();
+    // 根據目前的模式，呼叫對應的路由函式，系統就會自動跳入 Lv 1 視覺辨識階段
+    if (typeof masteryModeType !== 'undefined' && masteryModeType === 'phrase' && typeof window.nextPhraseMasteryTurn === 'function') {
+        window.nextPhraseMasteryTurn();
+    } else if (typeof window.nextMasteryTurn === 'function') {
+        window.nextMasteryTurn();
     }
 };
 
