@@ -3562,3 +3562,33 @@ window.openEditCampaignPlan = function() {
         }
     });
 };
+
+
+// ==========================================
+// 21. UX 優化：側邊欄收納匣與跳過暖身機制
+// ==========================================
+
+// --- 1. 側邊欄「商店與市集」收納匣平滑開關邏輯 ---
+window.toggleSidebarSubmenu = function(event) {
+    const toggleBtn = event.currentTarget;
+    const submenu = toggleBtn.nextElementSibling;
+    
+    // 切換 expanded 類別，觸發 style.css 裡的動畫與高度變更
+    toggleBtn.classList.toggle('expanded');
+    submenu.classList.toggle('expanded');
+};
+
+// --- 2. 綜合精通模式：跳過 Lv 0 暖身機制 ---
+window.skipMasteryL0 = function() {
+    // 將暖身進度指標直接推到最後一題，模擬「已全數看完」的狀態
+    if (window.currentBook && window.currentBook.words) {
+        window.masteryL0Index = window.currentBook.words.length;
+    } else {
+        window.masteryL0Index = 999; 
+    }
+    
+    // 呼叫原本的下一步邏輯，系統會自動判定暖身結束，並平滑過渡到 Lv 1 視覺辨識
+    if (typeof window.masteryL0Next === 'function') {
+        window.masteryL0Next();
+    }
+};
