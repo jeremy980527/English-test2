@@ -17,7 +17,7 @@ const firebaseConfig = {
     databaseURL: "https://silenvocab-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
-// 綁定你的 Vultr VPS Cloudflare Tunnel
+// 綁定 Vultr VPS Cloudflare Tunnel 後端網址
 const API_BASE = 'https://api.tralingo.app';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -25,7 +25,6 @@ const db = getFirestore(app);
 const rtdb = getDatabase(app); 
 const provider = new GoogleAuthProvider();
 
-let currentUser = null;
 window.purchasedBundles = JSON.parse(localStorage.getItem('sv_purchased_bundles')) || []; 
 
 // =====================================
@@ -35,10 +34,12 @@ const connectedRef = ref(rtdb, '.info/connected');
 let mySessionRef = null;
 
 window.updateMyPresence = function() {
-    const user = window.currentUser || auth.currentUser;
+    const user = auth.currentUser;
     if (user) {
+        // 核心修改：捨棄隨機 push() 亂碼，改用單一 UID 綁定在線節點，徹底消除網頁殘留幽靈
         mySessionRef = ref(rtdb, `online_users/${user.uid}`);
         onDisconnect(mySessionRef).remove();
+        
         set(mySessionRef, {
             uid: user.uid,
             name: user.displayName || '匿名者',
@@ -62,6 +63,7 @@ onValue(ref(rtdb, 'online_users'), (snap) => {
     if (snap.exists()) {
         snap.forEach(childSnap => {
             const data = childSnap.val();
+            // 只計算帶有合法 UID 資訊的真實上線用戶
             if (data && data.uid) realCount++; 
         });
     }
@@ -70,13 +72,13 @@ onValue(ref(rtdb, 'online_users'), (snap) => {
     if (countEl) countEl.innerText = realCount;
 });
 
-// 當玩家直接關閉分頁或滑掉網頁時，強制瞬間清除在線狀態
+// 當玩家直接關閉分頁、視窗或滑掉網頁時，強制瞬間抹除在線狀態
 window.addEventListener('beforeunload', () => {
     if (mySessionRef) set(mySessionRef, null);
 });
 
 // =====================================
-// 帳號登入與登出邏輯 
+// 帳號登入與登出邏輯
 // =====================================
 window.loginWithGoogle = () => {
     const isApp = typeof AndroidBridge !== 'undefined';
@@ -97,23 +99,25 @@ function executeSignOut() {
     signOut(auth).then(() => {
         localStorage.removeItem('sv_books');
         localStorage.removeItem('sv_books_timestamp'); 
-        localStorage.removeItem('sv_campaign_data'); // 清除本地闖關紀錄
+        localStorage.removeItem('sv_campaign_data'); // 登出時一併清空本地闖關紀錄
         window.books = [];
-        window.campaignData = null;
+        window.campaignData = {};
         window.location.reload(); 
     }).catch(e => console.error("登出失敗:", e));
 }
 
 // =====================================
-// 雲端與本地端資料備份同步引擎
+// 雲端與本地端資料備份同步引擎 (支援多 Level 闖關進度)
 // =====================================
 window.syncToCloud = async function(uid, booksData, timestamp) {
     if (!uid) return;
     const ts = timestamp || Date.now();
     try {
         let dataObj = { books: booksData, lastUpdated: ts };
-        // 確保闖關紀錄一併存入 Firebase Firestore
-        if (window.campaignData) dataObj.campaignData = window.campaignData;
+        // 核心修改：將多 Level 獨立的地圖資料一併打包上傳至 Firestore 備份
+        if (window.campaignData) {
+            dataObj.campaignData = window.campaignData;
+        }
         await setDoc(doc(db, "users", uid), dataObj, { merge: true });
     } catch (error) { console.error("雲端備份錯誤:", error); }
 };
@@ -128,34 +132,34 @@ window.syncFromCloud = async function(uid) {
             if (typeof cloudTime === 'string') cloudTime = new Date(cloudTime).getTime() || 0;
             const localTime = parseInt(localStorage.getItem('sv_books_timestamp')) || 0;
 
-            // 1. 同步單字庫
-            if (localTime > cloudTime && window.books && window.books.length > 0) {
-                window.syncToCloud(uid, window.books, localTime);
-            } else if (cloudData && cloudData.books) {
-                window.books = cloudData.books;
-                localStorage.setItem('sv_books', JSON.stringify(window.books));
-                localStorage.setItem('sv_books_timestamp', cloudTime.toString());
-                if (typeof window.renderBookList === 'function') window.renderBookList();
-                if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
-            }
-
-            // 2. 同步學測闖關地圖進度
-            if (cloudData.campaignData) {
-                if (!window.campaignData || cloudData.campaignData.currentLevel > window.campaignData.currentLevel) {
-                    // 雲端進度超前，覆蓋本地
+            // 以最新存檔時間戳記為單一核心標準，實現跨裝置完美同步
+            if (cloudTime > localTime) {
+                // 1. 同步單字庫
+                if (cloudData.books) {
+                    window.books = cloudData.books;
+                    localStorage.setItem('sv_books', JSON.stringify(window.books));
+                    if (typeof window.renderBookList === 'function') window.renderBookList();
+                    if (typeof window.updateHomeSummary === 'function') window.updateHomeSummary();
+                }
+                
+                // 2. 同步學測多等級闖關地圖進度
+                if (cloudData.campaignData) {
                     window.campaignData = cloudData.campaignData;
                     localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
-                    // 若玩家正處於闖關畫面，立即重新渲染地圖
+                    
+                    // 如果玩家當前正停留在地圖畫面，UI 立即重新生成渲染
                     const viewCampaign = document.getElementById('view-campaign');
                     if (viewCampaign && !viewCampaign.classList.contains('hidden') && typeof window.renderCampaignMap === 'function') {
                         window.renderCampaignMap();
                     }
-                } else if (window.campaignData && window.campaignData.currentLevel > cloudData.campaignData.currentLevel) {
-                    // 本地進度超前，推上雲端
-                    window.syncToCloud(uid, window.books, Date.now());
                 }
+                
+                localStorage.setItem('sv_books_timestamp', cloudTime.toString());
+                
+            } else if (localTime > cloudTime) {
+                // 本地資料較新，強制覆蓋雲端
+                window.syncToCloud(uid, window.books, localTime);
             }
-
         } else {
             if (window.books && window.books.length > 0) {
                 const now = Date.now();
@@ -174,9 +178,9 @@ setInterval(() => {
             if (typeof original === 'function') original();
             const now = Date.now();
             localStorage.setItem('sv_books_timestamp', now.toString());
-            if (window.currentUser) {
-                window.syncToCloud(window.currentUser.uid, window.books, now);
-                set(ref(rtdb, `users/${window.currentUser.uid}/purchasedBundles`), window.purchasedBundles || []);
+            if (auth.currentUser) {
+                window.syncToCloud(auth.currentUser.uid, window.books, now);
+                set(ref(rtdb, `users/${auth.currentUser.uid}/purchasedBundles`), window.purchasedBundles || []);
             }
         };
         _lastSaveData = window.saveData;
@@ -237,11 +241,11 @@ onAuthStateChanged(auth, (user) => {
             const tzOptions = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
             const now = new Date();
             const todayStr = now.toLocaleDateString('zh-TW', tzOptions);
-            const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
             
             let dbData = docSnapAdminDb.exists() ? docSnapAdminDb.data() : {};
             let lastDate = dbData.lastCheckInDate || '';
 
+            // 安全對接每日簽到 Node.js API
             if (lastDate !== todayStr && !window.isGuestMode && !hasShareLink) {
                 try {
                     const token = await user.getIdToken();
@@ -315,7 +319,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =====================================
-// 17. 伺服器端防作弊加分系統 API
+// 17. 伺服器端防作弊加分系統 API (安全對接端點)
 // =====================================
 window.addStorePoints = async function(points, mode = 'normal', correctCount = 1, force = false) {
     if (window.isGuestMode) return; 
@@ -325,10 +329,11 @@ window.addStorePoints = async function(points, mode = 'normal', correctCount = 1
     window.lastStoreScoreTime = now;
 
     try {
-        const user = window.currentUser || auth.currentUser; 
+        const user = auth.currentUser; 
         if (!user) return;
         const idToken = await user.getIdToken();
 
+        // 帶著防作弊驗證參數發送 POST 請求至 Express API
         const response = await fetch(`${API_BASE}/api/addpoints`, {
             method: 'POST',
             headers: {
@@ -366,8 +371,8 @@ window.addStorePoints = async function(points, mode = 'normal', correctCount = 1
 // 飾品系統 Firebase 同步
 // =====================================
 window.syncAccessoriesToCloud = async function() {
-    if (!window.currentUser) return;
-    const uid = window.currentUser.uid;
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
     try {
         await set(ref(rtdb, `users/${uid}/purchasedAccessories`), window.purchasedAccessories || []);
         await set(ref(rtdb, `users/${uid}/equippedFrame`), window.equippedFrame || '');
@@ -400,15 +405,15 @@ window.applyAvatarFrame = function(frameId) {
 // 排行榜與雙軌分數同步邏輯
 // =====================================
 window.uploadScoreToCloud = async function(rankPoints, storePoints) {
-    if (!window.currentUser || typeof rtdb === 'undefined') return;
-    const uid = window.currentUser.uid;
+    if (!auth.currentUser || typeof rtdb === 'undefined') return;
+    const uid = auth.currentUser.uid;
     try { await set(ref(rtdb, `users/${uid}/storePoints`), storePoints); } catch(e) { console.warn("商城點數同步延遲", e); }
-    try { await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
+    try { await set(ref(rtdb, `users/${uid}/rankPoints`], rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
     try {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}`), {
-            name: window.currentUser.displayName || '匿名者',
-            photo: window.currentUser.photoURL || '',
+            name: auth.currentUser.displayName || '匿名者',
+            photo: auth.currentUser.photoURL || '',
             score: rankPoints,
             frame: window.equippedFrame || '',
             timestamp: Date.now()
@@ -429,12 +434,12 @@ window.fetchLeaderboard = async function(weekId) {
 };
 
 window.updateCloudUserName = async function(newName) {
-    if (!window.currentUser) { window.SilenModal.alert("請先登入帳號！"); return; }
+    if (!auth.currentUser) { window.SilenModal.alert("請先登入帳號！"); return; }
     try {
-        await updateProfile(window.currentUser, { displayName: newName });
-        await setDoc(doc(db, "users", window.currentUser.uid), { name: newName }, { merge: true });
+        await updateProfile(auth.currentUser, { displayName: newName });
+        await setDoc(doc(db, "users", auth.currentUser.uid), { name: newName }, { merge: true });
         const weekId = window.getCurrentWeekId();
-        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${window.currentUser.uid}`);
+        const lbRef = ref(rtdb, `leaderboard/week_${weekId}/${auth.currentUser.uid}`);
         const snap = await get(lbRef);
         if (snap.exists()) await set(lbRef, { ...snap.val(), name: newName });
         window.updateMyPresence(); 
@@ -602,14 +607,14 @@ window.refreshAdminOnlineUsers = async function() {
 };
 
 // ==========================================
-// 14. 玩家市場系統 (Player Market) Phase 2
+// 14. 玩家市場系統 (Player Market)
 // ==========================================
 window.currentPublishBookId = null;
 
 window.checkPublishLimit = async function() {
-    if (!window.currentUser) return { canUpload: false, remaining: 0 };
+    if (!auth.currentUser) return { canUpload: false, remaining: 0 };
     try {
-        const docSnap = await getDoc(doc(db, "users", window.currentUser.uid));
+        const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
         if (docSnap.exists()) {
             const data = docSnap.data();
             const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
@@ -621,7 +626,7 @@ window.checkPublishLimit = async function() {
 };
 
 window.openPublishModal = function() {
-    if (!window.currentUser) { window.SilenModal.alert("請先登入帳號以使用市場功能。"); return; }
+    if (!auth.currentUser) { window.SilenModal.alert("請先登入帳號以使用市場功能。"); return; }
     const eligibleBooks = window.books.filter(b => !b.isStore && b.words.length >= 10);
     const container = document.getElementById('pub-book-list-container');
     container.innerHTML = '';
@@ -664,16 +669,16 @@ window.confirmPublish = function() {
 };
 
 window.executePublishToMarket = async function(book, price, desc) {
-    if (!window.currentUser) return; window.SilenModal.alert("上架處理中...");
+    if (!auth.currentUser) return; window.SilenModal.alert("上架處理中...");
     try {
-        const userRef = doc(db, "users", window.currentUser.uid);
+        const userRef = doc(db, "users", auth.currentUser.uid);
         const docSnap = await getDoc(userRef); let data = docSnap.exists() ? docSnap.data() : {};
         const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
         let count = data.lastUploadDate === today ? (data.dailyUploadCount || 0) : 0;
         if (count >= 3) return window.SilenModal.alert("今日上架額度已用盡！");
         const cleanWords = book.words.map(w => ({ en: w.en, zh: w.zh, pos: w.pos || '' }));
         await addDoc(collection(db, "market_books"), {
-            authorUid: window.currentUser.uid, authorName: window.currentUser.displayName || '匿名玩家',
+            authorUid: auth.currentUser.uid, authorName: auth.currentUser.displayName || '匿名玩家',
             bookName: book.name, description: desc, price: price, wordCount: cleanWords.length, words: cleanWords, salesCount: 0, timestamp: Date.now()
         });
         await updateDoc(userRef, { dailyUploadCount: count + 1, lastUploadDate: today });
@@ -700,7 +705,7 @@ window.renderMarketCatalog = function(marketBooks) {
     marketBooks.forEach(book => {
         const card = document.createElement('div'); card.className = 'store-card';
         const isOwned = window.books.some(b => b.marketId === book.id);
-        const myUid = window.currentUser ? window.currentUser.uid : '';
+        const myUid = auth.currentUser ? auth.currentUser.uid : '';
         let btnHtml = isOwned ? `<button class="btn btn-small" style="background:#333; color:#aaa;" disabled>已擁有</button>` : 
                      (book.authorUid === myUid ? `<button class="btn btn-small" style="background:#333; color:#aaa;" disabled>您的商品</button>` : 
                      `<button class="btn btn-small" style="background:#fff; color:#000;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`);
@@ -713,7 +718,7 @@ window.renderMarketCatalog = function(marketBooks) {
 };
 
 window.purchaseMarketBook = async function(marketBookId, price, bookName, authorUid) {
-    if (!window.currentUser) return window.SilenModal.alert("請先登入！");
+    if (!auth.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！需要 ${price} 點數。`);
     window.SilenModal.confirm(`花費 ${price} 點數購買「${bookName}」嗎？`).then(async agreed => {
         if (agreed) {
@@ -723,7 +728,7 @@ window.purchaseMarketBook = async function(marketBookId, price, bookName, author
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) throw new Error("商品已下架");
 
-                const token = await window.currentUser.getIdToken();
+                const token = await auth.currentUser.getIdToken();
                 const tradeRes = await fetch(`${API_BASE}/api/trade`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -776,12 +781,12 @@ window.renderAccessoriesCatalog = function(catalog) {
 };
 
 window.purchaseAccessory = async function(id, price, name) {
-    if (!window.currentUser) return window.SilenModal.alert("請先登入！");
+    if (!auth.currentUser) return window.SilenModal.alert("請先登入！");
     if (window.myStorePoints < price) return window.SilenModal.alert(`點數不足！`);
     window.SilenModal.confirm(`花費 ${price} 點數購買「${name}」嗎？`).then(async agreed => {
         if (agreed) {
             try {
-                const token = await window.currentUser.getIdToken();
+                const token = await auth.currentUser.getIdToken();
                 const purchRes = await fetch(`${API_BASE}/api/purchase`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -811,20 +816,20 @@ window.equipAccessory = function(id) {
 // 16. 1v1 即時對戰 Firebase 核心
 // ==========================================
 window.createArenaRoom = async function() {
-    if (!window.currentUser) return window.SilenModal.alert("請登入！");
+    if (!auth.currentUser) return window.SilenModal.alert("請登入！");
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code = ''; for(let i=0; i<5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
     const roomRef = ref(rtdb, `arena_rooms/${code}`);
     try {
-        await set(roomRef, { status: 'waiting', host: { uid: window.currentUser.uid, name: window.currentUser.displayName, photo: window.currentUser.photoURL, frame: window.equippedFrame, score: 0 }, timestamp: Date.now() });
+        await set(roomRef, { status: 'waiting', host: { uid: auth.currentUser.uid, name: auth.currentUser.displayName, photo: auth.currentUser.photoURL, frame: window.equippedFrame, score: 0 }, timestamp: Date.now() });
         onDisconnect(roomRef).remove();
         window.currentArenaRoom = code; window.isArenaHost = true; window.matchStarted = false;
-        if (typeof window.showArenaWaiting === 'function') window.showArenaWaiting(code, true, {name:window.currentUser.displayName, photo:window.currentUser.photoURL, frame:window.equippedFrame}, null);
+        if (typeof window.showArenaWaiting === 'function') window.showArenaWaiting(code, true, {name:auth.currentUser.displayName, photo:auth.currentUser.photoURL, frame:window.equippedFrame}, null);
         window.listenToArenaRoom(roomRef);
     } catch(e) { window.SilenModal.alert("建房失敗"); }
 };
 
 window.joinArenaRoom = async function() {
-    if (!window.currentUser) return window.SilenModal.alert("請登入！");
+    if (!auth.currentUser) return window.SilenModal.alert("請登入！");
     const code = document.getElementById('arena-join-code').value.trim().toUpperCase();
     if(code.length !== 5) return window.SilenModal.alert("輸入 5 碼！");
     const roomRef = ref(rtdb, `arena_rooms/${code}`);
@@ -833,8 +838,8 @@ window.joinArenaRoom = async function() {
         if (!snap.exists()) return window.SilenModal.alert("找不到房間。");
         const roomData = snap.val();
         if (roomData.status !== 'waiting' || roomData.guest) return window.SilenModal.alert("房間已滿或已開始！");
-        if (roomData.host.uid === window.currentUser.uid) return window.SilenModal.alert("不能加入自己的房間！");
-        const myData = { uid: window.currentUser.uid, name: window.currentUser.displayName, photo: window.currentUser.photoURL, frame: window.equippedFrame, score: 0 };
+        if (roomData.host.uid === auth.currentUser.uid) return window.SilenModal.alert("不能加入自己的房間！");
+        const myData = { uid: auth.currentUser.uid, name: auth.currentUser.displayName, photo: auth.currentUser.photoURL, frame: window.equippedFrame, score: 0 };
         await update(roomRef, { guest: myData });
         onDisconnect(child(roomRef, 'guest')).remove();
         window.currentArenaRoom = code; window.isArenaHost = false; window.matchStarted = false;
