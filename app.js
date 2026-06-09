@@ -3592,3 +3592,158 @@ window.skipMasteryL0 = function() {
         window.masteryL0Next();
     }
 };
+
+
+// ==========================================
+// 22. 語音音量控制與防中斷存檔系統 (Checkpoints)
+// ==========================================
+
+// --- 音量控制系統 ---
+window.sysVolume = parseFloat(localStorage.getItem('sv_volume') ?? '1');
+
+const originalRenderSettings = window.SilenSettings.render;
+window.SilenSettings.render = function() {
+    originalRenderSettings.call(this);
+    const elVolume = document.getElementById('set-volume');
+    const elVolumeDisplay = document.getElementById('volume-display');
+    if (elVolume) {
+        elVolume.value = window.sysVolume;
+        if (elVolumeDisplay) elVolumeDisplay.innerText = Math.round(window.sysVolume * 100) + '%';
+        
+        // 綁定拉動事件，即時更新數字
+        elVolume.oninput = (e) => {
+            window.sysVolume = parseFloat(e.target.value);
+            if (elVolumeDisplay) elVolumeDisplay.innerText = Math.round(window.sysVolume * 100) + '%';
+        };
+        
+        // 拉動結束後，記憶設定並播放測試音
+        elVolume.onchange = (e) => {
+            localStorage.setItem('sv_volume', window.sysVolume);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let u = new SpeechSynthesisUtterance("Silen Vocab");
+                u.lang = 'en-US';
+                u.volume = window.sysVolume;
+                window.speechSynthesis.speak(u);
+            }
+        };
+    }
+};
+
+// 攔截發音函數，將調整後的音量灌入引擎
+const origSpeakEnglishWord = window.speakEnglishWord;
+window.speakEnglishWord = function(word) {
+    if (!autoPronounce && !window.forceSpeak) return; 
+    if (window.AndroidBridge && typeof window.AndroidBridge.speak === 'function') {
+        try { window.AndroidBridge.speak(word); } catch (e) {}
+    } else if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US'; 
+        utterance.rate = 0.95; 
+        utterance.volume = window.sysVolume; // 應用自訂音量
+        window.speechSynthesis.speak(utterance);
+    }
+    window.forceSpeak = false;
+};
+
+// --- 零碎時間防護：闖關中途存檔 (Checkpoint) ---
+window.saveMasteryCheckpoint = function() {
+    // 只有在學測闖關模式，且題庫不為空時才執行靜默存檔
+    if (!window.isCampaignMode || !masteryPool || masteryPool.length === 0) return;
+    let cp = {
+        isCampaignMode: window.isCampaignMode,
+        campaignLevel: window.currentCampaignLevel,
+        campaignNode: window.campaignCurrentNode,
+        campaignType: window.campaignCurrentType,
+        masteryModeType: masteryModeType,
+        masteryPool: masteryPool,
+        pendingMasteredWords: pendingMasteredWords,
+        currentBook: window.currentBook,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('sv_mastery_cp', JSON.stringify(cp));
+};
+
+window.clearMasteryCheckpoint = function() {
+    localStorage.removeItem('sv_mastery_cp');
+};
+
+// 攔截：每次答對跳換下一題時，自動靜默存檔
+const originalNextMasteryTurn2 = window.nextMasteryTurn;
+window.nextMasteryTurn = function() {
+    originalNextMasteryTurn2();
+    window.saveMasteryCheckpoint();
+};
+
+// 攔截：成功通關結算時，清除存檔
+const origFinalizeSession = window.finalizeMasterySession;
+window.finalizeMasterySession = function() {
+    window.clearMasteryCheckpoint();
+    origFinalizeSession();
+};
+
+// 攔截：點擊地圖關卡時檢查是否有未完成的存檔
+const origStartCampaignNode2 = window.startCampaignNode;
+window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
+    let cpJson = localStorage.getItem('sv_mastery_cp');
+    if (cpJson) {
+        try {
+            let cp = JSON.parse(cpJson);
+            // 檢查是否是點擊「同一個」未完成的關卡
+            if (cp.isCampaignMode && cp.campaignLevel === window.currentCampaignLevel && cp.campaignNode === nodeIndex) {
+                let resume = await window.SilenModal.confirm("💾 發現中斷的學習紀錄！\n\n您上次在這個關卡挑戰到一半，是否要從中斷的地方繼續？\n\n(選擇「取消」將放棄舊進度並重新開始)");
+                if (resume) {
+                    window.resumeMasterySession(cp);
+                    return;
+                } else {
+                    window.clearMasteryCheckpoint();
+                }
+            }
+        } catch(e) { window.clearMasteryCheckpoint(); }
+    }
+    // 如果沒有存檔或玩家放棄舊存檔，走原本的流程載入全新單字
+    origStartCampaignNode2(nodeIndex, type, part, levelIndex);
+};
+
+// 負責從存檔中無縫恢復畫面與狀態的神奇函數
+window.resumeMasterySession = function(cp) {
+    window.isCampaignMode = cp.isCampaignMode;
+    window.currentCampaignLevel = cp.campaignLevel;
+    window.campaignCurrentNode = cp.campaignNode;
+    window.campaignCurrentType = cp.campaignType;
+    masteryModeType = cp.masteryModeType;
+    masteryPool = cp.masteryPool;
+    pendingMasteredWords = cp.pendingMasteredWords || [];
+    window.currentBook = cp.currentBook;
+
+    // 將暫存書放回背包，確保邏輯不會報錯
+    const existingIndex = window.books.findIndex(b => b.id === 'campaign_temp');
+    if (existingIndex !== -1) window.books[existingIndex] = cp.currentBook;
+    else window.books.push(cp.currentBook);
+
+    const headerTitle = document.getElementById('mastery-header-title'); 
+    const progressBar = document.getElementById('mastery-progress-bar');
+    const l0Card = document.getElementById('mastery-l0-card'); 
+    const nextBtns = document.querySelectorAll('#view-mastery .btn:not(.btn-icon):not(.btn-outline)');
+
+    if (masteryModeType === 'comprehensive') {
+        headerTitle.innerText = "綜合精通模式"; headerTitle.style.color = "#9c27b0"; progressBar.style.background = "#9c27b0"; l0Card.style.borderColor = "#9c27b0";
+        nextBtns.forEach(b => { b.className = "btn mastery-btn-comp btn-next-big"; if (['mastery-btn-l0', 'mastery-btn-puzzle', 'mastery-btn-typing', 'mastery-btn-finish'].includes(b.id)) b.classList.remove('btn-next-big'); });
+    }
+
+    if (window.isCampaignMode) {
+        if(cp.campaignType === 'midterm' || cp.campaignType === 'final') {
+            progressBar.style.background = '#ff9800';
+        } else {
+            progressBar.style.background = '#00bcd4';
+        }
+    }
+
+    document.getElementById('silen-modal-overlay').classList.add('hidden');
+    window.switchView('mastery'); 
+    window.updateMasteryProgress(); 
+    
+    // 恢復後直接執行下一回合，重繪畫面
+    window.nextMasteryTurn();
+};
