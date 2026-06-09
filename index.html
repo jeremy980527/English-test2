@@ -1015,6 +1015,15 @@
 <div id="silen-settings-overlay" class="hidden">
     <div class="silen-modal-box" style="max-width: 320px;">
         <h3 style="margin-top: 0; color: var(--text-main); margin-bottom: 25px;">偏好設定</h3>
+        
+        <div style="margin-bottom: 25px;">
+            <label style="display:flex; justify-content:space-between; color:var(--text-sub); font-size:0.9rem; margin-bottom:10px;">
+                <span>語音音量</span>
+                <span id="volume-display" style="color: #00bcd4; font-weight: bold;">100%</span>
+            </label>
+            <input type="range" id="set-volume" min="0" max="1" step="0.1" value="1" style="width:100%; accent-color: #00bcd4; cursor: pointer;">
+        </div>
+
         <div class="checkbox-wrapper" style="margin-bottom: 20px;" onclick="window.toggleSetting('pronounce')">
             <input type="checkbox" id="set-pronounce" style="pointer-events: none;">
             <label style="flex:1;">自動朗讀英文</label>
