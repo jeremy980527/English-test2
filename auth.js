@@ -408,7 +408,8 @@ window.uploadScoreToCloud = async function(rankPoints, storePoints) {
     if (!auth.currentUser || typeof rtdb === 'undefined') return;
     const uid = auth.currentUser.uid;
     try { await set(ref(rtdb, `users/${uid}/storePoints`), storePoints); } catch(e) { console.warn("商城點數同步延遲", e); }
-    try { await set(ref(rtdb, `users/${uid}/rankPoints`], rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
+    // 下面這行的 ] 已經被我改回 ) 了！
+    try { await set(ref(rtdb, `users/${uid}/rankPoints`), rankPoints); } catch(e) { console.warn("牌位分數同步延遲", e); }
     try {
         const weekId = window.getCurrentWeekId();
         await set(ref(rtdb, `leaderboard/week_${weekId}/${uid}`), {
