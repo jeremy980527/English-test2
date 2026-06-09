@@ -3538,3 +3538,27 @@ window.confirmArenaSetup = async function() {
     let payload = { words: selectedWords, mode: mode };
     window.triggerArenaStart(payload);
 };
+
+
+// ==========================================
+// 20. 闖關地圖：修改計畫與重置進度機制
+// ==========================================
+window.openEditCampaignPlan = function() {
+    window.SilenModal.confirm(`⚠️ 嚴重警告 ⚠️\n\n一旦重新設定路線，您當前「學測 Lv.${window.currentCampaignLevel}」的【所有闖關進度】將會完全重置歸零！\n\n確定要重新設定嗎？`).then(agreed => {
+        if (agreed) {
+            // 1. 刪除當前 Level 的進度
+            if (window.campaignData && window.campaignData['lv' + window.currentCampaignLevel]) {
+                delete window.campaignData['lv' + window.currentCampaignLevel];
+                localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+            }
+            
+            // 2. 觸發雲端同步，告訴伺服器這個 Level 被重置了
+            if (window.currentUser && typeof window.saveData === 'function') {
+                window.saveData(); 
+            }
+
+            // 3. 強制觸發當前 Level 的問卷彈窗
+            window.switchCampaignLevel(window.currentCampaignLevel);
+        }
+    });
+};
