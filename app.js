@@ -3612,27 +3612,26 @@ window.SilenSettings.render = function() {
     originalRenderSettings.call(this);
     const elVolume = document.getElementById('set-volume');
     const elVolumeDisplay = document.getElementById('volume-display');
+
+    // 【手機版專屬修復】：確保滑動結束後正確觸發中樞發聲
+    const handleVolumeChange = () => {
+        localStorage.setItem('sv_volume', window.sysVolume);
+        // 強制開啟發聲權限，並呼叫中樞發聲函數，確保 AndroidBridge 或 Web 都能正確響應
+        window.forceSpeak = true;
+        window.speakEnglishWord("Silen Vocab");
+    };
+
     if (elVolume) {
         elVolume.value = window.sysVolume;
         if (elVolumeDisplay) elVolumeDisplay.innerText = Math.round(window.sysVolume * 100) + '%';
         
-        // 綁定拉動事件，即時更新數字
         elVolume.oninput = (e) => {
             window.sysVolume = parseFloat(e.target.value);
             if (elVolumeDisplay) elVolumeDisplay.innerText = Math.round(window.sysVolume * 100) + '%';
         };
         
-        // 拉動結束後，記憶設定並播放測試音
-        elVolume.onchange = (e) => {
-            localStorage.setItem('sv_volume', window.sysVolume);
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let u = new SpeechSynthesisUtterance("Silen Vocab");
-                u.lang = 'en-US';
-                u.volume = window.sysVolume;
-                window.speechSynthesis.speak(u);
-            }
-        };
+        elVolume.onchange = handleVolumeChange;
+        elVolume.ontouchend = handleVolumeChange; // 確保手機觸控放開時能完美觸發
     }
 };
 
@@ -3640,14 +3639,21 @@ window.SilenSettings.render = function() {
 const origSpeakEnglishWord = window.speakEnglishWord;
 window.speakEnglishWord = function(word) {
     if (!autoPronounce && !window.forceSpeak) return; 
+    
     if (window.AndroidBridge && typeof window.AndroidBridge.speak === 'function') {
-        try { window.AndroidBridge.speak(word); } catch (e) {}
+        try { 
+            // 【核心修復】：將 JavaScript 的音量數值傳遞給 Android 原生層
+            window.AndroidBridge.speak(word, window.sysVolume); 
+        } catch (e) {
+            // 為了相容舊版還沒更新 Java 代碼的 App，做個退路
+            try { window.AndroidBridge.speak(word); } catch(err) {}
+        }
     } else if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'en-US'; 
         utterance.rate = 0.95; 
-        utterance.volume = window.sysVolume; // 應用自訂音量
+        utterance.volume = window.sysVolume; // 應用網頁端音量
         window.speechSynthesis.speak(utterance);
     }
     window.forceSpeak = false;
@@ -3655,7 +3661,6 @@ window.speakEnglishWord = function(word) {
 
 // --- 零碎時間防護：闖關中途存檔 (Checkpoint) ---
 window.saveMasteryCheckpoint = function() {
-    // 只有在學測闖關模式，且題庫不為空時才執行靜默存檔
     if (!window.isCampaignMode || !masteryPool || masteryPool.length === 0) return;
     let cp = {
         isCampaignMode: window.isCampaignMode,
@@ -3675,28 +3680,24 @@ window.clearMasteryCheckpoint = function() {
     localStorage.removeItem('sv_mastery_cp');
 };
 
-// 攔截：每次答對跳換下一題時，自動靜默存檔
 const originalNextMasteryTurn2 = window.nextMasteryTurn;
 window.nextMasteryTurn = function() {
     originalNextMasteryTurn2();
     window.saveMasteryCheckpoint();
 };
 
-// 攔截：成功通關結算時，清除存檔
 const origFinalizeSession = window.finalizeMasterySession;
 window.finalizeMasterySession = function() {
     window.clearMasteryCheckpoint();
     origFinalizeSession();
 };
 
-// 攔截：點擊地圖關卡時檢查是否有未完成的存檔
 const origStartCampaignNode2 = window.startCampaignNode;
 window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
     let cpJson = localStorage.getItem('sv_mastery_cp');
     if (cpJson) {
         try {
             let cp = JSON.parse(cpJson);
-            // 檢查是否是點擊「同一個」未完成的關卡
             if (cp.isCampaignMode && cp.campaignLevel === window.currentCampaignLevel && cp.campaignNode === nodeIndex) {
                 let resume = await window.SilenModal.confirm("💾 發現中斷的學習紀錄！\n\n您上次在這個關卡挑戰到一半，是否要從中斷的地方繼續？\n\n(選擇「取消」將放棄舊進度並重新開始)");
                 if (resume) {
@@ -3708,11 +3709,9 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
             }
         } catch(e) { window.clearMasteryCheckpoint(); }
     }
-    // 如果沒有存檔或玩家放棄舊存檔，走原本的流程載入全新單字
     origStartCampaignNode2(nodeIndex, type, part, levelIndex);
 };
 
-// 負責從存檔中無縫恢復畫面與狀態的神奇函數
 window.resumeMasterySession = function(cp) {
     window.isCampaignMode = cp.isCampaignMode;
     window.currentCampaignLevel = cp.campaignLevel;
@@ -3723,7 +3722,6 @@ window.resumeMasterySession = function(cp) {
     pendingMasteredWords = cp.pendingMasteredWords || [];
     window.currentBook = cp.currentBook;
 
-    // 將暫存書放回背包，確保邏輯不會報錯
     const existingIndex = window.books.findIndex(b => b.id === 'campaign_temp');
     if (existingIndex !== -1) window.books[existingIndex] = cp.currentBook;
     else window.books.push(cp.currentBook);
@@ -3749,7 +3747,5 @@ window.resumeMasterySession = function(cp) {
     document.getElementById('silen-modal-overlay').classList.add('hidden');
     window.switchView('mastery'); 
     window.updateMasteryProgress(); 
-    
-    // 恢復後直接執行下一回合，重繪畫面
     window.nextMasteryTurn();
 };
