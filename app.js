@@ -3348,9 +3348,20 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
         let targetWords = [];
 
         if (type === 'normal') {
-            // 每關從對應位置切割，不重複
-            const startIdx = (nodeIndex - 1) * wordsPerNode;
-            targetWords = allWords.slice(startIdx, startIdx + wordsPerNode);
+            // 用 level + nodeIndex 當 seed，讓同一關每次進去都抽到一樣的單字，但不同關不重複
+            const seededShuffle = (arr, seed) => {
+                let a = [...arr];
+                let s = seed;
+                for (let i = a.length - 1; i > 0; i--) {
+                    s = (s * 1664525 + 1013904223) & 0xffffffff;
+                    const j = Math.abs(s) % (i + 1);
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            };
+            const seed = window.currentCampaignLevel * 1000 + nodeIndex;
+            const shuffled = seededShuffle(allWords, seed);
+            targetWords = shuffled.slice(0, wordsPerNode);
         } else if (type === 'midterm') {
             // 期中考：該 part 前半段的單字
             const partStart = (part - 1) * data.nodesPerPart * wordsPerNode;
