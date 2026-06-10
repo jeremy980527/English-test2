@@ -3186,6 +3186,7 @@ window.fetchCampaignVocab = async function(level) {
     return data;
 };
 
+// --- 監聽學習週期並計算 (固定節奏版) ---
 document.getElementById('campaign-target-months')?.addEventListener('input', async function(e) {
     let months = parseInt(e.target.value);
     if (isNaN(months) || months < 1) months = 1;
@@ -3197,10 +3198,14 @@ document.getElementById('campaign-target-months')?.addEventListener('input', asy
     try {
         const words = await window.fetchCampaignVocab(window.currentCampaignLevel);
         const totalWords = words.length;
-        const totalDays = months * 30;
-        const parts = 6;
-        const nodesPerPart = Math.ceil(totalDays / parts);
-        const wordsPerNode = Math.ceil(totalWords / (nodesPerPart * parts));
+        const totalDays = months * 30; // 每天一關
+
+        // 算出每天的單字量
+        const wordsPerNode = Math.ceil(totalWords / totalDays);
+
+        // 新邏輯：固定每 6 關組成一個大 PART (含 1次期中 + 1次期末)
+        const normalNodesPerPart = 6;
+        const totalParts = Math.ceil(totalDays / normalNodesPerPart);
 
         resultEl.innerHTML = `
             <div style="width: 100%; background: rgba(0,188,212,0.08); border: 1px solid rgba(0,188,212,0.2); border-radius: 12px; padding: 16px 20px; text-align: left;">
@@ -3209,21 +3214,20 @@ document.getElementById('campaign-target-months')?.addEventListener('input', asy
                     <span style="font-size: 1rem; color: #00bcd4; font-weight: 600;">${totalWords} 個單字</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
-                    <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">學習期限</span>
-                    <span style="font-size: 1rem; color: var(--text-main); font-weight: 600;">${months} 個月</span>
+                    <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">總通關天數</span>
+                    <span style="font-size: 1rem; color: var(--text-main); font-weight: 600;">${totalDays} 天 (關)</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.5px;">每關單字數</span>
-                    <span style="font-size: 1.2rem; color: #fff; font-weight: 700;">${wordsPerNode} 個</span>
+                    <span style="font-size: 1.2rem; color: #fff; font-weight: 700;">約 ${wordsPerNode} 個</span>
                 </div>
             </div>
         `;
 
         window.tempCampaignPlan = {
             months, totalDays, totalWords,
-            wordsPerNode, nodesPerPart,
-            levelsPerPart: nodesPerPart,
-            currentLevel: 1
+            wordsPerNode, totalParts,
+            currentLevel: 1 // 總地圖進度指標
         };
     } catch(err) {
         resultEl.innerHTML = `<span style="color:#ff4444">題庫讀取失敗，請確認網路連線。</span>`;
@@ -3270,40 +3274,45 @@ window.editCampaignPlan = function() {
         }
     });
 };
-// --- 3. 渲染極簡闖關地圖 ---
+
+// --- 3. 渲染極簡闖關地圖 (固定節奏版) ---
 window.renderCampaignMap = function() {
     const container = document.getElementById('campaign-map-container');
     container.innerHTML = '';
     let data = window.campaignData['lv' + window.currentCampaignLevel];
     if(!data) return;
-    let globalNodeIndex = 1;
+    
+    let globalMapIndex = 1; // 控制進度解鎖用的全域指標
+    let normalNodeIndex = 1; // 單純顯示「第幾天(關)」的數字
 
-    for (let p = 1; p <= 6; p++) {
+    for (let p = 1; p <= data.totalParts; p++) {
         let divider = document.createElement('div');
         divider.className = 'campaign-part-divider';
         divider.innerHTML = `<span>PART 0${p}</span>`;
         container.appendChild(divider);
 
-        for (let l = 1; l <= data.levelsPerPart; l++) {
-            let isMidterm = (l === Math.floor(data.levelsPerPart / 2));
-            let isFinal = (l === data.levelsPerPart);
+        // 這個 Part 有幾個普通關卡 (最後一個 Part 可能不滿 6 關)
+        let nodesInThisPart = Math.min(6, data.totalDays - (p - 1) * 6);
 
-            container.appendChild(createNodeHTML(globalNodeIndex, 'normal', p, l, data));
-            globalNodeIndex++;
+        for (let i = 1; i <= nodesInThisPart; i++) {
+            container.appendChild(createNodeHTML(globalMapIndex, 'normal', p, normalNodeIndex, data));
+            globalMapIndex++;
+            normalNodeIndex++;
 
-            if (isMidterm) {
-                container.appendChild(createNodeHTML(globalNodeIndex, 'midterm', p, l, data));
-                globalNodeIndex++;
+            // 固定節奏：每滿 3 關必有一次期中考
+            if (i === 3) {
+                container.appendChild(createNodeHTML(globalMapIndex, 'midterm', p, null, data));
+                globalMapIndex++;
             }
-
-            if (isFinal) {
-                container.appendChild(createNodeHTML(globalNodeIndex, 'final', p, l, data));
-                globalNodeIndex++;
+            // 固定節奏：滿 6 關 (或是這個 Part 結束時) 有一次期末考
+            if (i === nodesInThisPart) {
+                container.appendChild(createNodeHTML(globalMapIndex, 'final', p, null, data));
+                globalMapIndex++;
             }
         }
     }
 
-    document.getElementById('campaign-progress-text').innerText = `目前進度：第 ${data.currentLevel} 關 / 總計 ${globalNodeIndex - 1} 關`;
+    document.getElementById('campaign-progress-text').innerText = `目前進度：第 ${data.currentLevel} 關 / 總計 ${globalMapIndex - 1} 關`;
 
     setTimeout(() => {
         let currentEl = document.querySelector('.campaign-node.current');
@@ -3313,28 +3322,38 @@ window.renderCampaignMap = function() {
     }, 300);
 };
 
-function createNodeHTML(nodeIdx, type, part, level, data) {
-    let statusClass = nodeIdx < data.currentLevel ? 'completed' : (nodeIdx === data.currentLevel ? 'current' : 'locked');
+function createNodeHTML(mapIdx, type, part, normalIdx, data) {
+    let statusClass = mapIdx < data.currentLevel ? 'completed' : (mapIdx === data.currentLevel ? 'current' : 'locked');
     let isBoss = type !== 'normal';
     
     let node = document.createElement('div');
     node.className = `campaign-node ${isBoss ? 'boss' : ''} ${statusClass}`;
     
-    let content = isBoss ? (type === 'midterm' ? '期中' : '期末') : nodeIdx;
+    let content = isBoss ? (type === 'midterm' ? '期中' : '期末') : normalIdx;
     node.innerHTML = `<span class="node-content">${content}</span>`;
     
     if (statusClass !== 'locked') {
-        node.onclick = () => window.startCampaignNode(nodeIdx, type, part, level);
+        node.onclick = () => window.startCampaignNode(mapIdx, type, part, normalIdx);
     } else {
         node.onclick = () => window.SilenModal.alert("🔒 該關卡尚未解鎖！請先完成前置關卡。");
     }
     return node;
 }
 
+// 實作輕量級的 Seed Random 產生器 (Mulberry32)
+function seededRandomGenerator(a) {
+    return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+
 // --- 4. 啟動關卡與題海切割 ---
-window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
+window.startCampaignNode = async function(mapIndex, type, part, normalNodeIndex) {
     let data = window.campaignData['lv' + window.currentCampaignLevel];
-    if (nodeIndex < data.currentLevel) {
+    if (mapIndex < data.currentLevel) {
         let replay = await window.SilenModal.confirm("✅ 該關卡已完美通關！\n是否要重新複習一次？(複習無額外獎勵)");
         if (!replay) return;
     }
@@ -3348,46 +3367,44 @@ window.startCampaignNode = async function(nodeIndex, type, part, levelIndex) {
         let targetWords = [];
 
         if (type === 'normal') {
-            // 用 level + nodeIndex 當 seed，讓同一關每次進去都抽到一樣的單字，但不同關不重複
-            const seededShuffle = (arr, seed) => {
-                let a = [...arr];
-                let s = seed;
-                for (let i = a.length - 1; i > 0; i--) {
-                    s = (s * 1664525 + 1013904223) & 0xffffffff;
-                    const j = Math.abs(s) % (i + 1);
-                    [a[i], a[j]] = [a[j], a[i]];
-                }
-                return a;
-            };
-            const seed = window.currentCampaignLevel * 1000 + nodeIndex;
-            const shuffled = seededShuffle(allWords, seed);
-            targetWords = shuffled.slice(0, wordsPerNode);
+            // 切割出屬於這關的範圍
+            const startIdx = (normalNodeIndex - 1) * wordsPerNode;
+            let slicedWords = allWords.slice(startIdx, startIdx + wordsPerNode);
+            
+            // 【整合 Seeded Shuffle】：讓每天遇見的單字打亂，但重開同一關還是同樣一批
+            let seed = window.currentCampaignLevel * 1000 + normalNodeIndex;
+            let rand = seededRandomGenerator(seed);
+            
+            for (let i = slicedWords.length - 1; i > 0; i--) {
+                const j = Math.floor(rand() * (i + 1));
+                [slicedWords[i], slicedWords[j]] = [slicedWords[j], slicedWords[i]];
+            }
+            targetWords = slicedWords;
+
         } else if (type === 'midterm') {
-            // 期中考：該 part 前半段的單字
-            const partStart = (part - 1) * data.nodesPerPart * wordsPerNode;
-            const midCount = Math.floor(data.nodesPerPart / 2) * wordsPerNode;
+            // 期中考：從這個 Part 的最開頭，抓取 3 個普通關的範圍
+            const partStart = (part - 1) * 6 * wordsPerNode;
+            const midCount = 3 * wordsPerNode;
             targetWords = allWords.slice(partStart, partStart + midCount);
-            // 隨機抽取最多 20 題
-            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 20);
+            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 20); // 隨機抽 20 題驗收
         } else if (type === 'final') {
-            // 期末考：整個 part 的單字
-            const partStart = (part - 1) * data.nodesPerPart * wordsPerNode;
-            const fullCount = data.nodesPerPart * wordsPerNode;
+            // 期末考：抓取這個 Part 內所有的單字 (最多 6 關的量)
+            const partStart = (part - 1) * 6 * wordsPerNode;
+            const fullCount = 6 * wordsPerNode;
             targetWords = allWords.slice(partStart, partStart + fullCount);
-            // 隨機抽取最多 30 題
-            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 30);
+            targetWords = targetWords.sort(() => 0.5 - Math.random()).slice(0, 30); // 隨機抽 30 題驗收
         }
 
         if (targetWords.length === 0) targetWords = allWords.slice(0, wordsPerNode);
 
         window.isCampaignMode = true;
         window.campaignCurrentType = type;
-        window.campaignCurrentNode = nodeIndex;
+        window.campaignCurrentNode = mapIndex; // 使用全域指標存檔防重疊
 
         const tempBook = {
             id: 'campaign_temp',
             name: type === 'normal'
-                ? `闖關 第${nodeIndex}關`
+                ? `闖關 第${normalNodeIndex}天`
                 : (type === 'midterm' ? `PART 0${part} 期中測驗` : `PART 0${part} 期末測驗`),
             words: targetWords
         };
