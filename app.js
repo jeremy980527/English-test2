@@ -3275,13 +3275,23 @@ window.editCampaignPlan = function() {
     });
 };
 
-// --- 3. 渲染極簡闖關地圖 (固定節奏版) ---
+// --- 3. 渲染極簡闖關地圖 (固定節奏版 + 舊存檔相容) ---
 window.renderCampaignMap = function() {
     const container = document.getElementById('campaign-map-container');
+    if(!container) return;
     container.innerHTML = '';
+    
     let data = window.campaignData['lv' + window.currentCampaignLevel];
     if(!data) return;
-    
+
+    // 【核心修復】：如果抓到的是舊版存檔，自動幫它升級成新版格式！
+    if (!data.totalParts) {
+        data.wordsPerNode = data.wordsPerNode || data.wordsPerLevel || 10;
+        data.totalParts = Math.ceil((data.totalDays || 60) / 6);
+        window.campaignData['lv' + window.currentCampaignLevel] = data;
+        localStorage.setItem('sv_campaign_data', JSON.stringify(window.campaignData));
+    }
+
     let globalMapIndex = 1; // 控制進度解鎖用的全域指標
     let normalNodeIndex = 1; // 單純顯示「第幾天(關)」的數字
 
@@ -3292,7 +3302,7 @@ window.renderCampaignMap = function() {
         container.appendChild(divider);
 
         // 這個 Part 有幾個普通關卡 (最後一個 Part 可能不滿 6 關)
-        let nodesInThisPart = Math.min(6, data.totalDays - (p - 1) * 6);
+        let nodesInThisPart = Math.min(6, (data.totalDays || 60) - (p - 1) * 6);
 
         for (let i = 1; i <= nodesInThisPart; i++) {
             container.appendChild(createNodeHTML(globalMapIndex, 'normal', p, normalNodeIndex, data));
@@ -3312,7 +3322,10 @@ window.renderCampaignMap = function() {
         }
     }
 
-    document.getElementById('campaign-progress-text').innerText = `目前進度：第 ${data.currentLevel} 關 / 總計 ${globalMapIndex - 1} 關`;
+    const progressText = document.getElementById('campaign-progress-text');
+    if(progressText) {
+        progressText.innerText = `目前進度：第 ${data.currentLevel} 關 / 總計 ${globalMapIndex - 1} 關`;
+    }
 
     setTimeout(() => {
         let currentEl = document.querySelector('.campaign-node.current');
@@ -3322,6 +3335,7 @@ window.renderCampaignMap = function() {
     }, 300);
 };
 
+// 確保 createNodeHTML 緊接在後面
 function createNodeHTML(mapIdx, type, part, normalIdx, data) {
     let statusClass = mapIdx < data.currentLevel ? 'completed' : (mapIdx === data.currentLevel ? 'current' : 'locked');
     let isBoss = type !== 'normal';
