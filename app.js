@@ -739,12 +739,19 @@ window.addPhraseBookWithImport = function() {
 window.toggleExportMenu = function(event) { 
     if (event) event.stopPropagation();
     const menu = document.getElementById('export-menu');
-    if (menu) menu.classList.toggle('active'); 
+    if (menu) {
+        menu.classList.toggle('active'); 
+        menu.classList.toggle('hidden'); // 【修復 1】：同步切換 hidden 狀態
+    }
 };
 
 window.exportBook = function(type) {
     const book = window.books.find(b => b.id === currentBookId);
-    if (!book || book.words.length === 0) { window.SilenModal.alert("無可用數據匯出。"); window.toggleExportMenu(); return; }
+    if (!book || book.words.length === 0) { 
+        window.SilenModal.alert("無可用數據匯出。"); 
+        window.toggleExportMenu(); 
+        return; 
+    }
     
     const content = book.words.map(w => {
         if (w.pos && w.pos.trim() !== '') return `${w.en} - ${w.zh.join(' / ')} - ${w.pos}`;
@@ -752,12 +759,29 @@ window.exportBook = function(type) {
     }).join('\n');
     
     if (type === 'copy') {
-        if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(content).then(() => window.SilenModal.alert("已複製到剪貼簿。")).catch(() => window.SilenModal.prompt("請複製以下內容：", content)); } 
-        else { window.SilenModal.prompt("請複製以下內容：", content); }
+        if (navigator.clipboard && window.isSecureContext) { 
+            navigator.clipboard.writeText(content)
+                .then(() => window.SilenModal.alert("✅ 已成功複製到剪貼簿！"))
+                .catch(() => window.SilenModal.prompt("您的裝置封鎖了自動複製，請手動全選複製以下內容：", content)); 
+        } else { 
+            window.SilenModal.prompt("請手動全選複製以下內容：", content); 
+        }
     } else if (type === 'download') {
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${book.name || 'Export'}.txt`; 
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        try {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob); 
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = `${book.name || 'Export'}.txt`; 
+            document.body.appendChild(a); 
+            a.click(); 
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url);
+            // 【修復 2】：防呆提示，因為手機 App 版可能擋住 blob 下載
+            window.SilenModal.alert("📥 檔案下載指令已送出！\n\n(若您使用手機 App 發現無反應，請改用「複製文字」功能)");
+        } catch(e) {
+            window.SilenModal.prompt("您的裝置不支援直接下載檔案，請手動複製以下內容：", content);
+        }
     }
     window.toggleExportMenu();
 };
@@ -766,6 +790,7 @@ document.addEventListener('click', (event) => {
     const menu = document.getElementById('export-menu'); 
     if (menu && menu.classList.contains('active') && !menu.contains(event.target)) {
         menu.classList.remove('active');
+        menu.classList.add('hidden'); // 【修復 3】：點擊外部區域時，確保補上 hidden
     }
 });
 
@@ -778,7 +803,13 @@ window.deleteCurrentBook = function() {
 window.openEditBook = function(id) { 
     currentBookId = id; const book = window.books.find(b => b.id === id);
     document.getElementById('edit-book-name-input').value = book.name; document.getElementById('edit-book-tag-input').value = book.tag || '';
-    document.getElementById('export-menu').classList.remove('active'); 
+    
+    const menu = document.getElementById('export-menu');
+    if (menu) {
+        menu.classList.remove('active'); 
+        menu.classList.add('hidden'); // 【修復 4】：進入編輯畫面時強制隱藏選單
+    }
+    
     window.editingWordIndex = null;
     window.renderWordList(); window.switchView('edit'); 
 };
