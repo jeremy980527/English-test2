@@ -628,11 +628,12 @@ window.checkPublishLimit = async function() {
 
 window.openPublishModal = function() {
     if (!auth.currentUser) { window.SilenModal.alert("請先登入帳號以使用市場功能。"); return; }
-    const eligibleBooks = window.books.filter(b => !b.isStore && b.words.length >= 10);
+    // 【全新防斂財機制】：除了過濾掉商城包，也把學測單字 (!b.isGSAT) 徹底擋在市場門外
+    const eligibleBooks = window.books.filter(b => !b.isStore && !b.isGSAT && b.words.length >= 10);
     const container = document.getElementById('pub-book-list-container');
     container.innerHTML = '';
     if (eligibleBooks.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding:20px;">您目前沒有符合條件的單字簿可供上架！</div>';
+        container.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding:20px;">您目前沒有符合條件的單字簿可供上架！<br><br><span style="font-size:0.8rem;color:#ff9800;">(提示：學測單字庫無法上架至玩家市場)</span></div>';
     } else {
         eligibleBooks.forEach(b => {
             const div = document.createElement('div'); div.className = 'card book-item'; div.style.cursor = 'pointer';
