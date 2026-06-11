@@ -3925,3 +3925,46 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 });
+
+
+// ==========================================
+// 24. 全域資安升級：XSS 防禦與惡意代碼過濾
+// ==========================================
+
+// 核心淨化引擎：將危險的 HTML 標籤轉換為安全純文字
+window.sanitizeString = function(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+};
+
+// 攔截：手動新增單字時進行過濾
+if (typeof window.addWord === 'function') {
+    const origAddWord = window.addWord;
+    window.addWord = function() {
+        const enInput = document.getElementById('input-en');
+        const zhInput = document.getElementById('input-zh');
+        if (enInput) enInput.value = window.sanitizeString(enInput.value);
+        if (zhInput) zhInput.value = window.sanitizeString(zhInput.value);
+        origAddWord.apply(this, arguments);
+    };
+}
+
+// 攔截：批量匯入普通單字時進行過濾
+if (typeof window.addBookWithImport === 'function') {
+    const origAddBookWithImport = window.addBookWithImport;
+    window.addBookWithImport = function() {
+        const importContent = document.getElementById('import-content');
+        if (importContent) importContent.value = window.sanitizeString(importContent.value);
+        origAddBookWithImport.apply(this, arguments);
+    };
+}
+
+// 攔截：批量匯入片語時進行過濾
+if (typeof window.addPhraseBookWithImport === 'function') {
+    const origAddPhraseBookWithImport = window.addPhraseBookWithImport;
+    window.addPhraseBookWithImport = function() {
+        const importContent = document.getElementById('import-content-phrase');
+        if (importContent) importContent.value = window.sanitizeString(importContent.value);
+        origAddPhraseBookWithImport.apply(this, arguments);
+    };
+}
