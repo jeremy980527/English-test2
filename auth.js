@@ -708,14 +708,53 @@ window.renderMarketCatalog = function(marketBooks) {
         const card = document.createElement('div'); card.className = 'store-card';
         const isOwned = window.books.some(b => b.marketId === book.id);
         const myUid = auth.currentUser ? auth.currentUser.uid : '';
-        let btnHtml = isOwned ? `<button class="btn btn-small" style="background:#333; color:#aaa;" disabled>已擁有</button>` : 
-                     (book.authorUid === myUid ? `<button class="btn btn-small" style="background:#333; color:#aaa;" disabled>您的商品</button>` : 
-                     `<button class="btn btn-small" style="background:#fff; color:#000;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`);
+        
+        // 【核心修改】：判斷如果是自己的商品，顯示「管理」按鈕
+        let btnHtml = '';
+        if (book.authorUid === myUid) {
+            btnHtml = `<button class="btn btn-small btn-outline" style="border-color:#ff9800; color:#ff9800; margin:0;" onclick="window.manageMarketBook('${book.id}', ${book.price})">管理</button>`;
+        } else if (isOwned) {
+            btnHtml = `<button class="btn btn-small" style="background:#333; color:#aaa; margin:0;" disabled>已擁有</button>`;
+        } else {
+            btnHtml = `<button class="btn btn-small" style="background:#fff; color:#000; margin:0;" onclick="window.purchaseMarketBook('${book.id}', ${book.price}, '${book.bookName.replace(/'/g, "\\'")}', '${book.authorUid}')">${book.price} pts</button>`;
+        }
+        
         const safeBookName = book.bookName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const safeAuthorName = book.authorName.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const safeDesc = book.description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         card.innerHTML = `<div class="store-header"><h4 class="store-title">${safeBookName}</h4><div style="font-size: 0.8rem; color: #ff9800; border: 1px solid #ff9800; padding: 2px 6px; border-radius: 4px;">銷量: ${book.salesCount || 0}</div></div><div style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 10px;"><span style="background:#222; padding:2px 8px; border-radius:10px;">創作者: ${safeAuthorName}</span></div><div class="store-desc">${safeDesc} <br><span style="color:var(--text-sub); font-size: 0.8rem; opacity: 0.8;">(共 ${book.wordCount} 詞)</span></div><div style="display: flex; justify-content: flex-end;">${btnHtml}</div>`;
         container.appendChild(card);
+    });
+};
+
+// 【全新】：創作者管理商品邏輯 (改價 / 下架)
+window.manageMarketBook = function(marketBookId, currentPrice) {
+    window.SilenModal.prompt("⚙️ 管理您的商品：\n\n請輸入新的價格 (最低 50)。\n(⚠️ 若輸入 0 將永久下架此商品)", currentPrice.toString()).then(async input => {
+        if (input === null) return; 
+        const newPrice = parseInt(input.trim());
+        if (isNaN(newPrice)) { window.SilenModal.alert("請輸入有效的數字！"); return; }
+
+        if (newPrice === 0) {
+            // 輸入 0 觸發下架流程
+            window.SilenModal.confirm("確定要將此單字簿【永久下架】嗎？\n\n下架後其他玩家將無法再購買，但已購買的玩家不會受影響。").then(async agreed => {
+                if (agreed) {
+                    window.SilenModal.alert("商品下架中...");
+                    try {
+                        await deleteDoc(doc(db, "market_books", marketBookId));
+                        window.SilenModal.alert("✅ 已成功下架！").then(() => window.openMarket());
+                    } catch(e) { window.SilenModal.alert("下架失敗，請檢查網路連線。"); }
+                }
+            });
+        } else if (newPrice < 50) {
+            window.SilenModal.alert("定價最低需為 50 點數。");
+        } else if (newPrice !== currentPrice) {
+            // 更新價格流程
+            window.SilenModal.alert("價格更新中...");
+            try {
+                await updateDoc(doc(db, "market_books", marketBookId), { price: newPrice });
+                window.SilenModal.alert("✅ 價格已成功更新！").then(() => window.openMarket());
+            } catch(e) { window.SilenModal.alert("更新失敗，請檢查網路連線。"); }
+        }
     });
 };
 
