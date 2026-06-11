@@ -807,7 +807,21 @@ window.openEditBook = function(id) {
     const menu = document.getElementById('export-menu');
     if (menu) {
         menu.classList.remove('active'); 
-        menu.classList.add('hidden'); // 【修復 4】：進入編輯畫面時強制隱藏選單
+        menu.classList.add('hidden');
+    }
+
+    // 【全新防斂財機制】：如果是學測單字，按鈕變暗且無法點擊
+    const exportBtn = document.getElementById('edit-export-btn');
+    if (exportBtn) {
+        if (book.isGSAT) {
+            exportBtn.style.opacity = '0.3';
+            exportBtn.style.pointerEvents = 'none';
+            exportBtn.innerText = '禁匯出';
+        } else {
+            exportBtn.style.opacity = '1';
+            exportBtn.style.pointerEvents = 'auto';
+            exportBtn.innerText = '匯出';
+        }
     }
     
     window.editingWordIndex = null;
