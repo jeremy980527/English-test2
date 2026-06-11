@@ -3968,3 +3968,101 @@ if (typeof window.addPhraseBookWithImport === 'function') {
         origAddPhraseBookWithImport.apply(this, arguments);
     };
 }
+
+
+// ==========================================
+// 25. 連接力訓練防黑屏與計分機制修正
+// ==========================================
+
+// --- 1. 終極防黑屏機制 (攔截進度切換) ---
+const origNextTurnForBlackScreen = window.nextMasteryTurn;
+window.nextMasteryTurn = function() {
+    // 【針對連接力訓練】：如果連連看 (Level 2) 因為字數太少會當機，我們直接讓連接力模式跳過連連看，只專注於雙向選擇題
+    if (window.masteryModeType === 'connection' && window.masteryPool) {
+        window.masteryPool.forEach(w => {
+            if (w.level === 2 && !w.mastered) {
+                w.mastered = true; // 直接標記為過關，避免進入錯誤的連連看階段
+            }
+        });
+    }
+
+    // 執行原本的切換邏輯
+    origNextTurnForBlackScreen.apply(this, arguments);
+
+    // 【全域防黑屏安全網】：如果畫面變全黑 (所有練習區塊都呈現 hidden 狀態)，強制跳過卡住的單字
+    setTimeout(() => {
+        const view = document.getElementById('view-mastery');
+        if (view && !view.classList.contains('hidden')) {
+            const visible = view.querySelectorAll('.practice-area:not(.hidden)');
+            const success = document.getElementById('mastery-success-area');
+            
+            // 如果畫面上沒有任何題目，且還沒結算
+            if (visible.length === 0 && (success && success.classList.contains('hidden'))) {
+                console.warn("🛡️ 防黑屏機制啟動：跳過無法載入的題型");
+                if (window.masteryPool) {
+                    // 找出卡住的那一個未精通單字，強制標記過關以打破死結
+                    let unmastered = window.masteryPool.filter(w => !w.mastered);
+                    if (unmastered.length > 0) {
+                        unmastered[0].mastered = true; 
+                    }
+                    window.nextMasteryTurn(); // 重新觸發下一題
+                }
+            }
+        }
+    }, 150);
+};
+
+// --- 2. 修正連接力訓練的結算計分 (移除牌位分，改給商城點數) ---
+const origFinalizeSessionForConn = window.finalizeMasterySession;
+window.finalizeMasterySession = function() {
+    if (typeof window.clearMasteryCheckpoint === 'function') {
+        window.clearMasteryCheckpoint();
+    }
+    
+    // 如果是「連接力訓練」
+    if (window.masteryModeType === 'connection') {
+        const successArea = document.getElementById('mastery-success-area');
+        const titleEl = document.getElementById('mastery-success-title');
+        
+        // 隱藏所有練習區
+        document.querySelectorAll('#view-mastery .practice-area').forEach(el => el.classList.add('hidden'));
+        
+        if (successArea && titleEl) {
+            successArea.classList.remove('hidden');
+            titleEl.innerText = "連接力訓練完成！";
+        }
+        
+        // 改發商城點數：每一個單字給予 10 點
+        let wordsCount = window.masteryPool ? window.masteryPool.length : 10;
+        let pts = wordsCount * 10; 
+        
+        if (typeof window.addStorePoints === 'function') {
+            // 使用 'normal' 模式來發放點數，對接 VPS API
+            window.addStorePoints(pts, 'normal', wordsCount, true);
+        }
+        
+        setTimeout(() => {
+            window.SilenModal.alert(`🎉 訓練完成！\n\n獲得了 ${pts} 點商城點數獎勵！\n(註：連接力訓練不列入牌位積分)`);
+        }, 500);
+        
+        if (typeof window.saveData === 'function') window.saveData();
+        return; // 提前終止，絕對不執行後續會給牌位分的邏輯
+    }
+    
+    // 如果是「綜合精通模式」，則照常執行原本的牌位給分邏輯
+    origFinalizeSessionForConn.apply(this, arguments);
+};
+
+// --- 3. UI 修正：更改首頁按鈕的文字提示 ---
+const updateConnBtnText = () => {
+    const connBtn = document.querySelector('.mastery-btn-conn');
+    if (connBtn) {
+        connBtn.innerHTML = '連結力訓練<br><span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(獲取商城點數)</span>';
+    }
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateConnBtnText);
+} else {
+    updateConnBtnText();
+}
