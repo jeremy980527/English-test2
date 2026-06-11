@@ -3836,3 +3836,92 @@ window.resumeMasterySession = function(cp) {
     window.updateMasteryProgress(); 
     window.nextMasteryTurn();
 };
+
+// ==========================================
+// 23. 連接力訓練黑屏修復與分數機制調整
+// ==========================================
+
+// --- 1. 修復連連看 (Matching) 的黑屏當機問題 ---
+if (typeof window.renderMasteryMatch !== 'undefined') {
+    const originalRenderMatch = window.renderMasteryMatch;
+    window.renderMasteryMatch = function() {
+        try {
+            // 防呆機制：如果準備進入連連看的單字太少 (小於2個)，直接強制跳過這個階段，進入下一題
+            if (!window.pendingMasteredWords || window.pendingMasteredWords.length < 2) {
+                console.warn("單字數量不足以生成連連看，自動跳過此階段");
+                window.masteryMatchPassCount = window.pendingMasteredWords ? window.pendingMasteredWords.length : 0;
+                setTimeout(() => window.nextMasteryTurn(), 100);
+                return;
+            }
+            // 若數量正常，執行原本的連連看渲染邏輯
+            originalRenderMatch.call(this);
+        } catch (error) {
+            console.error("連連看渲染失敗，啟動防崩潰機制:", error);
+            // 發生錯誤時的終極防黑屏：直接當作過關，跳入下一題
+            window.masteryMatchPassCount = 999; 
+            window.nextMasteryTurn();
+        }
+    };
+}
+
+// --- 2. 攔截結算畫面：拔除連接力的牌位分數，改發商城點數 ---
+const originalFinalizeSession3 = window.finalizeMasterySession;
+window.finalizeMasterySession = function() {
+    // 呼叫我們之前寫好的 checkpoint 清除邏輯
+    window.clearMasteryCheckpoint();
+
+    const successArea = document.getElementById('mastery-success-area');
+    const titleEl = document.getElementById('mastery-success-title');
+    
+    // 隱藏所有練習區域
+    document.querySelectorAll('#view-mastery .practice-area').forEach(el => el.classList.add('hidden'));
+    
+    if (successArea && titleEl) {
+        successArea.classList.remove('hidden');
+        
+        // 判斷當前模式
+        if (window.masteryModeType === 'connection') {
+            titleEl.innerText = "連接力訓練完成！";
+            // 連接力訓練：不給牌位分，給普通商城點數 (例如 50 點)
+            let rewardPoints = 50;
+            if (typeof window.addStorePoints === 'function') {
+                window.addStorePoints(rewardPoints, 'normal', 1, true);
+            }
+            setTimeout(() => {
+                window.SilenModal.alert(`🎉 訓練完成！\n\n獲得了 ${rewardPoints} 點商城點數獎勵！\n(註：連接力訓練不列入牌位積分)`);
+            }, 500);
+            
+        } else if (window.masteryModeType === 'comprehensive') {
+            titleEl.innerText = "綜合精通模式完成！";
+            // 綜合精通模式：給予牌位積分與商城點數
+            let pts = 100;
+            window.myRankPoints = (window.myRankPoints || 0) + pts;
+            
+            if (typeof window.addStorePoints === 'function') {
+                window.addStorePoints(pts, 'mastery', 1, true); // 給商城點數
+            }
+            if (typeof window.uploadScoreToCloud === 'function') {
+                window.uploadScoreToCloud(window.myRankPoints, window.myStorePoints); // 上傳牌位
+            }
+            
+            setTimeout(() => {
+                window.SilenModal.alert(`🎉 完美精通！\n\n牌位積分 +${pts}\n商城點數 +${pts}`);
+            }, 500);
+        }
+        
+        // 觸發全域存檔
+        if (typeof window.saveData === 'function') window.saveData();
+    }
+};
+
+// --- 3. UI 修改：把首頁按鈕的文字修正 ---
+// 因為不能直接改 HTML，我們在 JS 載入時動態把首頁按鈕的提示文字改掉
+document.addEventListener("DOMContentLoaded", () => {
+    const connBtn = document.querySelector('.mastery-btn-conn');
+    if (connBtn) {
+        connBtn.innerHTML = `
+            連結力訓練<br>
+            <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7; letter-spacing: 0px;">(獲取商城點數)</span>
+        `;
+    }
+});
