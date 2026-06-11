@@ -941,3 +941,30 @@ window.handleOpponentFled = function() {
     window.currentArenaRoom = null; window.isArenaHost = false; window.matchStarted = false;
     window.SilenModal.alert("對手落荒而逃！\n\n不戰而勝，您贏得了這場對決！").then(() => window.switchView('arena'));
 };
+
+// --- 系統公告廣播接收器 ---
+window.listenForAnnouncements = function() {
+    if (typeof rtdb === 'undefined') return;
+    
+    const announceRef = ref(rtdb, 'system/announcement');
+    onValue(announceRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        // 如果有公告，且包含時間戳記
+        if (data && data.timestamp) {
+            const lastRead = localStorage.getItem('sv_last_announcement_id');
+            const currentId = data.timestamp.toString();
+            
+            // 如果這則公告的 ID 跟本機紀錄的不同，代表是「未讀」的新公告
+            if (lastRead !== currentId) {
+                // 延遲 1 秒顯示，避免跟剛登入時的畫面切換動畫衝突
+                setTimeout(() => {
+                    window.SilenModal.alert(`📢 系統公告：${data.title}\n\n${data.content}`).then(() => {
+                        // 玩家點擊確認後，將這則公告標記為「已讀」
+                        localStorage.setItem('sv_last_announcement_id', currentId);
+                    });
+                }, 1000);
+            }
+        }
+    });
+};
