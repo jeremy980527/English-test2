@@ -191,6 +191,9 @@ setInterval(() => {
 // 全站身份驗證狀態變更 (Auth State)
 // =====================================
 onAuthStateChanged(auth, (user) => {
+
+    window.listenForAnnouncements();
+    
     const authContainer = document.getElementById('auth-container');
     const mainHeader = document.getElementById('main-header');
     if (!authContainer || !mainHeader) return;
