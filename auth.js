@@ -579,12 +579,22 @@ window.revokeAnnouncement = async function() {
     });
 };
 
+// =====================================
+// 管理員：自訂賽季結算
+// =====================================
 window.settleLastSeason = async function() {
-    const confirmed = await window.SilenModal.confirm("⚠️ 終極警告\n\n確定要進行賽季結算嗎？\n系統將自動發放徽章給前三名，並且【強制清空】全伺服器玩家的牌位積分！");
-    if (!confirmed) return;
+    if (!window.isAdmin) return;
+    const defaultWeek = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : 1;
+    
+    // 讓管理員可以自己輸入要結算第幾賽季
+    const targetWeekStr = await window.SilenModal.prompt("🏆 賽季結算與發放\n\n請輸入要結算的「賽季/週數」(數字)：\n(將發放該賽季前三名徽章，並清空全服積分)", defaultWeek.toString());
+    
+    if (!targetWeekStr) return;
+    const targetWeek = parseInt(targetWeekStr);
+    if (isNaN(targetWeek) || targetWeek < 1) return window.SilenModal.alert("請輸入有效的數字！");
 
-    // 取得當前賽季的 ID
-    const currentWeekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : '未知';
+    const confirmed = await window.SilenModal.confirm(`⚠️ 終極警告\n\n確定要結算【第 ${targetWeek} 賽季】嗎？`);
+    if (!confirmed) return;
 
     window.SilenModal.alert("伺服器結算中，請勿關閉視窗...");
 
@@ -592,27 +602,42 @@ window.settleLastSeason = async function() {
         const idToken = await auth.currentUser.getIdToken();
         const res = await fetch(`${API_BASE}/api/settleseason`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${idToken}`
-            },
-            body: JSON.stringify({ weekId: currentWeekId })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ weekId: targetWeek })
         });
-
         const data = await res.json();
-        
         if (data.success) {
             window.SilenModal.alert(`✅ 結算大成功！\n\n${data.message}`);
-            // 結算後把畫面上的分數歸零，並重新整理列表
             window.myRankPoints = 0;
             if (typeof window.updateMyPresence === 'function') window.updateMyPresence();
             if (typeof window.openLeaderboard === 'function') window.openLeaderboard();
-        } else {
-            window.SilenModal.alert("❌ 結算失敗：" + data.error);
-        }
-    } catch (error) {
-        window.SilenModal.alert("❌ 伺服器連線失敗，請檢查網路。\n" + error.message);
-    }
+        } else window.SilenModal.alert("❌ 結算失敗：" + data.error);
+    } catch (error) { window.SilenModal.alert("❌ 連線失敗：" + error.message); }
+};
+
+// =====================================
+// 管理員：撤回誤發的徽章
+// =====================================
+window.revokeSeasonBadges = async function() {
+    if (!window.isAdmin) return;
+    const targetWeekStr = await window.SilenModal.prompt("🗑️ 撤回徽章\n\n請輸入要撤回的「賽季/週數」(數字)：\n(系統將刪除全伺服器該賽季的所有徽章)", "");
+    
+    if (!targetWeekStr) return;
+    const targetWeek = parseInt(targetWeekStr);
+    if (isNaN(targetWeek) || targetWeek < 1) return window.SilenModal.alert("請輸入有效的數字！");
+
+    window.SilenModal.alert("正在全服掃描並撤回中...");
+    try {
+        const idToken = await auth.currentUser.getIdToken();
+        const res = await fetch(`${API_BASE}/api/revokeseason`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ weekId: targetWeek })
+        });
+        const data = await res.json();
+        if (data.success) window.SilenModal.alert(`✅ 撤回成功！\n\n${data.message}`).then(() => window.location.reload());
+        else window.SilenModal.alert("❌ 撤回失敗：" + data.error);
+    } catch (e) { window.SilenModal.alert("❌ 連線失敗：" + e.message); }
 };
 
 window.resetAllRankPoints = async function() {
