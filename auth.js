@@ -453,77 +453,83 @@ window.updateCloudUserName = async function(newName) {
 };
 
 // =====================================
-// 替換 1：個人主頁徽章渲染
+// 替換 1：個人主頁徽章渲染 (超帥發光版)
 // =====================================
 window.renderMyBadges = function(badges) {
     const container = document.getElementById('profile-badges-container');
     if (!container) return;
     container.innerHTML = '';
+    container.style.display = 'flex'; container.style.gap = '10px'; container.style.flexWrap = 'wrap';
     
-    // 【核心修改】：相容新的 Object 格式，並轉換回陣列排序
     const myBadges = badges || {};
     const badgeArray = Object.values(myBadges).sort((a, b) => b.timestamp - a.timestamp);
 
     if (badgeArray.length === 0) {
-        container.innerHTML = `
-            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
-            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
-            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
-        `;
+        container.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 10px 0;">尚未獲得</div>';
         return;
     }
     
     badgeArray.forEach(badge => {
         const slot = document.createElement('div');
-        slot.className = 'badge-slot';
+        const borderColor = badge.rank === 1 ? '#FFD700' : (badge.rank === 2 ? '#E0E0E0' : '#CD7F32');
+        const bgGlow = badge.rank === 1 ? 'rgba(255, 215, 0, 0.15)' : (badge.rank === 2 ? 'rgba(224, 224, 224, 0.15)' : 'rgba(205, 127, 50, 0.15)');
         
-        // 依據名次給予金、銀、銅專屬顏色
-        const borderColor = badge.rank === 1 ? '#f1c40f' : (badge.rank === 2 ? '#bdc3c7' : '#cd7f32');
+        slot.style.width = '60px'; slot.style.height = '60px';
+        slot.style.borderRadius = '50%'; slot.style.border = `2px solid ${borderColor}`;
+        slot.style.background = bgGlow; slot.style.boxShadow = `0 0 12px ${bgGlow}`;
+        slot.style.display = 'flex'; slot.style.flexDirection = 'column';
+        slot.style.justifyContent = 'center'; slot.style.alignItems = 'center';
+        
         const medalIcon = badge.rank === 1 ? '🥇' : (badge.rank === 2 ? '🥈' : '🥉');
-        
-        slot.style.border = `2px solid ${borderColor}`;
-        slot.style.color = borderColor;
-        slot.style.fontWeight = 'bold';
-        slot.innerHTML = `<div style="font-size: 1.2rem; margin-bottom: 5px;">${medalIcon}</div><div style="font-size: 0.7rem; color: var(--text-sub);">第 ${badge.season} 週</div>`;
+        slot.innerHTML = `<div style="font-size: 1.6rem; line-height: 1.2;">${medalIcon}</div><div style="font-size: 0.7rem; color: ${borderColor}; font-weight: bold; letter-spacing: 1px;">S${badge.season}</div>`;
         container.appendChild(slot);
     });
 };
-
 // =====================================
-// 替換 2：公開主頁 (別人看你) 徽章渲染
+// 替換 2：公開主頁 (別人看你) 徽章渲染 (完整防呆版)
 // =====================================
 window.fetchPublicBadges = async function(uid) {
     const badgeContainer = document.getElementById('public-badges-container');
+    if (!badgeContainer) return;
+
     try {
         const snap = await get(ref(rtdb, `users/${uid}/badges`));
         badgeContainer.innerHTML = '';
+        badgeContainer.style.display = 'flex'; 
+        badgeContainer.style.gap = '10px'; 
+        badgeContainer.style.flexWrap = 'wrap';
         
         if (snap.exists()) {
             const theirBadges = snap.val() || {};
-            // 【核心修改】：相容新的 Object 格式，並轉換回陣列排序
             const badgeArray = Object.values(theirBadges).sort((a, b) => b.timestamp - a.timestamp);
             
             if (badgeArray.length === 0) {
-                badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
+                badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 10px 0;">該玩家尚未獲得榮譽徽章。</div>';
             } else {
                 badgeArray.forEach(badge => {
                     const slot = document.createElement('div');
-                    slot.className = 'badge-slot';
-                    const borderColor = badge.rank === 1 ? '#f1c40f' : (badge.rank === 2 ? '#bdc3c7' : '#cd7f32');
-                    const medalIcon = badge.rank === 1 ? '🥇' : (badge.rank === 2 ? '🥈' : '🥉');
+                    const borderColor = badge.rank === 1 ? '#FFD700' : (badge.rank === 2 ? '#E0E0E0' : '#CD7F32');
+                    const bgGlow = badge.rank === 1 ? 'rgba(255, 215, 0, 0.15)' : (badge.rank === 2 ? 'rgba(224, 224, 224, 0.15)' : 'rgba(205, 127, 50, 0.15)');
                     
-                    slot.style.border = `2px solid ${borderColor}`;
-                    slot.style.color = borderColor;
-                    slot.style.fontWeight = 'bold';
-                    slot.innerHTML = `<div style="font-size: 1.2rem; margin-bottom: 5px;">${medalIcon}</div><div style="font-size: 0.7rem; color: var(--text-sub);">第 ${badge.season} 週</div>`;
+                    slot.style.width = '60px'; slot.style.height = '60px';
+                    slot.style.borderRadius = '50%'; slot.style.border = `2px solid ${borderColor}`;
+                    slot.style.background = bgGlow; slot.style.boxShadow = `0 0 12px ${bgGlow}`;
+                    slot.style.display = 'flex'; slot.style.flexDirection = 'column';
+                    slot.style.justifyContent = 'center'; slot.style.alignItems = 'center';
+                    
+                    const medalIcon = badge.rank === 1 ? '🥇' : (badge.rank === 2 ? '🥈' : '🥉');
+                    slot.innerHTML = `<div style="font-size: 1.6rem; line-height: 1.2;">${medalIcon}</div><div style="font-size: 0.7rem; color: ${borderColor}; font-weight: bold; letter-spacing: 1px;">S${badge.season}</div>`;
                     badgeContainer.appendChild(slot);
                 });
             }
         } else {
+            // 補回：找不到任何資料時的顯示
             badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
         }
-    } catch(e) { 
-        badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>'; 
+    } catch(e) {
+        // 補回：網路連線失敗或權限阻擋時的錯誤顯示
+        badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>';
+        console.error("載入公開徽章失敗:", e);
     }
 };
 
