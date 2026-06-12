@@ -531,35 +531,40 @@ window.revokeAnnouncement = async function() {
     });
 };
 
-window.settleLastSeason = function() {
-    if (!window.isAdmin) return;
-    window.SilenModal.prompt("請輸入要結算的賽季 (例如: 1)", window.getCurrentWeekId().toString()).then(async input => {
-        if (!input) return; const targetWeek = parseInt(input.trim());
-        if (isNaN(targetWeek) || targetWeek < 1) return window.SilenModal.alert("請輸入有效的賽季數字。");
-        const settleRef = ref(rtdb, `system/settlement/week_${targetWeek}`);
-        const settleSnap = await get(settleRef);
-        if (settleSnap.exists() && settleSnap.val() === true) return window.SilenModal.alert(`第 ${targetWeek} 賽季已結算！`);
-        const lbRef = query(ref(rtdb, `leaderboard/week_${targetWeek}`), orderByChild('score'), limitToLast(3));
-        const snap = await get(lbRef);
-        if (!snap.exists()) return window.SilenModal.alert(`第 ${targetWeek} 賽季無人參與。`);
-        let winners = []; snap.forEach(c => winners.push({ uid: c.key, ...c.val() })); winners.reverse();
-        for (let i = 0; i < winners.length; i++) {
-            const w = winners[i];
-            let badgeColor = (i === 0) ? '#FFD700' : (i === 1) ? '#C0C0C0' : '#CD7F32';
-            const userBadgesRef = ref(rtdb, `users/${w.uid}/badges`);
-            const ubSnap = await get(userBadgesRef);
-            let badges = ubSnap.exists() ? ubSnap.val() : [];
-            badges.push({ season: targetWeek, name: `S${targetWeek} ${i===0?'冠軍':i===1?'亞軍':'季軍'}`, color: badgeColor });
-            await set(userBadgesRef, badges);
+window.settleLastSeason = async function() {
+    const confirmed = await window.SilenModal.confirm("⚠️ 終極警告\n\n確定要進行賽季結算嗎？\n系統將自動發放徽章給前三名，並且【強制清空】全伺服器玩家的牌位積分！");
+    if (!confirmed) return;
+
+    // 取得當前賽季的 ID
+    const currentWeekId = typeof window.getCurrentWeekId === 'function' ? window.getCurrentWeekId() : '未知';
+
+    window.SilenModal.alert("伺服器結算中，請勿關閉視窗...");
+
+    try {
+        const idToken = await auth.currentUser.getIdToken();
+        const res = await fetch(`${API_BASE}/api/settleseason`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ weekId: currentWeekId })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+            window.SilenModal.alert(`✅ 結算大成功！\n\n${data.message}`);
+            // 結算後把畫面上的分數歸零，並重新整理列表
+            window.myRankPoints = 0;
+            if (typeof window.updateMyPresence === 'function') window.updateMyPresence();
+            if (typeof window.openLeaderboard === 'function') window.openLeaderboard();
+        } else {
+            window.SilenModal.alert("❌ 結算失敗：" + data.error);
         }
-        await set(settleRef, true);
-        const usersSnap = await get(ref(rtdb, 'users'));
-        if (usersSnap.exists()) {
-            const updates = {}; usersSnap.forEach(c => { updates[`users/${c.key}/rankPoints`] = 0; });
-            await update(ref(rtdb), updates);
-        }
-        window.SilenModal.alert(`第 ${targetWeek} 賽季結算成功！全服積分已歸零。`).then(()=>window.location.reload());
-    });
+    } catch (error) {
+        window.SilenModal.alert("❌ 伺服器連線失敗，請檢查網路。\n" + error.message);
+    }
 };
 
 window.resetAllRankPoints = async function() {
