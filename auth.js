@@ -452,37 +452,79 @@ window.updateCloudUserName = async function(newName) {
     } catch (e) { window.SilenModal.alert("雲端同步失敗，請檢查網路。"); }
 };
 
+// =====================================
+// 替換 1：個人主頁徽章渲染
+// =====================================
 window.renderMyBadges = function(badges) {
     const container = document.getElementById('profile-badges-container');
     if (!container) return;
     container.innerHTML = '';
-    if (!badges || badges.length === 0) {
-        container.innerHTML = '<div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div><div class="badge-slot">尚未獲得</div>'; return;
+    
+    // 【核心修改】：相容新的 Object 格式，並轉換回陣列排序
+    const myBadges = badges || {};
+    const badgeArray = Object.values(myBadges).sort((a, b) => b.timestamp - a.timestamp);
+
+    if (badgeArray.length === 0) {
+        container.innerHTML = `
+            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
+            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
+            <div class="badge-slot" style="border: 1px dashed #444; color: #666;">尚未獲得</div>
+        `;
+        return;
     }
-    badges.forEach(b => {
-        const slot = document.createElement('div'); slot.className = 'badge-slot';
-        slot.style.border = `2px solid ${b.color}`; slot.style.color = b.color; slot.style.fontWeight = 'bold'; slot.style.fontSize = '0.8rem';
-        slot.style.display = 'flex'; slot.style.flexDirection = 'column'; slot.style.lineHeight = '1.4';
-        const lines = b.name.split(' '); slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
+    
+    badgeArray.forEach(badge => {
+        const slot = document.createElement('div');
+        slot.className = 'badge-slot';
+        
+        // 依據名次給予金、銀、銅專屬顏色
+        const borderColor = badge.rank === 1 ? '#f1c40f' : (badge.rank === 2 ? '#bdc3c7' : '#cd7f32');
+        const medalIcon = badge.rank === 1 ? '🥇' : (badge.rank === 2 ? '🥈' : '🥉');
+        
+        slot.style.border = `2px solid ${borderColor}`;
+        slot.style.color = borderColor;
+        slot.style.fontWeight = 'bold';
+        slot.innerHTML = `<div style="font-size: 1.2rem; margin-bottom: 5px;">${medalIcon}</div><div style="font-size: 0.7rem; color: var(--text-sub);">第 ${badge.season} 週</div>`;
         container.appendChild(slot);
     });
 };
 
+// =====================================
+// 替換 2：公開主頁 (別人看你) 徽章渲染
+// =====================================
 window.fetchPublicBadges = async function(uid) {
     const badgeContainer = document.getElementById('public-badges-container');
     try {
         const snap = await get(ref(rtdb, `users/${uid}/badges`));
         badgeContainer.innerHTML = '';
-        if (snap.exists() && snap.val().length > 0) {
-            snap.val().forEach(b => {
-                const slot = document.createElement('div'); slot.className = 'badge-slot';
-                slot.style.border = `2px solid ${b.color}`; slot.style.color = b.color; slot.style.fontWeight = 'bold'; slot.style.fontSize = '0.8rem';
-                slot.style.display = 'flex'; slot.style.flexDirection = 'column'; slot.style.lineHeight = '1.4';
-                const lines = b.name.split(' '); slot.innerHTML = `<span>${lines[0]}</span><span>${lines[1]}</span>`;
-                badgeContainer.appendChild(slot);
-            });
-        } else badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
-    } catch(e) { badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>'; }
+        
+        if (snap.exists()) {
+            const theirBadges = snap.val() || {};
+            // 【核心修改】：相容新的 Object 格式，並轉換回陣列排序
+            const badgeArray = Object.values(theirBadges).sort((a, b) => b.timestamp - a.timestamp);
+            
+            if (badgeArray.length === 0) {
+                badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
+            } else {
+                badgeArray.forEach(badge => {
+                    const slot = document.createElement('div');
+                    slot.className = 'badge-slot';
+                    const borderColor = badge.rank === 1 ? '#f1c40f' : (badge.rank === 2 ? '#bdc3c7' : '#cd7f32');
+                    const medalIcon = badge.rank === 1 ? '🥇' : (badge.rank === 2 ? '🥈' : '🥉');
+                    
+                    slot.style.border = `2px solid ${borderColor}`;
+                    slot.style.color = borderColor;
+                    slot.style.fontWeight = 'bold';
+                    slot.innerHTML = `<div style="font-size: 1.2rem; margin-bottom: 5px;">${medalIcon}</div><div style="font-size: 0.7rem; color: var(--text-sub);">第 ${badge.season} 週</div>`;
+                    badgeContainer.appendChild(slot);
+                });
+            }
+        } else {
+            badgeContainer.innerHTML = '<div style="color:var(--text-sub); font-size:0.85rem; padding: 20px 0;">該玩家尚未獲得榮譽徽章。</div>';
+        }
+    } catch(e) { 
+        badgeContainer.innerHTML = '<div style="color:var(--error); font-size:0.85rem; padding: 20px 0;">載入失敗</div>'; 
+    }
 };
 
 // =====================================
