@@ -1,3 +1,26 @@
+// ==========================================
+// 🛡️ 網頁前端基礎防護：禁用右鍵與開發者工具快捷鍵
+// ==========================================
+
+// 1. 禁用滑鼠右鍵選單
+document.addEventListener('contextmenu', function (e) {
+    e.preventDefault(); // 阻止預設的右鍵選單彈出
+});
+
+// 2. 禁用 F12 與常見的開發者工具快捷鍵
+document.addEventListener('keydown', function (e) {
+    // 判斷按下的按鍵
+    if (
+        e.key === 'F12' || // 擋下 F12
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) || // 擋下 Ctrl+Shift+I (開啟開發者工具)
+        (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) || // 擋下 Ctrl+Shift+J (開啟 Console)
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u')) // 擋下 Ctrl+U (檢視網頁原始碼)
+    ) {
+        e.preventDefault(); // 阻止按鍵的預設行為
+    }
+});
+
+
 // =====================================
 // 1. 自訂彈窗與設定引擎(Modal & Settings)
 // =====================================
